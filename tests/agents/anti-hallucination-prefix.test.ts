@@ -48,4 +48,21 @@ describe('Agent anti-hallucination protocol', () => {
     expect(content).toContain('INCONCLUSIVE');
     expect(content).toContain('/scan');
   });
+
+  it('commands/apply.md exists and references simulate-only mode', () => {
+    const content = readFileSync(resolve(process.cwd(), 'commands/apply.md'), 'utf8');
+    expect(content).toContain('simulateOnly');
+    expect(content).toContain('dry-run');
+    expect(content).toContain('/verify');
+  });
+
+  it('skills/uncertainty-checklist/SKILL.md exists with checklist items', () => {
+    const content = readFileSync(
+      resolve(process.cwd(), 'skills/uncertainty-checklist/SKILL.md'), 'utf8',
+    );
+    expect(content).toContain('verified');
+    expect(content).toContain('manifest');
+    expect(content).toContain('anti-slop');
+    expect(content).toContain('placeholder');
+  });
 });
