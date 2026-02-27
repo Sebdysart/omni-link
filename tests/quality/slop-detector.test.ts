@@ -301,6 +301,65 @@ export class UserController {
     });
   });
 
+  describe('over-abstraction detection', () => {
+    const mockManifest = makeManifest();
+
+    it('flags file with 3+ extends relationships as over-abstracted', () => {
+      const code = `
+        class A extends B {}
+        class C extends D {}
+        class E extends F {}
+      `;
+      const result = detectSlop(code, mockManifest);
+      expect(result.issues.some(i => i.kind === 'over-abstraction')).toBe(true);
+    });
+
+    it('flags when abstract/interface count >= 2x concrete class count', () => {
+      const code = `
+        abstract class BaseA {}
+        abstract class BaseB {}
+        interface IFoo {}
+        interface IBar {}
+        class ConcreteImpl {}
+      `;
+      const result = detectSlop(code, mockManifest);
+      expect(result.issues.some(i => i.kind === 'over-abstraction')).toBe(true);
+    });
+
+    it('flags 3+ single-delegation wrapper functions', () => {
+      const code = `
+        export function doA(x: string) { return service.doA(x); }
+        export function doB(x: string) { return service.doB(x); }
+        export function doC(x: string) { return service.doC(x); }
+      `;
+      const result = detectSlop(code, mockManifest);
+      expect(result.issues.some(i => i.kind === 'over-abstraction')).toBe(true);
+    });
+
+    it('does not flag normal code with few extends', () => {
+      const code = `
+        class Animal {}
+        class Dog extends Animal {}
+        function greet(name: string) { return \`Hello \${name}\`; }
+      `;
+      const result = detectSlop(code, mockManifest);
+      expect(result.issues.filter(i => i.kind === 'over-abstraction')).toHaveLength(0);
+    });
+
+    it('over-abstraction issue has kind, message, and severity', () => {
+      const code = `
+        class A extends B {}
+        class C extends D {}
+        class E extends F {}
+      `;
+      const result = detectSlop(code, mockManifest);
+      const issue = result.issues.find(i => i.kind === 'over-abstraction');
+      expect(issue).toBeDefined();
+      expect(issue!.message).toBeTruthy();
+      expect(issue!.severity).toBeTruthy();
+    });
+  });
+
   describe('edge cases', () => {
     it('handles empty code', () => {
       const manifest = makeManifest();

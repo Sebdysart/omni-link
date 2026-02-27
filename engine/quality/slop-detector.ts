@@ -276,6 +276,51 @@ function detectOverCommenting(code: string): SlopIssue[] {
   return issues;
 }
 
+// ─── Over-Abstraction Detection ──────────────────────────────────────────────
+
+function detectOverAbstraction(code: string): SlopIssue[] {
+  const issues: SlopIssue[] = [];
+
+  // Heuristic 1: Deep inheritance chains (3+ extends in one file)
+  const extendsMatches = (code.match(/\bextends\b/g) ?? []).length;
+  if (extendsMatches >= 3) {
+    issues.push({
+      kind: 'over-abstraction',
+      message: `File has ${extendsMatches} extends relationships — may indicate over-engineered inheritance hierarchy.`,
+      line: 1,
+      severity: 'warning',
+    });
+  }
+
+  // Heuristic 2: Abstract/interface count >= 2x concrete class count
+  const abstractCount = (code.match(/\babstract\s+class\b/g) ?? []).length +
+                        (code.match(/\binterface\s+\w/g) ?? []).length;
+  const concreteCount = (code.match(/\bclass\s+\w/g) ?? []).length - (code.match(/\babstract\s+class\b/g) ?? []).length;
+  if (concreteCount > 0 && abstractCount >= concreteCount * 2) {
+    issues.push({
+      kind: 'over-abstraction',
+      message: `${abstractCount} abstract types for ${concreteCount} concrete classes — abstraction may exceed value.`,
+      line: 1,
+      severity: 'warning',
+    });
+  }
+
+  // Heuristic 3: 3+ single-delegation wrapper functions
+  // Matches: export function foo(...) { return something.bar(...); }
+  const wrapperPattern = /export\s+(?:async\s+)?function\s+\w+\s*\([^)]*\)\s*\{[^}]*return\s+\w+\.\w+\s*\(/g;
+  const wrapperMatches = (code.match(wrapperPattern) ?? []).length;
+  if (wrapperMatches >= 3) {
+    issues.push({
+      kind: 'over-abstraction',
+      message: `${wrapperMatches} single-delegation wrapper functions — consider exposing the delegated object directly.`,
+      line: 1,
+      severity: 'warning',
+    });
+  }
+
+  return issues;
+}
+
 // ─── Main Detector ───────────────────────────────────────────────────────────
 
 /**
@@ -291,6 +336,7 @@ export function detectSlop(proposedCode: string, manifest: RepoManifest): SlopCh
     ...detectPhantomImports(proposedCode, manifest),
     ...detectDuplicateBlocks(proposedCode),
     ...detectOverCommenting(proposedCode),
+    ...detectOverAbstraction(proposedCode),
   ];
 
   return {
