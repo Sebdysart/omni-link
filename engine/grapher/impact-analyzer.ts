@@ -189,7 +189,7 @@ function assessSeverity(change: string): 'breaking' | 'warning' | 'info' {
 function assessCrossRepoSeverity(change: string): 'breaking' | 'warning' | 'info' {
   if (change.includes('type-change') || change.includes('type change')) return 'breaking';
   if (change.includes('route-change') || change.includes('route change')) return 'breaking';
-  if (change.includes('implementation-change') || change.includes('implementation change')) return 'breaking';
+  if (change.includes('implementation-change') || change.includes('implementation change')) return 'warning';
   if (change.includes('rename')) return 'breaking';
   if (change.includes('delete') || change.includes('remove')) return 'breaking';
   return 'warning';

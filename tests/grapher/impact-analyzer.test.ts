@@ -215,4 +215,40 @@ describe('analyzeImpact', () => {
     // Transitive dependent
     expect(affectedFiles).toContain('src/routes.ts');
   });
+
+  it('assigns warning (not breaking) severity for cross-repo implementation-change', () => {
+    const backend = makeManifest({
+      repoId: 'backend',
+      apiSurface: {
+        routes: [
+          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes/users.ts', line: 10 },
+        ],
+        procedures: [],
+        exports: [],
+      },
+    });
+
+    const ios = makeManifest({ repoId: 'ios-app', language: 'swift' });
+
+    const bridge: ApiBridge = {
+      consumer: { repo: 'ios-app', file: 'Services/UserService.swift', line: 15 },
+      provider: { repo: 'backend', route: 'GET /api/users', handler: 'getUsers' },
+      contract: {
+        inputType: { name: 'void', fields: [], source: { repo: 'backend', file: 'types.ts', line: 0 } },
+        outputType: { name: 'UserList', fields: [], source: { repo: 'backend', file: 'types.ts', line: 5 } },
+        matchStatus: 'exact',
+      },
+    };
+
+    const graph = makeGraph({ repos: [backend, ios], bridges: [bridge] });
+
+    const impacts = analyzeImpact(graph, [
+      { repo: 'backend', file: 'src/routes/users.ts', change: 'implementation-change' },
+    ]);
+
+    const crossRepoAffected = impacts[0]?.affected.find(a => a.repo === 'ios-app');
+    expect(crossRepoAffected).toBeDefined();
+    // Implementation-only change cannot break consumers — must be 'warning', not 'breaking'
+    expect(crossRepoAffected!.severity).toBe('warning');
+  });
 });
