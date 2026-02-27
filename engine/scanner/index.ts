@@ -1,6 +1,7 @@
 // engine/scanner/index.ts — Repo scanner orchestrator: walks a repo, extracts everything, assembles RepoManifest
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 
 import type {
@@ -14,7 +15,25 @@ import type {
   SchemaDef,
   PackageDep,
   HealthScore,
+  FileScanResult,
 } from '../types.js';
+
+/**
+ * Per-file incremental cache entry.
+ * Keyed by absolute file path. Stores the SHA1 of the last-seen file
+ * content alongside the parsed result so unchanged files can be skipped.
+ */
+export interface FileCacheEntry {
+  sha1: string;
+  result: FileScanResult;
+}
+
+/**
+ * In-memory incremental file cache: Map<absoluteFilePath, FileCacheEntry>.
+ * Pass the same Map across multiple scanRepo calls to avoid re-parsing
+ * files whose content hasn't changed.
+ */
+export type FileCache = Map<string, FileCacheEntry>;
 
 import { detectLanguage } from './tree-sitter.js';
 import { extractExports, extractRoutes, extractProcedures } from './api-extractor.js';
@@ -36,12 +55,20 @@ const SKIP_DIRS = new Set([
  *
  * 1. Walk the directory tree, collecting files with supported extensions
  * 2. Parse each file: extract exports, routes, procedures, types, schemas
+ *    - If an optional `fileCache` is provided and the file's SHA1 matches
+ *      the cached entry, the cached parse result is reused (no re-parse).
+ *    - On a cache miss the file is parsed normally and the result is stored.
  * 3. Extract git state via child_process
  * 4. Detect conventions from the collected data
  * 5. Extract external dependencies from package.json / Package.swift
  * 6. Assemble and return the RepoManifest
+ *
+ * @param config    Repository configuration
+ * @param fileCache Optional in-memory incremental cache (Map keyed by absolute
+ *                  file path). Pass the same Map across multiple calls to skip
+ *                  re-parsing unchanged files.
  */
-export function scanRepo(config: RepoConfig): RepoManifest {
+export function scanRepo(config: RepoConfig, fileCache?: FileCache): RepoManifest {
   const { name, path: repoPath, language } = config;
 
   // 1. Walk and collect supported files
@@ -71,12 +98,54 @@ export function scanRepo(config: RepoConfig): RepoManifest {
     // Relative path from repo root for cleaner file references
     const relPath = path.relative(repoPath, filePath);
 
-    // Extract all dimensions
-    const exports = extractExports(source, relPath, lang);
-    const routes = extractRoutes(source, relPath, lang);
-    const procedures = extractProcedures(source, relPath, lang);
-    const types = extractTypes(source, relPath, lang, name);
-    const schemas = extractSchemas(source, relPath, lang, name);
+    // ── Incremental cache check ──────────────────────────────────────────
+    let exports: ExportDef[];
+    let routes: RouteDefinition[];
+    let procedures: ProcedureDef[];
+    let types: TypeDef[];
+    let schemas: SchemaDef[];
+
+    if (fileCache !== undefined) {
+      const sha1 = crypto.createHash('sha1').update(source).digest('hex');
+      const cached = fileCache.get(filePath);
+
+      if (cached !== undefined && cached.sha1 === sha1) {
+        // Cache hit — reuse the previously parsed result
+        exports = cached.result.exports;
+        routes = cached.result.routes;
+        procedures = cached.result.procedures;
+        types = cached.result.types;
+        schemas = cached.result.schemas;
+      } else {
+        // Cache miss or stale — parse and store
+        exports = extractExports(source, relPath, lang);
+        routes = extractRoutes(source, relPath, lang);
+        procedures = extractProcedures(source, relPath, lang);
+        types = extractTypes(source, relPath, lang, name);
+        schemas = extractSchemas(source, relPath, lang, name);
+
+        const result: FileScanResult = {
+          filePath,
+          sha: sha1,
+          scannedAt: new Date().toISOString(),
+          exports,
+          imports: [], // Cross-file import resolution is done by the grapher
+          types,
+          schemas,
+          routes,
+          procedures,
+        };
+        fileCache.set(filePath, { sha1, result });
+      }
+    } else {
+      // No cache provided — parse unconditionally (original behaviour)
+      exports = extractExports(source, relPath, lang);
+      routes = extractRoutes(source, relPath, lang);
+      procedures = extractProcedures(source, relPath, lang);
+      types = extractTypes(source, relPath, lang, name);
+      schemas = extractSchemas(source, relPath, lang, name);
+    }
+    // ────────────────────────────────────────────────────────────────────
 
     allExports.push(...exports);
     allRoutes.push(...routes);

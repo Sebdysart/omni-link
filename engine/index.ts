@@ -10,6 +10,7 @@ import type {
 } from './types.js';
 
 import { scanRepo } from './scanner/index.js';
+import type { FileCache } from './scanner/index.js';
 import { buildEcosystemGraph } from './grapher/index.js';
 import { buildContext } from './context/index.js';
 import { analyzeEvolution } from './evolution/index.js';
@@ -49,8 +50,12 @@ export interface ScanResult {
  * Full pipeline: scan all repos -> build graph -> build context digest.
  */
 export function scan(config: OmniLinkConfig): ScanResult {
+  // Shared incremental cache for this pipeline run: unchanged files are
+  // parsed only once even if referenced by multiple repos.
+  const fileCache: FileCache = new Map();
+
   // 1. Scan each repo to produce a manifest
-  const manifests = config.repos.map((repo) => scanRepo(repo));
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
 
   // 2. Build the ecosystem graph from all manifests
   const graph = buildEcosystemGraph(manifests);
@@ -71,7 +76,8 @@ export function impact(
   config: OmniLinkConfig,
   changedFiles: Array<{ repo: string; file: string; change: string }>,
 ): ImpactPath[] {
-  const manifests = config.repos.map((repo) => scanRepo(repo));
+  const fileCache: FileCache = new Map();
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
   const graph = buildEcosystemGraph(manifests);
   return analyzeImpact(graph, changedFiles);
 }
@@ -87,7 +93,8 @@ export interface HealthResult {
  * Compute per-repo and ecosystem-wide health scores.
  */
 export function health(config: OmniLinkConfig): HealthResult {
-  const manifests = config.repos.map((repo) => scanRepo(repo));
+  const fileCache: FileCache = new Map();
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
   const graph = buildEcosystemGraph(manifests);
   return scoreEcosystemHealth(graph);
 }
@@ -98,7 +105,8 @@ export function health(config: OmniLinkConfig): HealthResult {
  * Run the evolution analysis pipeline: gaps, bottlenecks, benchmarks -> ranked suggestions.
  */
 export function evolve(config: OmniLinkConfig): EvolutionSuggestion[] {
-  const manifests = config.repos.map((repo) => scanRepo(repo));
+  const fileCache: FileCache = new Map();
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
   const graph = buildEcosystemGraph(manifests);
   return analyzeEvolution(graph, config);
 }
@@ -123,7 +131,8 @@ export function qualityCheck(
   config: OmniLinkConfig,
 ): QualityCheckResult {
   // Find the repo this file belongs to (match by path prefix or repo name)
-  const manifests = config.repos.map((repo) => scanRepo(repo));
+  const fileCache: FileCache = new Map();
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
 
   // Use the first manifest by default, or find by repo path in filename
   const manifest = manifests.find((m) => file.startsWith(m.path)) ?? manifests[0];

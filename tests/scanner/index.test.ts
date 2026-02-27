@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { scanRepo } from '../../engine/scanner/index.js';
-import type { RepoConfig, RepoManifest } from '../../engine/types.js';
+import type { RepoConfig, RepoManifest, FileScanResult } from '../../engine/types.js';
+import type { FileCache } from '../../engine/scanner/index.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import * as crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 
 describe('scanRepo orchestrator', () => {
@@ -202,5 +204,147 @@ export type User = z.infer<typeof userSchema>;
     const allFiles = manifest.apiSurface.exports.map((e) => e.file);
     const hasNodeModules = allFiles.some((f) => f.includes('node_modules'));
     expect(hasNodeModules).toBe(false);
+  });
+});
+
+// ─── Incremental Caching Tests ───────────────────────────────────────────────
+
+describe('scanRepo incremental caching', () => {
+  let tmpDir: string;
+  let config: RepoConfig;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omni-link-cache-'));
+
+    execSync('git init', { cwd: tmpDir, stdio: 'ignore' });
+    execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'ignore' });
+    execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'ignore' });
+
+    fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'service.ts'),
+      `export function hello(): string { return 'hello'; }\n`,
+    );
+
+    execSync('git add -A', { cwd: tmpDir, stdio: 'ignore' });
+    execSync('git commit -m "initial"', { cwd: tmpDir, stdio: 'ignore' });
+
+    config = { name: 'cache-test-repo', path: tmpDir, language: 'typescript', role: 'backend' };
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('scanRepo works without a cache parameter (no regression)', () => {
+    // Passing no cache should work identically to before
+    const manifest = scanRepo(config);
+    expect(manifest.repoId).toBe('cache-test-repo');
+    expect(manifest.apiSurface.exports.length).toBeGreaterThan(0);
+  });
+
+  it('scanRepo works with an empty cache (cold miss path)', () => {
+    const cache: FileCache = new Map();
+    const manifest = scanRepo(config, cache);
+    expect(manifest.repoId).toBe('cache-test-repo');
+    // After scan the cache should be populated with at least one entry
+    expect(cache.size).toBeGreaterThan(0);
+  });
+
+  it('cache entries are keyed by absolute file path and contain sha1 + result', () => {
+    const cache: FileCache = new Map();
+    scanRepo(config, cache);
+
+    const serviceFile = path.join(tmpDir, 'src', 'service.ts');
+    expect(cache.has(serviceFile)).toBe(true);
+
+    const entry = cache.get(serviceFile)!;
+    expect(typeof entry.sha1).toBe('string');
+    expect(entry.sha1).toHaveLength(40); // SHA1 hex
+    expect(entry.result).toBeDefined();
+    expect(Array.isArray(entry.result.exports)).toBe(true);
+  });
+
+  it('uses cached result when SHA1 matches (hit: cached exports survive a content-identical re-scan)', () => {
+    // First scan populates cache
+    const cache: FileCache = new Map();
+    scanRepo(config, cache);
+
+    const serviceFile = path.join(tmpDir, 'src', 'service.ts');
+    const cachedEntry = cache.get(serviceFile)!;
+    // Tamper with the cached result's exports to prove the second scan uses the cache
+    cachedEntry.result.exports = [
+      { name: '__CACHED__', kind: 'function', signature: '', file: 'service.ts', line: 1 },
+    ];
+    cache.set(serviceFile, cachedEntry);
+
+    // Second scan: file on disk is unchanged — SHA1 matches — cached result should be used
+    const manifest2 = scanRepo(config, cache);
+    const exportNames = manifest2.apiSurface.exports.map((e) => e.name);
+    expect(exportNames).toContain('__CACHED__');
+  });
+
+  it('re-parses when file content changes (SHA1 mismatch)', () => {
+    const cache: FileCache = new Map();
+    scanRepo(config, cache);
+
+    const serviceFile = path.join(tmpDir, 'src', 'service.ts');
+    const originalSha1 = cache.get(serviceFile)!.sha1;
+
+    // Change the file
+    fs.writeFileSync(
+      serviceFile,
+      `export function hello(): string { return 'world'; }\nexport function goodbye(): void {}\n`,
+    );
+
+    scanRepo(config, cache);
+
+    const newSha1 = cache.get(serviceFile)!.sha1;
+    expect(newSha1).not.toBe(originalSha1);
+  });
+
+  it('stale cache entry with old SHA1 is replaced after re-parse', () => {
+    const cache: FileCache = new Map();
+    const serviceFile = path.join(tmpDir, 'src', 'service.ts');
+    const content = fs.readFileSync(serviceFile, 'utf-8');
+    const realSha1 = crypto.createHash('sha1').update(content).digest('hex');
+
+    // Manually insert a cache entry with a WRONG sha1 (simulates stale cache)
+    const staleSha1 = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    cache.set(serviceFile, {
+      sha1: staleSha1,
+      result: {
+        filePath: serviceFile,
+        sha: staleSha1,
+        scannedAt: new Date().toISOString(),
+        exports: [],   // empty — intentionally wrong cached result
+        imports: [],
+        types: [],
+        schemas: [],
+        routes: [],
+        procedures: [],
+      },
+    });
+
+    // scanRepo should detect sha1 mismatch, re-parse, and update the cache
+    const manifest = scanRepo(config, cache);
+
+    // After scan: cache should be updated with the real sha1
+    expect(cache.get(serviceFile)!.sha1).toBe(realSha1);
+
+    // And the manifest should contain the real exports (not the stale empty ones)
+    expect(manifest.apiSurface.exports.length).toBeGreaterThan(0);
+  });
+
+  it('cache is shared across multiple scanRepo calls for the same files', () => {
+    const cache: FileCache = new Map();
+
+    // First call populates cache
+    scanRepo(config, cache);
+    const sizeAfterFirst = cache.size;
+
+    // Second call: no new files, same SHA1s — cache size stays the same
+    scanRepo(config, cache);
+    expect(cache.size).toBe(sizeAfterFirst);
   });
 });
