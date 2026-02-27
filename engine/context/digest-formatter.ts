@@ -150,6 +150,7 @@ export function formatDigest(
   // API Route Signatures section
   const routeSignatures = buildApiRouteSignatures(graph);
   if (routeSignatures) {
+    sections.push('');
     sections.push(routeSignatures);
   }
 
