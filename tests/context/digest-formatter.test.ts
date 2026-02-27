@@ -368,4 +368,49 @@ describe('formatDigest', () => {
 
     expect(markdown).toContain("missing field 'email'");
   });
+
+  it('markdown includes Key Type Signatures section when shared types present', () => {
+    const graph = makeGraph(); // uses existing makeGraph() that has sharedTypes with User type
+    const config = makeConfig();
+    const { markdown } = formatDigest(graph, config);
+
+    expect(markdown).toContain('## Key Type Signatures');
+    expect(markdown).toContain('interface User');
+    expect(markdown).toContain('id: string');
+    expect(markdown).toContain('name: string');
+  });
+
+  it('markdown includes API Route Signatures section when routes present', () => {
+    const graph = makeGraph(); // makeGraph() backend has GET /api/users and POST /api/users routes
+    const config = makeConfig();
+    const { markdown } = formatDigest(graph, config);
+
+    expect(markdown).toContain('## API Route Signatures');
+    expect(markdown).toContain('GET /api/users');
+    expect(markdown).toContain('getUsers');
+  });
+
+  it('does NOT include Key Type Signatures section when no shared types', () => {
+    const graph: EcosystemGraph = {
+      repos: [],
+      bridges: [],
+      sharedTypes: [],
+      contractMismatches: [],
+      impactPaths: [],
+    };
+    const { markdown } = formatDigest(graph, makeConfig());
+    expect(markdown).not.toContain('## Key Type Signatures');
+  });
+
+  it('does NOT include API Route Signatures section when no routes', () => {
+    const graph: EcosystemGraph = {
+      repos: [],
+      bridges: [],
+      sharedTypes: [],
+      contractMismatches: [],
+      impactPaths: [],
+    };
+    const { markdown } = formatDigest(graph, makeConfig());
+    expect(markdown).not.toContain('## API Route Signatures');
+  });
 });

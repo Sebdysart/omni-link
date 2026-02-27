@@ -140,6 +140,19 @@ export function formatDigest(
     }
   }
 
+  // Key Type Signatures section (code quotes for grounding)
+  const typeSignatures = buildKeyTypeSignatures(graph);
+  if (typeSignatures) {
+    sections.push('');
+    sections.push(typeSignatures);
+  }
+
+  // API Route Signatures section
+  const routeSignatures = buildApiRouteSignatures(graph);
+  if (routeSignatures) {
+    sections.push(routeSignatures);
+  }
+
   const markdown = sections.join('\n');
 
   const digest: EcosystemDigest = {
@@ -155,6 +168,65 @@ export function formatDigest(
   };
 
   return { digest, markdown };
+}
+
+function buildKeyTypeSignatures(graph: EcosystemGraph): string {
+  if (graph.sharedTypes.length === 0) return '';
+
+  const lines: string[] = ['## Key Type Signatures', ''];
+
+  for (const lineage of graph.sharedTypes) {
+    for (const instance of lineage.instances) {
+      const t = instance.type;
+      lines.push(`### ${t.name} (${instance.repo})`);
+      lines.push('```');
+      lines.push(`interface ${t.name} {`);
+      // Show up to 8 fields to keep the digest token-efficient
+      const fields = t.fields.slice(0, 8);
+      for (const f of fields) {
+        const optional = f.optional ? '?' : '';
+        lines.push(`  ${f.name}${optional}: ${f.type};`);
+      }
+      if (t.fields.length > 8) {
+        lines.push(`  // ... ${t.fields.length - 8} more fields`);
+      }
+      lines.push('}');
+      lines.push('```');
+      lines.push(`> Source: \`${instance.repo}/${t.source.file}:${t.source.line}\``);
+      lines.push('');
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function buildApiRouteSignatures(graph: EcosystemGraph): string {
+  const allRoutes = graph.repos.flatMap(r =>
+    r.apiSurface.routes.map(route => ({ repoId: r.repoId, route })),
+  );
+  if (allRoutes.length === 0) return '';
+
+  const lines: string[] = ['## API Route Signatures', ''];
+
+  // Show up to 10 routes to keep digest compact
+  for (const { repoId, route } of allRoutes.slice(0, 10)) {
+    const input = route.inputType ? `  // Input: ${route.inputType}` : '';
+    const output = route.outputType ? `  // Output: ${route.outputType}` : '';
+    lines.push(`**${route.method} ${route.path}** — \`${repoId}/${route.file}:${route.line}\``);
+    lines.push('```');
+    lines.push(`handler: ${route.handler}(req, res)`);
+    if (input) lines.push(input);
+    if (output) lines.push(output);
+    lines.push('```');
+    lines.push('');
+  }
+
+  if (allRoutes.length > 10) {
+    lines.push(`> ${allRoutes.length - 10} more routes omitted. Run \`/scan\` for full list.`);
+    lines.push('');
+  }
+
+  return lines.join('\n');
 }
 
 // ─── Internal Helpers ────────────────────────────────────────────────────────
