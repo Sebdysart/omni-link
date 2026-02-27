@@ -204,7 +204,7 @@ function detectMissingRateLimiting(manifest: RepoManifest): BottleneckFinding[] 
 
 // ─── Queue Detection ────────────────────────────────────────────────────────
 
-const QUEUE_PACKAGES = ['bullmq', 'bull', 'bee-queue', 'agenda', 'rabbitmq', 'amqplib', 'kafkajs', 'redis'];
+const QUEUE_PACKAGES = ['bullmq', 'bull', 'bee-queue', 'agenda', 'amqplib', 'kafkajs'];
 
 function detectNoQueue(manifest: RepoManifest): BottleneckFinding[] {
   const mutationCount = manifest.apiSurface.procedures.filter(p => p.kind === 'mutation').length;
