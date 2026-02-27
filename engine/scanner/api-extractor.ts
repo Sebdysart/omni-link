@@ -188,8 +188,13 @@ function extractSwiftExports(source: string, file: string): ExportDef[] {
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 
 /**
- * Extract GraphQL Query/Mutation/Subscription operations from GraphQL SDL source.
- * Uses regex-based SDL parsing — no tree-sitter binding required.
+ * Extract GraphQL operations (Query/Mutation/Subscription fields) from SDL source.
+ *
+ * Known limitations:
+ * - Fields with multi-line argument lists are not extracted (args must be on the same line
+ *   as the field name, e.g., `field(arg: Type): ReturnType`).
+ * - Fields inside inline type declarations (e.g., `type Query { field: T }`) are extracted
+ *   only if they fit on a single field per line.
  */
 function extractGraphQLOperations(source: string, file: string): RouteDefinition[] {
   const routes: RouteDefinition[] = [];
@@ -209,7 +214,30 @@ function extractGraphQLOperations(source: string, file: string): RouteDefinition
         if (new RegExp(`^type\\s+${rootType}\\s*\\{`).test(line)) {
           currentRootType = rootType;
           braceDepth = 1;
-          break;
+
+          // Handle single-line type blocks: type Query { field: T }
+          const afterBrace = line.replace(/^[^{]*\{/, '').trim();
+          if (afterBrace) {
+            // Check if block closes on same line
+            if (afterBrace.includes('}')) {
+              // Extract any fields between { and }
+              const inlineContent = afterBrace.replace(/}.*$/, '').trim();
+              const inlineField = inlineContent.match(/^(\w+)\s*(?:\([^)]*\))?\s*:/);
+              if (inlineField) {
+                routes.push({
+                  method: currentRootType.toUpperCase(),
+                  path: `/${inlineField[1]}`,
+                  handler: inlineField[1],
+                  file,
+                  line: lineNumber,
+                });
+              }
+              currentRootType = null;
+              braceDepth = 0;
+            }
+            // If not closing on same line, the next loop iteration will pick up
+          }
+          break; // done checking ROOT_TYPES
         }
       }
       continue;

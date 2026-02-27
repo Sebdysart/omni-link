@@ -141,5 +141,11 @@ class UserService {
       const routes = extractRoutes(source, 'schema.graphql', 'graphql');
       expect(routes).toHaveLength(0);
     });
+
+    it('extracts fields from single-line type block', () => {
+      const source = `type Query { health: Boolean }`;
+      const routes = extractRoutes(source, 'schema.graphql', 'graphql');
+      expect(routes.some(r => r.handler === 'health' && r.method === 'QUERY')).toBe(true);
+    });
   });
 });
