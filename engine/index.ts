@@ -19,10 +19,12 @@ import { checkReferences } from './quality/reference-checker.js';
 import { validateConventions } from './quality/convention-validator.js';
 import { detectSlop } from './quality/slop-detector.js';
 import { scoreEcosystemHealth } from './quality/health-scorer.js';
+import { checkRules } from './quality/rule-engine.js';
 import type { HealthScoreResult } from './quality/health-scorer.js';
 import type { ReferenceCheckResult } from './quality/reference-checker.js';
 import type { ConventionCheckResult } from './quality/convention-validator.js';
 import type { SlopCheckResult } from './quality/slop-detector.js';
+import type { RuleCheckResult } from './quality/rule-engine.js';
 
 // Re-export types that callers need
 export type {
@@ -36,6 +38,7 @@ export type {
   ReferenceCheckResult,
   ConventionCheckResult,
   SlopCheckResult,
+  RuleCheckResult,
 };
 
 // ---- Scan Pipeline ----
@@ -117,6 +120,7 @@ export interface QualityCheckResult {
   references: ReferenceCheckResult;
   conventions: ConventionCheckResult;
   slop: SlopCheckResult;
+  rules: RuleCheckResult;
 }
 
 /**
@@ -142,12 +146,14 @@ export function qualityCheck(
       references: { valid: true, violations: [] },
       conventions: { valid: true, violations: [] },
       slop: { clean: true, issues: [] },
+      rules: { passed: true, violations: [] },
     };
   }
 
   const references = checkReferences(code, file, manifest);
   const conventions = validateConventions(code, file, manifest);
   const slop = detectSlop(code, manifest);
+  const rules = checkRules(code, file);
 
-  return { references, conventions, slop };
+  return { references, conventions, slop, rules };
 }
