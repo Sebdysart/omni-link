@@ -39,4 +39,12 @@ describe('Agent anti-hallucination protocol', () => {
     expect(content).toContain('- Glob');
     expect(content).toContain('Iron Laws');
   });
+
+  it('commands/verify.md exists and references validator agent', () => {
+    const content = readFileSync(resolve(process.cwd(), 'commands/verify.md'), 'utf8');
+    expect(content).toContain('validator');
+    expect(content).toContain('PASS');
+    expect(content).toContain('FAIL');
+    expect(content).toContain('/scan');
+  });
 });
