@@ -11,7 +11,7 @@ const AGENT_FILES = [
 const REQUIRED_PHRASES = [
   'ANTI-HALLUCINATION PROTOCOL',
   'cannot confirm',
-  'thinking',
+  '<thinking>',
   'confidence',
 ];
 
