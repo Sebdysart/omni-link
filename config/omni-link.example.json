@@ -1,0 +1,35 @@
+{
+  "repos": [
+    {
+      "name": "my-backend",
+      "path": "/path/to/backend",
+      "language": "typescript",
+      "role": "backend"
+    },
+    {
+      "name": "my-ios-app",
+      "path": "/path/to/ios-app",
+      "language": "swift",
+      "role": "ios-app"
+    }
+  ],
+  "evolution": {
+    "aggressiveness": "aggressive",
+    "maxSuggestionsPerSession": 5,
+    "categories": ["features", "performance", "monetization", "scale", "security"]
+  },
+  "quality": {
+    "blockOnFailure": true,
+    "requireTestsForNewCode": true,
+    "conventionStrictness": "strict"
+  },
+  "context": {
+    "tokenBudget": 8000,
+    "prioritize": "changed-files-first",
+    "includeRecentCommits": 20
+  },
+  "cache": {
+    "directory": "~/.claude/omni-link-cache",
+    "maxAgeDays": 7
+  }
+}

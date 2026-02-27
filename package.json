@@ -1,0 +1,36 @@
+{
+  "name": "omni-link",
+  "version": "0.1.0",
+  "description": "Multi-repo AI ecosystem plugin for Claude Code",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "omni-link": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Sebastian Dysart",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "@types/node": "^22.0.0"
+  },
+  "dependencies": {
+    "tree-sitter": "^0.22.1",
+    "tree-sitter-typescript": "^0.23.0",
+    "tree-sitter-javascript": "^0.23.0",
+    "tree-sitter-swift": "^0.7.0",
+    "tree-sitter-python": "^0.23.0",
+    "tree-sitter-go": "^0.23.0",
+    "tree-sitter-rust": "^0.23.0",
+    "tree-sitter-java": "^0.23.0"
+  }
+}

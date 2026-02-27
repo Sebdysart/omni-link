@@ -1,0 +1,11 @@
+{
+  "name": "omni-link",
+  "description": "Multi-repo AI ecosystem plugin for Claude Code",
+  "plugins": [
+    {
+      "name": "omni-link",
+      "version": "0.1.0",
+      "source": "./"
+    }
+  ]
+}
