@@ -45,6 +45,7 @@ describe('Agent anti-hallucination protocol', () => {
     expect(content).toContain('validator');
     expect(content).toContain('PASS');
     expect(content).toContain('FAIL');
+    expect(content).toContain('INCONCLUSIVE');
     expect(content).toContain('/scan');
   });
 });
