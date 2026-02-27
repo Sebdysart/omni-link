@@ -44,11 +44,24 @@ function extractTSTypes(source: string, file: string, language: string, repo: st
     const body = iface.descendantsOfType('interface_body')[0];
     const fields = body ? extractTSInterfaceFields(body) : [];
 
-    results.push({
+    const typeDef: import('../types.js').TypeDef = {
       name: nameNode.text,
       fields,
       source: { repo, file, line: iface.startPosition.row + 1 },
-    });
+    };
+
+    // Capture extends clause: interface Foo extends A, B { ... }
+    const extendsClause = iface.children.find((c: any) => c.type === 'extends_type_clause');
+    if (extendsClause) {
+      const parentNames: string[] = extendsClause.children
+        .filter((c: any) => c.type === 'type_identifier')
+        .map((c: any) => c.text as string);
+      if (parentNames.length > 0) {
+        typeDef.extends = parentNames;
+      }
+    }
+
+    results.push(typeDef);
   }
 
   // Extract type aliases (only those with object type bodies have meaningful fields)
@@ -61,11 +74,24 @@ function extractTSTypes(source: string, file: string, language: string, repo: st
     const objectType = alias.descendantsOfType('object_type')[0];
     const fields = objectType ? extractTSObjectTypeFields(objectType) : [];
 
-    results.push({
+    const typeDef: import('../types.js').TypeDef = {
       name: nameNode.text,
       fields,
       source: { repo, file, line: alias.startPosition.row + 1 },
-    });
+    };
+
+    // Capture intersection type parents: type Combined = TypeA & TypeB
+    const intersectionNode = alias.children.find((c: any) => c.type === 'intersection_type');
+    if (intersectionNode) {
+      const memberNames: string[] = intersectionNode.children
+        .filter((c: any) => c.type === 'type_identifier')
+        .map((c: any) => c.text as string);
+      if (memberNames.length > 0) {
+        typeDef.extends = memberNames;
+      }
+    }
+
+    results.push(typeDef);
   }
 
   return results;

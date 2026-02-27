@@ -59,4 +59,44 @@ class User(BaseModel):
     expect(types).toHaveLength(1);
     expect(types[0].name).toBe('User');
   });
+
+  describe('inheritance tracking', () => {
+    it('captures single extends on interface', () => {
+      const source = `interface Dog extends Animal { breed: string; }`;
+      const types = extractTypes(source, 'types.ts', 'typescript', 'backend');
+      const dog = types.find(t => t.name === 'Dog');
+      expect(dog).toBeDefined();
+      expect(dog!.extends).toBeDefined();
+      expect(dog!.extends).toContain('Animal');
+    });
+
+    it('captures multiple extends on interface', () => {
+      const source = `interface C extends A, B { x: number; }`;
+      const types = extractTypes(source, 'types.ts', 'typescript', 'backend');
+      const c = types.find(t => t.name === 'C');
+      expect(c).toBeDefined();
+      expect(c!.extends).toBeDefined();
+      expect(c!.extends).toContain('A');
+      expect(c!.extends).toContain('B');
+    });
+
+    it('captures intersection type parents', () => {
+      const source = `type Combined = TypeA & TypeB;`;
+      const types = extractTypes(source, 'types.ts', 'typescript', 'backend');
+      const combined = types.find(t => t.name === 'Combined');
+      expect(combined).toBeDefined();
+      expect(combined!.extends).toBeDefined();
+      expect(combined!.extends).toContain('TypeA');
+      expect(combined!.extends).toContain('TypeB');
+    });
+
+    it('plain interface has no extends', () => {
+      const source = `interface Simple { x: number; }`;
+      const types = extractTypes(source, 'types.ts', 'typescript', 'backend');
+      const simple = types.find(t => t.name === 'Simple');
+      expect(simple).toBeDefined();
+      const extendsField = simple!.extends;
+      expect(!extendsField || extendsField.length === 0).toBe(true);
+    });
+  });
 });

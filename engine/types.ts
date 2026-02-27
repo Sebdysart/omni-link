@@ -77,6 +77,7 @@ export interface TypeField {
 export interface TypeDef {
   name: string;
   fields: TypeField[];
+  extends?: string[]; // parent type names from extends clause or intersection type
   source: { repo: string; file: string; line: number };
 }
 
