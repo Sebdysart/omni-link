@@ -82,9 +82,6 @@ export function pruneToTokenBudget(
     return { graph: pruned, droppedItems: [], tokenEstimate: 0 };
   }
 
-  // Adjust priorities based on mode
-  const priorityWeights = getPriorityWeights(prioritize);
-
   // Calculate total tokens
   let totalTokens = computeTotalTokens(pruned);
 
@@ -203,12 +200,15 @@ export function pruneToTokenBudget(
     trimRoutes();
   }
 
-  // Phase 8 (deferred): If focus='commits', trim commits last
+  // NOTE: focus values 'types', 'mismatches', and 'auto' are reserved for future phase-order
+  // customization. They currently produce the same behavior as the default (no focus).
+
+  // Phase 8a (deferred — focus: commits): trim commits last
   if (totalTokens > budget && focus === 'commits') {
     trimCommits();
   }
 
-  // Phase 8 (deferred): If focus='api-surface', trim routes last
+  // Phase 8b (deferred — focus: api-surface): trim routes last
   if (totalTokens > budget && focus === 'api-surface') {
     trimRoutes();
   }
