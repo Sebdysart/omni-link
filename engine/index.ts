@@ -20,6 +20,8 @@ import { validateConventions } from './quality/convention-validator.js';
 import { detectSlop } from './quality/slop-detector.js';
 import { scoreEcosystemHealth } from './quality/health-scorer.js';
 import { checkRules } from './quality/rule-engine.js';
+import { assertNotSimulateOnly } from './quality/simulate-guard.js';
+export { SimulateOnlyError } from './quality/simulate-guard.js';
 import type { HealthScoreResult } from './quality/health-scorer.js';
 import type { ReferenceCheckResult } from './quality/reference-checker.js';
 import type { ConventionCheckResult } from './quality/convention-validator.js';
@@ -53,6 +55,7 @@ export interface ScanResult {
  * Full pipeline: scan all repos -> build graph -> build context digest.
  */
 export function scan(config: OmniLinkConfig): ScanResult {
+  assertNotSimulateOnly(config, 'scan');
   // Shared incremental cache for this pipeline run: unchanged files are
   // parsed only once even if referenced by multiple repos.
   const fileCache: FileCache = new Map();
@@ -79,6 +82,7 @@ export function impact(
   config: OmniLinkConfig,
   changedFiles: Array<{ repo: string; file: string; change: string }>,
 ): ImpactPath[] {
+  assertNotSimulateOnly(config, 'impact');
   const fileCache: FileCache = new Map();
   const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
   const graph = buildEcosystemGraph(manifests);
@@ -96,6 +100,7 @@ export interface HealthResult {
  * Compute per-repo and ecosystem-wide health scores.
  */
 export function health(config: OmniLinkConfig): HealthResult {
+  assertNotSimulateOnly(config, 'health');
   const fileCache: FileCache = new Map();
   const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
   const graph = buildEcosystemGraph(manifests);
@@ -108,6 +113,7 @@ export function health(config: OmniLinkConfig): HealthResult {
  * Run the evolution analysis pipeline: gaps, bottlenecks, benchmarks -> ranked suggestions.
  */
 export function evolve(config: OmniLinkConfig): EvolutionSuggestion[] {
+  assertNotSimulateOnly(config, 'evolve');
   const fileCache: FileCache = new Map();
   const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
   const graph = buildEcosystemGraph(manifests);
@@ -134,6 +140,7 @@ export function qualityCheck(
   file: string,
   config: OmniLinkConfig,
 ): QualityCheckResult {
+  assertNotSimulateOnly(config, 'qualityCheck');
   // Find the repo this file belongs to (match by path prefix or repo name)
   const fileCache: FileCache = new Map();
   const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));

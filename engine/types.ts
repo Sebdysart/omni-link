@@ -30,6 +30,7 @@ export interface OmniLinkConfig {
     directory: string;
     maxAgeDays: number;
   };
+  simulateOnly?: boolean;
 }
 
 // --- Scanner Output ---
