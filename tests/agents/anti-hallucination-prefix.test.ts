@@ -29,7 +29,14 @@ describe('Agent anti-hallucination protocol', () => {
     const content = readFileSync(resolve(process.cwd(), 'agents/validator.md'), 'utf8');
     expect(content).toContain('PASS');
     expect(content).toContain('FAIL');
+    expect(content).toContain('INCONCLUSIVE');
     expect(content).toContain('Verdict');
     expect(content).toContain('phantom');
+    // Verify tool restriction — validator must be read-only
+    expect(content).toContain('tools:');
+    expect(content).toContain('- Read');
+    expect(content).toContain('- Grep');
+    expect(content).toContain('- Glob');
+    expect(content).toContain('Iron Laws');
   });
 });
