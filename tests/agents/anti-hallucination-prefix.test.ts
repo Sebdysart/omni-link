@@ -24,4 +24,12 @@ describe('Agent anti-hallucination protocol', () => {
       }
     });
   }
+
+  it('agents/validator.md exists with required sections', () => {
+    const content = readFileSync(resolve(process.cwd(), 'agents/validator.md'), 'utf8');
+    expect(content).toContain('PASS');
+    expect(content).toContain('FAIL');
+    expect(content).toContain('Verdict');
+    expect(content).toContain('phantom');
+  });
 });
