@@ -1,0 +1,70 @@
+#!/bin/bash
+# omni-link session-start hook
+# Scans the ecosystem, reads the meta-skill, and injects context into Claude.
+
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Resolve paths
+# ---------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SKILL_FILE="${PLUGIN_ROOT}/skills/using-omni-link/SKILL.md"
+CLI="${PLUGIN_ROOT}/dist/cli.js"
+
+# ---------------------------------------------------------------------------
+# Locate config: local .omni-link.json first, then global fallback
+# ---------------------------------------------------------------------------
+CONFIG_PATH=""
+if [[ -f "${PWD}/.omni-link.json" ]]; then
+  CONFIG_PATH="${PWD}/.omni-link.json"
+elif [[ -f "${HOME}/.claude/omni-link.json" ]]; then
+  CONFIG_PATH="${HOME}/.claude/omni-link.json"
+fi
+
+if [[ -z "${CONFIG_PATH}" ]]; then
+  # No config found — emit a helpful nudge and exit cleanly
+  MSG="omni-link: No config found. Create .omni-link.json in your project root or ~/.claude/omni-link.json to enable ecosystem scanning."
+  printf '{"hookName":"session-start","additionalContext":"%s"}\n' "$MSG"
+  exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# Run the scan
+# ---------------------------------------------------------------------------
+DIGEST=""
+if [[ -f "${CLI}" ]]; then
+  DIGEST=$(node "${CLI}" scan --config "${CONFIG_PATH}" 2>/dev/null) || {
+    DIGEST="omni-link: scan failed — the engine encountered an error. Context will be partial."
+  }
+else
+  DIGEST="omni-link: dist/cli.js not found — run 'npm run build' in the plugin root."
+fi
+
+# ---------------------------------------------------------------------------
+# Read the meta-skill (may not exist yet — Task 32)
+# ---------------------------------------------------------------------------
+SKILL_CONTENT=""
+if [[ -f "${SKILL_FILE}" ]]; then
+  SKILL_CONTENT=$(<"${SKILL_FILE}")
+fi
+
+# ---------------------------------------------------------------------------
+# Combine and emit hook response
+# ---------------------------------------------------------------------------
+if [[ -n "${SKILL_CONTENT}" ]]; then
+  CONTEXT="${SKILL_CONTENT}
+
+${DIGEST}"
+else
+  CONTEXT="${DIGEST}"
+fi
+
+# JSON-escape the context string (newlines, quotes, backslashes, tabs)
+ESCAPED=$(printf '%s' "$CONTEXT" | python3 -c '
+import sys, json
+print(json.dumps(sys.stdin.read()))
+')
+
+# Emit the hook response — additionalContext is already a JSON string with quotes
+printf '{"hookName":"session-start","additionalContext":%s}\n' "$ESCAPED"
