@@ -5,7 +5,7 @@ import type { RepoManifest, RouteDefinition, ProcedureDef } from '../types.js';
 // ─── Public Types ────────────────────────────────────────────────────────────
 
 export interface BottleneckFinding {
-  kind: 'missing-pagination' | 'unbounded-query' | 'no-caching' | 'sync-in-async';
+  kind: 'missing-pagination' | 'unbounded-query' | 'no-caching' | 'sync-in-async' | 'no-rate-limiting' | 'no-queue';
   description: string;
   repo: string;
   file: string;
@@ -172,25 +172,57 @@ function detectMissingRateLimiting(manifest: RepoManifest): BottleneckFinding[] 
 
   if (hasRateLimiting(manifest)) return [];
 
-  // Only flag if there are mutation routes (POST, PUT, DELETE)
-  const mutationRoutes = manifest.apiSurface.routes.filter(r => {
-    const method = r.method.toUpperCase();
-    return method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE';
-  });
+  const hasMutationProcedures = manifest.apiSurface.procedures.some(p => p.kind === 'mutation');
+  const hasMutationRoutes = manifest.apiSurface.routes.some(r =>
+    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(r.method.toUpperCase())
+  );
 
-  if (mutationRoutes.length === 0) return [];
+  if (!hasMutationRoutes && !hasMutationProcedures) return [];
 
-  // Single finding for the whole repo
+  // Count all mutation surfaces for the description
+  const mutationRoutes = manifest.apiSurface.routes.filter(r =>
+    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(r.method.toUpperCase())
+  );
+  const mutationProcedures = manifest.apiSurface.procedures.filter(p => p.kind === 'mutation');
+  const totalMutations = mutationRoutes.length + mutationProcedures.length;
+
+  // Resolve a representative file/line — prefer routes, fall back to procedures
+  const representativeFile = mutationRoutes[0]?.file ?? mutationProcedures[0]?.file ?? '';
+  const representativeLine = mutationRoutes[0]?.line ?? mutationProcedures[0]?.line ?? 1;
+
   findings.push({
-    kind: 'unbounded-query',
-    description: `${mutationRoutes.length} mutation route(s) found but no rate-limiting middleware detected`,
+    kind: 'no-rate-limiting',
+    description: `${totalMutations} mutation route(s)/procedure(s) found but no rate-limiting middleware detected`,
     repo: manifest.repoId,
-    file: mutationRoutes[0].file,
-    line: mutationRoutes[0].line,
+    file: representativeFile,
+    line: representativeLine,
     severity: 'high',
   });
 
   return findings;
+}
+
+// ─── Queue Detection ────────────────────────────────────────────────────────
+
+const QUEUE_PACKAGES = ['bullmq', 'bull', 'bee-queue', 'agenda', 'rabbitmq', 'amqplib', 'kafkajs', 'redis'];
+
+function detectNoQueue(manifest: RepoManifest): BottleneckFinding[] {
+  const mutationCount = manifest.apiSurface.procedures.filter(p => p.kind === 'mutation').length;
+  if (mutationCount < 20) return [];
+
+  const hasQueue = manifest.dependencies.external.some(d =>
+    QUEUE_PACKAGES.some(pkg => d.name.toLowerCase().includes(pkg))
+  );
+  if (hasQueue) return [];
+
+  return [{
+    kind: 'no-queue',
+    repo: manifest.repoId,
+    severity: 'medium',
+    description: `${mutationCount} mutation procedures with no job queue detected. Consider adding a queue (e.g., BullMQ) for background processing.`,
+    file: manifest.apiSurface.procedures[0]?.file ?? '',
+    line: manifest.apiSurface.procedures[0]?.line ?? 1,
+  }];
 }
 
 // ─── Main Entry Point ───────────────────────────────────────────────────────
@@ -206,6 +238,7 @@ export function findBottlenecks(manifests: RepoManifest[]): BottleneckFinding[] 
       ...detectMissingPagination(manifest),
       ...detectNoCaching(manifest),
       ...detectMissingRateLimiting(manifest),
+      ...detectNoQueue(manifest),
     );
   }
 

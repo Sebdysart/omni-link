@@ -240,6 +240,103 @@ describe('findBottlenecks', () => {
     });
   });
 
+  describe('rate-limiting kind correctness', () => {
+    it('rate-limiting finding uses kind no-rate-limiting (not unbounded-query)', () => {
+      const manifest = makeManifest({
+        repoId: 'backend',
+        apiSurface: {
+          routes: [
+            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 10 },
+          ],
+          procedures: [],
+          exports: [],
+        },
+        conventions: { naming: 'camelCase', fileOrganization: 'feature-based', errorHandling: 'try-catch', patterns: [], testingPatterns: 'co-located' },
+        dependencies: { internal: [], external: [] },
+      });
+
+      const findings = findBottlenecks([manifest]);
+      const rateLimitFinding = findings.find(f => f.description.toLowerCase().includes('rate'));
+      expect(rateLimitFinding).toBeDefined();
+      expect(rateLimitFinding!.kind).toBe('no-rate-limiting');
+    });
+
+    it('flags mutation procedures without rate-limiting patterns', () => {
+      const manifest = makeManifest({
+        repoId: 'backend',
+        apiSurface: {
+          routes: [],
+          procedures: [
+            { name: 'createUser', kind: 'mutation', file: 'src/routers/user.ts', line: 10 },
+            { name: 'deletePost', kind: 'mutation', file: 'src/routers/post.ts', line: 20 },
+          ],
+          exports: [],
+        },
+        conventions: { naming: 'camelCase', fileOrganization: 'feature-based', errorHandling: 'try-catch', patterns: [], testingPatterns: 'co-located' },
+        dependencies: { internal: [], external: [] },
+      });
+
+      const findings = findBottlenecks([manifest]);
+      expect(findings.some(f => f.kind === 'no-rate-limiting')).toBe(true);
+    });
+  });
+
+  describe('no-queue detection', () => {
+    it('flags repo with 20+ mutation procedures and no queue package', () => {
+      const procedures = Array.from({ length: 22 }, (_, i) => ({
+        name: `mutation${i}`,
+        kind: 'mutation' as const,
+        file: `src/routers/router${i}.ts`,
+        line: 1,
+      }));
+
+      const manifest = makeManifest({
+        repoId: 'backend',
+        apiSurface: { routes: [], procedures, exports: [] },
+        dependencies: { internal: [], external: [] },
+      });
+
+      const findings = findBottlenecks([manifest]);
+      expect(findings.some(f => f.kind === 'no-queue')).toBe(true);
+    });
+
+    it('does not flag no-queue when queue package is present', () => {
+      const procedures = Array.from({ length: 22 }, (_, i) => ({
+        name: `mutation${i}`,
+        kind: 'mutation' as const,
+        file: `src/routers/router${i}.ts`,
+        line: 1,
+      }));
+
+      const manifest = makeManifest({
+        repoId: 'backend',
+        apiSurface: { routes: [], procedures, exports: [] },
+        dependencies: { internal: [], external: [{ name: 'bullmq', version: '^5.0.0', dev: false }] },
+      });
+
+      const findings = findBottlenecks([manifest]);
+      expect(findings.some(f => f.kind === 'no-queue')).toBe(false);
+    });
+
+    it('does not flag no-queue for fewer than 20 mutation procedures', () => {
+      const procedures = Array.from({ length: 15 }, (_, i) => ({
+        name: `mutation${i}`,
+        kind: 'mutation' as const,
+        file: `src/routers/router${i}.ts`,
+        line: 1,
+      }));
+
+      const manifest = makeManifest({
+        repoId: 'backend',
+        apiSurface: { routes: [], procedures, exports: [] },
+        dependencies: { internal: [], external: [] },
+      });
+
+      const findings = findBottlenecks([manifest]);
+      expect(findings.some(f => f.kind === 'no-queue')).toBe(false);
+    });
+  });
+
   describe('edge cases', () => {
     it('returns empty array for empty manifests', () => {
       const findings = findBottlenecks([]);
