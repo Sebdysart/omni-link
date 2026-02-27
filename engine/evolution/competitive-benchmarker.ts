@@ -18,16 +18,18 @@ type PracticeChecker = (manifest: RepoManifest) => BenchmarkResult | null;
 
 // ─── TS/Node Backend Checks ─────────────────────────────────────────────────
 
-const RATE_LIMIT_PACKAGES = ['express-rate-limit', 'rate-limiter-flexible', 'bottleneck', 'p-throttle'];
+// Keyword-based substring matching covers all frameworks:
+// express-rate-limit, rate-limiter-flexible, @hono/rate-limiter, hono-rate-limiter, bottleneck, p-throttle
+const RATE_LIMIT_KEYWORDS = ['rate-limit', 'ratelimit', 'rate_limit', 'throttle', 'limiter', 'bottleneck'];
 const RATE_LIMIT_PATTERNS = ['rate-limit', 'rate_limit', 'ratelimit', 'throttle'];
 
 function checkRateLimiting(manifest: RepoManifest): BenchmarkResult | null {
-  // Only check if the repo has routes
   if (manifest.apiSurface.routes.length === 0) return null;
 
-  const hasPkg = manifest.dependencies.external.some(d =>
-    RATE_LIMIT_PACKAGES.some(pkg => d.name.toLowerCase().includes(pkg))
-  );
+  const hasPkg = manifest.dependencies.external.some(d => {
+    const name = d.name.toLowerCase();
+    return RATE_LIMIT_KEYWORDS.some(kw => name.includes(kw));
+  });
   const hasPattern = manifest.conventions.patterns.some(p =>
     RATE_LIMIT_PATTERNS.some(rl => p.toLowerCase().includes(rl))
   );
@@ -37,7 +39,7 @@ function checkRateLimiting(manifest: RepoManifest): BenchmarkResult | null {
     status: hasPkg || hasPattern ? 'present' : 'missing',
     repo: manifest.repoId,
     category: 'security',
-    suggestion: 'Add rate limiting middleware (e.g., express-rate-limit) to protect mutation endpoints from abuse.',
+    suggestion: 'Add rate limiting middleware (e.g., express-rate-limit, @hono/rate-limiter) to protect mutation endpoints from abuse.',
   };
 }
 
@@ -60,14 +62,16 @@ function checkCors(manifest: RepoManifest): BenchmarkResult | null {
   };
 }
 
-const HELMET_PACKAGES = ['helmet', 'fastify-helmet'];
+// Keywords cover: helmet, fastify-helmet, @fastify/helmet, secure-headers, security-headers
+const SECURITY_HEADER_KEYWORDS = ['helmet', 'secure-header', 'security-header'];
 
 function checkSecurityHeaders(manifest: RepoManifest): BenchmarkResult | null {
   if (manifest.apiSurface.routes.length === 0) return null;
 
-  const hasPkg = manifest.dependencies.external.some(d =>
-    HELMET_PACKAGES.some(pkg => d.name.toLowerCase() === pkg)
-  );
+  const hasPkg = manifest.dependencies.external.some(d => {
+    const name = d.name.toLowerCase();
+    return SECURITY_HEADER_KEYWORDS.some(kw => name.includes(kw));
+  });
   const hasPattern = manifest.conventions.patterns.some(p =>
     p.toLowerCase().includes('helmet') || p.toLowerCase().includes('security-header')
   );
@@ -77,7 +81,7 @@ function checkSecurityHeaders(manifest: RepoManifest): BenchmarkResult | null {
     status: hasPkg || hasPattern ? 'present' : 'missing',
     repo: manifest.repoId,
     category: 'security',
-    suggestion: 'Add Helmet middleware to set security-related HTTP response headers.',
+    suggestion: 'Add security headers middleware (e.g., helmet, @fastify/helmet, or Hono secureHeaders()) to protect against common attacks.',
   };
 }
 
@@ -143,7 +147,8 @@ function checkRequestValidation(manifest: RepoManifest): BenchmarkResult | null 
   };
 }
 
-const LOGGING_PACKAGES = ['winston', 'pino', 'bunyan', 'morgan', 'log4js', 'signale'];
+// Covers modern logging libs across frameworks including Hono (consola, tslog, roarr)
+const LOGGING_PACKAGES = ['winston', 'pino', 'bunyan', 'morgan', 'log4js', 'signale', 'consola', 'tslog', 'roarr', 'loglevel'];
 
 function checkLogging(manifest: RepoManifest): BenchmarkResult | null {
   if (manifest.apiSurface.routes.length === 0) return null;

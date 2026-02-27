@@ -355,4 +355,103 @@ describe('benchmarkAgainstBestPractices', () => {
       expect(Array.isArray(results)).toBe(true);
     });
   });
+
+  describe('framework-aware detection (Hono/Fastify)', () => {
+    it('recognizes @hono/rate-limiter as rate limiting present', () => {
+      const manifest = makeManifest({
+        repoId: 'hono-backend',
+        apiSurface: {
+          routes: [{ method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/index.ts', line: 1 }],
+          procedures: [], exports: [],
+        },
+        dependencies: {
+          internal: [],
+          external: [{ name: '@hono/rate-limiter', version: '^0.4.0', dev: false }],
+        },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      const rl = results.find(r => r.practice.toLowerCase().includes('rate limit'));
+      expect(rl).toBeDefined();
+      expect(rl!.status).toBe('present');
+    });
+
+    it('recognizes hono-rate-limiter as rate limiting present', () => {
+      const manifest = makeManifest({
+        repoId: 'hono-backend',
+        apiSurface: {
+          routes: [{ method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/index.ts', line: 1 }],
+          procedures: [], exports: [],
+        },
+        dependencies: {
+          internal: [],
+          external: [{ name: 'hono-rate-limiter', version: '^0.1.0', dev: false }],
+        },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      const rl = results.find(r => r.practice.toLowerCase().includes('rate limit'));
+      expect(rl).toBeDefined();
+      expect(rl!.status).toBe('present');
+    });
+
+    it('recognizes @fastify/helmet as security headers present', () => {
+      const manifest = makeManifest({
+        repoId: 'fastify-backend',
+        apiSurface: {
+          routes: [{ method: 'GET', path: '/api/data', handler: 'getData', file: 'src/index.ts', line: 1 }],
+          procedures: [], exports: [],
+        },
+        dependencies: {
+          internal: [],
+          external: [{ name: '@fastify/helmet', version: '^11.0.0', dev: false }],
+        },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      const sec = results.find(r =>
+        r.practice.toLowerCase().includes('security header') || r.practice.toLowerCase().includes('helmet')
+      );
+      expect(sec).toBeDefined();
+      expect(sec!.status).toBe('present');
+    });
+
+    it('recognizes consola as structured logging present', () => {
+      const manifest = makeManifest({
+        repoId: 'hono-backend',
+        apiSurface: {
+          routes: [{ method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/index.ts', line: 1 }],
+          procedures: [], exports: [],
+        },
+        dependencies: {
+          internal: [],
+          external: [{ name: 'consola', version: '^3.0.0', dev: false }],
+        },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      const log = results.find(r => r.practice.toLowerCase().includes('logging'));
+      expect(log).toBeDefined();
+      expect(log!.status).toBe('present');
+    });
+
+    it('recognizes @hono/cors as CORS configuration present', () => {
+      const manifest = makeManifest({
+        repoId: 'hono-backend',
+        apiSurface: {
+          routes: [{ method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/index.ts', line: 1 }],
+          procedures: [], exports: [],
+        },
+        dependencies: {
+          internal: [],
+          external: [{ name: '@hono/cors', version: '^0.0.12', dev: false }],
+        },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      const cors = results.find(r => r.practice.toLowerCase().includes('cors'));
+      expect(cors).toBeDefined();
+      expect(cors!.status).toBe('present');
+    });
+  });
 });
