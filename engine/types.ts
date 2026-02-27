@@ -24,6 +24,7 @@ export interface OmniLinkConfig {
     tokenBudget: number;
     prioritize: 'changed-files-first' | 'api-surface-first';
     includeRecentCommits: number;
+    focus?: 'commits' | 'types' | 'api-surface' | 'mismatches' | 'auto';
   };
   cache: {
     directory: string;

@@ -302,3 +302,101 @@ describe('pruneToTokenBudget', () => {
     expect(result.droppedItems).toHaveLength(0);
   });
 });
+
+// ─── focus mode tests ─────────────────────────────────────────────────────────
+
+describe('focus mode', () => {
+  it("focus 'commits' preserves recent commits over types when budget is tight", () => {
+    // Build a graph with both recentCommits and types — enough content to force pruning
+    const graph = makeGraph({
+      commitCount: 30,
+      typeCount: 30,
+      bridgeCount: 0,
+      mismatchCount: 0,
+      typeLineageCount: 0,
+      impactCount: 0,
+    });
+
+    // Tight budget that forces pruning of some content
+    const withFocus = pruneToTokenBudget(graph, 200, 'changed-files-first', 'commits');
+    const withoutFocus = pruneToTokenBudget(graph, 200, 'changed-files-first');
+
+    const focusDroppedCommits = withFocus.droppedItems.filter(d => d.startsWith('commit:')).length;
+    const focusDroppedTypes = withFocus.droppedItems.filter(d => d.startsWith('type:')).length;
+
+    const defaultDroppedCommits = withoutFocus.droppedItems.filter(d => d.startsWith('commit:')).length;
+    const defaultDroppedTypes = withoutFocus.droppedItems.filter(d => d.startsWith('type:')).length;
+
+    // focus='commits': commits should be preserved — fewer commits dropped than in default
+    expect(focusDroppedCommits).toBeLessThanOrEqual(defaultDroppedCommits);
+
+    // focus='commits' should compensate by dropping more types
+    expect(focusDroppedTypes).toBeGreaterThanOrEqual(defaultDroppedTypes);
+
+    // The pruned graph with focus should have at least as many commits as without focus
+    const focusRemainingCommits = withFocus.graph.repos.reduce(
+      (sum, r) => sum + r.gitState.recentCommits.length, 0,
+    );
+    const defaultRemainingCommits = withoutFocus.graph.repos.reduce(
+      (sum, r) => sum + r.gitState.recentCommits.length, 0,
+    );
+    expect(focusRemainingCommits).toBeGreaterThanOrEqual(defaultRemainingCommits);
+  });
+
+  it("focus 'api-surface' preserves routes over commits when budget is tight", () => {
+    // Build a graph with both routes and commits
+    const graph = makeGraph({
+      commitCount: 30,
+      bridgeCount: 15,
+      typeCount: 0,
+      mismatchCount: 0,
+      typeLineageCount: 0,
+      impactCount: 0,
+    });
+
+    // Tight budget forces pruning
+    const withFocus = pruneToTokenBudget(graph, 200, 'changed-files-first', 'api-surface');
+    const withoutFocus = pruneToTokenBudget(graph, 200, 'changed-files-first');
+
+    const focusDroppedRoutes = withFocus.droppedItems.filter(d => d.startsWith('route:')).length;
+    const defaultDroppedRoutes = withoutFocus.droppedItems.filter(d => d.startsWith('route:')).length;
+
+    // focus='api-surface': routes should be preserved — fewer or equal routes dropped vs default
+    expect(focusDroppedRoutes).toBeLessThanOrEqual(defaultDroppedRoutes);
+
+    // With focus='api-surface', remaining routes should be >= default remaining routes
+    const focusRemainingRoutes = withFocus.graph.repos.reduce(
+      (sum, r) => sum + r.apiSurface.routes.length, 0,
+    );
+    const defaultRemainingRoutes = withoutFocus.graph.repos.reduce(
+      (sum, r) => sum + r.apiSurface.routes.length, 0,
+    );
+    expect(focusRemainingRoutes).toBeGreaterThanOrEqual(defaultRemainingRoutes);
+  });
+
+  it('no focus parameter preserves existing behavior', () => {
+    const graph = makeGraph({
+      commitCount: 20,
+      typeCount: 10,
+      bridgeCount: 5,
+      mismatchCount: 1,
+      typeLineageCount: 2,
+      impactCount: 2,
+    });
+
+    // Without focus: should work correctly with large budget (drops nothing)
+    const largeResult = pruneToTokenBudget(graph, 999999, 'changed-files-first');
+    expect(largeResult.droppedItems).toHaveLength(0);
+    expect(largeResult.graph.repos[0].gitState.recentCommits).toHaveLength(20);
+    expect(largeResult.graph.repos[0].typeRegistry.types).toHaveLength(10);
+
+    // Without focus: with tight budget, commits are trimmed first (default behavior)
+    const tightResult = pruneToTokenBudget(graph, 150, 'changed-files-first');
+    expect(tightResult.tokenEstimate).toBeLessThanOrEqual(150);
+
+    // Calling with undefined focus explicitly should also match default behavior
+    const undefinedFocusResult = pruneToTokenBudget(graph, 150, 'changed-files-first', undefined);
+    expect(undefinedFocusResult.tokenEstimate).toBeLessThanOrEqual(150);
+    expect(undefinedFocusResult.droppedItems).toEqual(tightResult.droppedItems);
+  });
+});

@@ -64,6 +64,7 @@ export function pruneToTokenBudget(
   graph: EcosystemGraph,
   budget: number,
   prioritize: 'changed-files-first' | 'api-surface-first',
+  focus?: 'commits' | 'types' | 'api-surface' | 'mismatches' | 'auto',
 ): PrunedContext {
   const droppedItems: string[] = [];
 
@@ -92,9 +93,14 @@ export function pruneToTokenBudget(
   }
 
   // ─── Trim Phase: Remove lowest-priority items first ──────────────────
+  //
+  // focus parameter shifts the phase order to preserve what the caller cares about:
+  //   'commits'     — move commit-trimming to last (preserve commits)
+  //   'api-surface' — move route-trimming to last (preserve routes)
+  //   'types', 'mismatches', 'auto', undefined — default order
 
-  // Phase 1: Trim recent commits (priority 10)
-  if (totalTokens > budget) {
+  // ── Commit trim helper ──────────────────────────────────────────────
+  const trimCommits = (): void => {
     for (const repo of pruned.repos) {
       const commits = repo.gitState.recentCommits;
       while (commits.length > 0 && totalTokens > budget) {
@@ -104,6 +110,23 @@ export function pruneToTokenBudget(
         droppedItems.push(`commit:${repo.repoId}:${removed.sha}`);
       }
     }
+  };
+
+  // ── Route trim helper ───────────────────────────────────────────────
+  const trimRoutes = (): void => {
+    for (const repo of pruned.repos) {
+      while (repo.apiSurface.routes.length > 0 && totalTokens > budget) {
+        const removed = repo.apiSurface.routes.pop()!;
+        const savedTokens = estimateTokens(JSON.stringify(removed));
+        totalTokens -= savedTokens;
+        droppedItems.push(`route:${repo.repoId}:${removed.path}`);
+      }
+    }
+  };
+
+  // Phase 1: Trim recent commits (priority 10) — skipped when focus='commits'
+  if (totalTokens > budget && focus !== 'commits') {
+    trimCommits();
   }
 
   // Phase 2: Trim conventions (priority 20)
@@ -112,7 +135,6 @@ export function pruneToTokenBudget(
       const convTokens = estimateTokens(serializeConventions(repo));
       if (convTokens > 0) {
         // Clear conventions to minimal
-        const originalPatterns = repo.conventions.patterns;
         repo.conventions.patterns = [];
         repo.conventions.testingPatterns = '';
         repo.conventions.errorHandling = '';
@@ -176,16 +198,19 @@ export function pruneToTokenBudget(
     }
   }
 
-  // Phase 7: Trim routes from repos (priority 60)
-  if (totalTokens > budget) {
-    for (const repo of pruned.repos) {
-      while (repo.apiSurface.routes.length > 0 && totalTokens > budget) {
-        const removed = repo.apiSurface.routes.pop()!;
-        const savedTokens = estimateTokens(JSON.stringify(removed));
-        totalTokens -= savedTokens;
-        droppedItems.push(`route:${repo.repoId}:${removed.path}`);
-      }
-    }
+  // Phase 7: Trim routes from repos (priority 60) — skipped when focus='api-surface'
+  if (totalTokens > budget && focus !== 'api-surface') {
+    trimRoutes();
+  }
+
+  // Phase 8 (deferred): If focus='commits', trim commits last
+  if (totalTokens > budget && focus === 'commits') {
+    trimCommits();
+  }
+
+  // Phase 8 (deferred): If focus='api-surface', trim routes last
+  if (totalTokens > budget && focus === 'api-surface') {
+    trimRoutes();
   }
 
   // Contract mismatches (priority 100) — never trimmed
