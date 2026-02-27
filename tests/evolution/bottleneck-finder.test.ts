@@ -200,11 +200,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      const rateLimitFindings = findings.filter(f => f.kind === 'sync-in-async');
-      // We use sync-in-async kind for rate-limiting (convention-based heuristic)
-      // Actually, let's check for unbounded-query kind
-      // Rate limiting is flagged as its own concern
-      expect(findings.length).toBeGreaterThan(0);
+      expect(findings.some(f => f.kind === 'no-rate-limiting')).toBe(true);
     });
 
     it('does not flag when rate-limit dependency is present', () => {
@@ -233,9 +229,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      const rateLimitFindings = findings.filter(f =>
-        f.kind === 'unbounded-query' && f.description.toLowerCase().includes('rate')
-      );
+      const rateLimitFindings = findings.filter(f => f.kind === 'no-rate-limiting');
       expect(rateLimitFindings).toHaveLength(0);
     });
   });
