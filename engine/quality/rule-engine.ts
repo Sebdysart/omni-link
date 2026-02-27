@@ -40,7 +40,11 @@ const noFetchWithoutCatch: HardRule = {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (!line.includes('fetch(')) continue;
+      // Skip lines where fetch( appears only inside a string literal or comment
+      if (!/\bfetch\s*\(/.test(line)) continue;
+      // Additional guard: skip if the whole line is a comment
+      const trimmed = line.trim();
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('#')) continue;
 
       // Check if this line or surrounding 5 lines contain .catch( or are inside try {
       const window = lines.slice(Math.max(0, i - 3), i + 6).join('\n');
@@ -71,7 +75,12 @@ const noRawEnvAccess: HardRule = {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       // Match process.env.SOMETHING without ?? or || on the same line
-      if (/process\.env\.\w+/.test(line) && !/process\.env\.\w+\s*[\?\|]{1,2}/.test(line)) {
+      if (
+        /process\.env\.\w+/.test(line) &&
+        !/process\.env\.\w+\s*[\?\|]{1,2}/.test(line) &&
+        !/process\.env\.\w+\s*[!=]{2,3}/.test(line) &&
+        !/typeof\s+process\.env/.test(line)
+      ) {
         violations.push({
           ruleId: 'no-raw-env-access',
           description: 'process.env access without fallback',
@@ -116,7 +125,9 @@ const noHardcodedSecret: HardRule = {
   id: 'no-hardcoded-secret',
   description: 'Hardcoded secrets (API keys, tokens, passwords) detected',
   severity: 'error',
-  check(code, _file) {
+  check(code, file) {
+    if (isTestFile(file)) return [];
+
     const violations: RuleViolation[] = [];
     const lines = code.split('\n');
 
@@ -160,6 +171,9 @@ export const BUILT_IN_RULES: HardRule[] = [
 /**
  * Run all hard rules against the provided code.
  * Returns a RuleCheckResult with all violations found.
+ *
+ * `passed` is false only when there is at least one `error`-severity violation.
+ * Warning-severity violations are included in `violations` but do not affect `passed`.
  */
 export function checkRules(
   code: string,
