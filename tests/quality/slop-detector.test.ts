@@ -336,11 +336,43 @@ export class UserController {
       expect(result.issues.some(i => i.kind === 'over-abstraction')).toBe(true);
     });
 
+    it('does not flag multi-line non-wrapper export functions', () => {
+      const code = `
+        export function processUser(user: User) {
+          const validated = validate(user);
+          const saved = save(validated);
+          return saved;
+        }
+        export function processPost(post: Post) {
+          const validated = validate(post);
+          const saved = save(validated);
+          return saved;
+        }
+        export function processComment(comment: Comment) {
+          const validated = validate(comment);
+          const saved = save(validated);
+          return saved;
+        }
+      `;
+      const result = detectSlop(code, mockManifest);
+      expect(result.issues.filter(i => i.kind === 'over-abstraction')).toHaveLength(0);
+    });
+
     it('does not flag normal code with few extends', () => {
       const code = `
         class Animal {}
         class Dog extends Animal {}
         function greet(name: string) { return \`Hello \${name}\`; }
+      `;
+      const result = detectSlop(code, mockManifest);
+      expect(result.issues.filter(i => i.kind === 'over-abstraction')).toHaveLength(0);
+    });
+
+    it('does not flag files with generic constraints as over-abstracted', () => {
+      const code = `
+        function identity<T extends object>(x: T): T { return x; }
+        function map<T extends string>(arr: T[]): T[] { return arr; }
+        type IsString<T> = T extends string ? true : false;
       `;
       const result = detectSlop(code, mockManifest);
       expect(result.issues.filter(i => i.kind === 'over-abstraction')).toHaveLength(0);
@@ -355,8 +387,8 @@ export class UserController {
       const result = detectSlop(code, mockManifest);
       const issue = result.issues.find(i => i.kind === 'over-abstraction');
       expect(issue).toBeDefined();
-      expect(issue!.message).toBeTruthy();
-      expect(issue!.severity).toBeTruthy();
+      expect(issue!.message.length).toBeGreaterThan(0);
+      expect(issue!.severity).toBe('warning');
     });
   });
 

@@ -282,12 +282,13 @@ function detectOverAbstraction(code: string): SlopIssue[] {
   const issues: SlopIssue[] = [];
 
   // Heuristic 1: Deep inheritance chains (3+ extends in one file)
-  const extendsMatches = (code.match(/\bextends\b/g) ?? []).length;
+  // Count only class-level extends (not generic constraints or conditional types)
+  const extendsMatches = (code.match(/\bclass\s+\w[^{]*\bextends\b/g) ?? []).length;
   if (extendsMatches >= 3) {
     issues.push({
       kind: 'over-abstraction',
       message: `File has ${extendsMatches} extends relationships — may indicate over-engineered inheritance hierarchy.`,
-      line: 1,
+      line: 1, // file-level diagnostic — no single offending line
       severity: 'warning',
     });
   }
@@ -300,20 +301,28 @@ function detectOverAbstraction(code: string): SlopIssue[] {
     issues.push({
       kind: 'over-abstraction',
       message: `${abstractCount} abstract types for ${concreteCount} concrete classes — abstraction may exceed value.`,
-      line: 1,
+      line: 1, // file-level diagnostic — no single offending line
       severity: 'warning',
     });
   }
 
-  // Heuristic 3: 3+ single-delegation wrapper functions
-  // Matches: export function foo(...) { return something.bar(...); }
-  const wrapperPattern = /export\s+(?:async\s+)?function\s+\w+\s*\([^)]*\)\s*\{[^}]*return\s+\w+\.\w+\s*\(/g;
-  const wrapperMatches = (code.match(wrapperPattern) ?? []).length;
-  if (wrapperMatches >= 3) {
+  // Heuristic 3: Single-delegation wrapper functions
+  // Match lines that are complete export function definitions delegating to one method
+  const lines = code.split('\n');
+  let wrapperCount = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Matches: export function foo(...) { return obj.method(...); }
+    // or: export async function foo(...) { return obj.method(...); }
+    if (/^export\s+(?:async\s+)?function\s+\w+\s*\([^)]*\)\s*\{[^{}]*return\s+\w+\.\w+\s*\(/.test(trimmed)) {
+      wrapperCount++;
+    }
+  }
+  if (wrapperCount >= 3) {
     issues.push({
       kind: 'over-abstraction',
-      message: `${wrapperMatches} single-delegation wrapper functions — consider exposing the delegated object directly.`,
-      line: 1,
+      message: `${wrapperCount} single-delegation wrapper functions — consider exposing the delegated object directly.`,
+      line: 1, // file-level diagnostic — no single offending line
       severity: 'warning',
     });
   }
