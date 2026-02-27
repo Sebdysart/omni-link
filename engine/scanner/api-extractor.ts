@@ -188,14 +188,77 @@ function extractSwiftExports(source: string, file: string): ExportDef[] {
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 
 /**
+ * Extract GraphQL Query/Mutation/Subscription operations from GraphQL SDL source.
+ * Uses regex-based SDL parsing — no tree-sitter binding required.
+ */
+function extractGraphQLOperations(source: string, file: string): RouteDefinition[] {
+  const routes: RouteDefinition[] = [];
+  const ROOT_TYPES = ['Query', 'Mutation', 'Subscription'];
+
+  let currentRootType: string | null = null;
+  let braceDepth = 0;
+  let lineNumber = 0;
+
+  for (const rawLine of source.split('\n')) {
+    lineNumber++;
+    const line = rawLine.trim();
+
+    // Check if entering a root type block
+    if (currentRootType === null) {
+      for (const rootType of ROOT_TYPES) {
+        if (new RegExp(`^type\\s+${rootType}\\s*\\{`).test(line)) {
+          currentRootType = rootType;
+          braceDepth = 1;
+          break;
+        }
+      }
+      continue;
+    }
+
+    // We are inside a root type block — track brace depth
+    for (const ch of line) {
+      if (ch === '{') braceDepth++;
+      else if (ch === '}') braceDepth--;
+    }
+
+    if (braceDepth <= 0) {
+      currentRootType = null;
+      braceDepth = 0;
+      continue;
+    }
+
+    // Extract field name at depth 1: fieldName(args): ReturnType or fieldName: ReturnType
+    if (braceDepth === 1) {
+      const fieldMatch = line.match(/^(\w+)\s*(?:\([^)]*\))?\s*:/);
+      if (fieldMatch) {
+        routes.push({
+          method: currentRootType.toUpperCase(),
+          path: `/${fieldMatch[1]}`,
+          handler: fieldMatch[1],
+          file,
+          line: lineNumber,
+        });
+      }
+    }
+  }
+
+  return routes;
+}
+
+/**
  * Extract HTTP route definitions from Hono/Express-style code.
  * Looks for `app.METHOD(path, handler)` patterns.
+ * Also handles GraphQL SDL files (.graphql/.gql) via SDL parsing.
  */
 export function extractRoutes(
   source: string,
   file: string,
   language: string,
 ): RouteDefinition[] {
+  if (language === 'graphql') {
+    return extractGraphQLOperations(source, file);
+  }
+
   if (language !== 'typescript' && language !== 'tsx' && language !== 'javascript') {
     return [];
   }

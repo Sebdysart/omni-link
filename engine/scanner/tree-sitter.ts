@@ -13,6 +13,7 @@ const LANGUAGE_MAP: Record<string, () => any> = {
   go: () => require('tree-sitter-go'),
   rust: () => require('tree-sitter-rust'),
   java: () => require('tree-sitter-java'),
+  graphql: () => require('tree-sitter-graphql'),
 };
 
 const EXTENSION_MAP: Record<string, string> = {
@@ -27,6 +28,8 @@ const EXTENSION_MAP: Record<string, string> = {
   '.go': 'go',
   '.rs': 'rust',
   '.java': 'java',
+  '.graphql': 'graphql',
+  '.gql': 'graphql',
 };
 
 /**

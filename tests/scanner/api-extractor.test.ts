@@ -90,4 +90,56 @@ class UserService {
       expect(exports.find(e => e.name === 'UserService')?.kind).toBe('class');
     });
   });
+
+  describe('GraphQL extraction', () => {
+    it('extracts Query fields from GraphQL schema as routes', () => {
+      const source = `
+    type Query {
+      users: [User]
+      post(id: ID!): Post
+    }
+  `;
+      const routes = extractRoutes(source, 'schema.graphql', 'graphql');
+      expect(routes.find(r => r.handler === 'users')).toBeDefined();
+      expect(routes.find(r => r.handler === 'post')).toBeDefined();
+      expect(routes.find(r => r.handler === 'users')?.method).toBe('QUERY');
+      expect(routes.find(r => r.handler === 'post')?.method).toBe('QUERY');
+    });
+
+    it('extracts Mutation fields from GraphQL schema as routes', () => {
+      const source = `
+    type Mutation {
+      createUser(input: CreateUserInput!): User
+      deletePost(id: ID!): Boolean
+    }
+  `;
+      const routes = extractRoutes(source, 'schema.graphql', 'graphql');
+      expect(routes.find(r => r.handler === 'createUser')).toBeDefined();
+      expect(routes.find(r => r.handler === 'deletePost')).toBeDefined();
+      expect(routes.find(r => r.handler === 'createUser')?.method).toBe('MUTATION');
+      expect(routes.find(r => r.handler === 'deletePost')?.method).toBe('MUTATION');
+    });
+
+    it('extracts Subscription fields from GraphQL schema as routes', () => {
+      const source = `
+    type Subscription {
+      messageAdded: Message
+    }
+  `;
+      const routes = extractRoutes(source, 'schema.graphql', 'graphql');
+      expect(routes.find(r => r.handler === 'messageAdded')).toBeDefined();
+      expect(routes.find(r => r.handler === 'messageAdded')?.method).toBe('SUBSCRIPTION');
+    });
+
+    it('does not extract non-root type fields as routes', () => {
+      const source = `
+    type User {
+      id: ID!
+      name: String
+    }
+  `;
+      const routes = extractRoutes(source, 'schema.graphql', 'graphql');
+      expect(routes).toHaveLength(0);
+    });
+  });
 });
