@@ -304,31 +304,6 @@ function computeTotalTokens(graph: EcosystemGraph): number {
   return total;
 }
 
-// ─── Priority Weights ────────────────────────────────────────────────────────
-
-function getPriorityWeights(mode: 'changed-files-first' | 'api-surface-first'): Record<string, number> {
-  if (mode === 'api-surface-first') {
-    return {
-      mismatches: 100,
-      apiSurface: 90,
-      changedFiles: 70,
-      typeRegistry: 40,
-      conventions: 20,
-      recentCommits: 10,
-    };
-  }
-
-  // Default: changed-files-first
-  return {
-    mismatches: 100,
-    changedFiles: 80,
-    apiSurface: 60,
-    typeRegistry: 40,
-    conventions: 20,
-    recentCommits: 10,
-  };
-}
-
 // ─── Deep Clone ──────────────────────────────────────────────────────────────
 
 function deepCloneManifest(manifest: RepoManifest): RepoManifest {
