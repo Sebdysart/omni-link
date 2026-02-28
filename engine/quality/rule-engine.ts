@@ -135,8 +135,8 @@ const noHardcodedSecret: HardRule = {
     const SECRET_PATTERNS = [
       // Long alphanumeric strings assigned to key/secret/token/password variables
       /(?:api[_-]?key|secret|token|password|auth[_-]?key)\s*[=:]\s*['"][a-zA-Z0-9+/=_\-]{20,}['"]/i,
-      // Common secret prefixes (OpenAI, Stripe, AWS, etc.)
-      /['"](?:sk-|pk_|rk_|AKIA|ghp_|gho_|ghu_|ghs_|glpat-)[a-zA-Z0-9]{10,}['"]/,
+      // Common secret prefixes (OpenAI sk-, Stripe sk_live_/sk_test_/pk_, AWS, GitHub, GitLab, etc.)
+      /['"](?:sk[-_]|pk_|rk_|AKIA|ghp_|gho_|ghu_|ghs_|glpat-)[a-zA-Z0-9_]{10,}['"]/,
     ];
 
     for (let i = 0; i < lines.length; i++) {
