@@ -39,7 +39,7 @@ vi.mock('../engine/quality/health-scorer.js', () => ({
   scoreEcosystemHealth: vi.fn(),
 }));
 
-import { scan, impact, health, evolve, qualityCheck } from '../engine/index.js';
+import { scan, impact, health, evolve, qualityCheck, SimulateOnlyError } from '../engine/index.js';
 import { scanRepo } from '../engine/scanner/index.js';
 import { buildEcosystemGraph } from '../engine/grapher/index.js';
 import { buildContext } from '../engine/context/index.js';
@@ -300,6 +300,10 @@ describe('engine/index — qualityCheck()', () => {
     expect(result.references).toBe(refResult);
     expect(result.conventions).toBe(convResult);
     expect(result.slop).toBe(slopResult);
+    // Rule engine is wired — rules field must be present
+    expect(result.rules).toBeDefined();
+    expect(typeof result.rules.passed).toBe('boolean');
+    expect(Array.isArray(result.rules.violations)).toBe(true);
   });
 
   it('returns clean results when no repos configured', () => {
@@ -311,5 +315,33 @@ describe('engine/index — qualityCheck()', () => {
     expect(result.references.valid).toBe(true);
     expect(result.conventions.valid).toBe(true);
     expect(result.slop.clean).toBe(true);
+  });
+});
+
+describe('engine/index — simulateOnly guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const simulateConfig = (): OmniLinkConfig => ({ ...makeConfig(1), simulateOnly: true });
+
+  it('scan() throws SimulateOnlyError when simulateOnly is true', () => {
+    expect(() => scan(simulateConfig())).toThrow(SimulateOnlyError);
+  });
+
+  it('impact() throws SimulateOnlyError when simulateOnly is true', () => {
+    expect(() => impact(simulateConfig(), [])).toThrow(SimulateOnlyError);
+  });
+
+  it('health() throws SimulateOnlyError when simulateOnly is true', () => {
+    expect(() => health(simulateConfig())).toThrow(SimulateOnlyError);
+  });
+
+  it('evolve() throws SimulateOnlyError when simulateOnly is true', () => {
+    expect(() => evolve(simulateConfig())).toThrow(SimulateOnlyError);
+  });
+
+  it('qualityCheck() throws SimulateOnlyError when simulateOnly is true', () => {
+    expect(() => qualityCheck('const x = 1;', 'src/index.ts', simulateConfig())).toThrow(SimulateOnlyError);
   });
 });

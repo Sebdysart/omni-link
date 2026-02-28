@@ -20,11 +20,15 @@ If any prerequisite is not met, resolve it before running `/apply`.
 
 ## Execution
 
-```bash
-omni-link apply --config <auto-detect>
+Open your omni-link config file (`~/.claude/omni-link.json` or `.omni-link.json` in the repo root) and temporarily set:
+
+```json
+{
+  "simulateOnly": false
+}
 ```
 
-This temporarily sets `simulateOnly: false` for the current execution, runs the full pipeline, and then restores the `simulateOnly: true` setting. It does NOT permanently change your config.
+Then trigger the operation you want to run (e.g. `/scan`, `/impact`, `/health`). After the operation completes and you have verified the results, restore `"simulateOnly": true` to re-enable dry-run mode.
 
 ## What Gets Executed
 
