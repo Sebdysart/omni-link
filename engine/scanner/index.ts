@@ -176,7 +176,7 @@ export function scanRepo(config: RepoConfig, fileCache?: FileCache): RepoManifes
 
   // 6. Build health scaffold (actual values computed by quality gate later)
   const health: HealthScore = {
-    testCoverage: null,
+    testCoverage: readCoverageReport(repoPath),
     lintErrors: 0,
     typeErrors: 0,
     todoCount: countTodos(sourceSnippets),
@@ -374,6 +374,42 @@ function extractSwiftDependencies(repoPath: string): PackageDep[] {
 }
 
 // ─── Health Helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Read a vitest/Istanbul json-summary coverage report from the repo's coverage
+ * directory and return the total lines coverage percentage (0-100), or null if
+ * no report is found.
+ *
+ * Checks two locations in order:
+ *   1. {repoPath}/coverage/coverage-summary.json  (vitest json-summary default)
+ *   2. {repoPath}/coverage/coverage.json          (Istanbul full report)
+ */
+function readCoverageReport(repoPath: string): number | null {
+  // Candidate paths in priority order
+  const candidates = [
+    path.join(repoPath, 'coverage', 'coverage-summary.json'),
+    path.join(repoPath, 'coverage', 'coverage.json'),
+  ];
+
+  for (const filePath of candidates) {
+    if (!fs.existsSync(filePath)) continue;
+    try {
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const data = JSON.parse(raw) as Record<string, unknown>;
+
+      // json-summary format: { total: { lines: { pct: 80 }, ... } }
+      const total = data['total'] as Record<string, { pct?: number }> | undefined;
+      if (total?.lines?.pct !== undefined) {
+        const pct = Number(total.lines.pct);
+        if (!isNaN(pct)) return Math.max(0, Math.min(100, pct));
+      }
+    } catch {
+      // Malformed JSON or unexpected shape — try next candidate
+    }
+  }
+
+  return null;
+}
 
 function countTodos(sourceSnippets: string[]): number {
   let count = 0;
