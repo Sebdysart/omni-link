@@ -49,6 +49,39 @@ Invoke these skills based on the trigger conditions described:
 | `ecosystem-planner` | Multi-repo feature planning | Order tasks across repos, identify coordination points |
 | `business-evolution` | Session start, `/evolve` command | Surface improvement opportunities with evidence |
 | `upgrade-executor` | Executing multi-repo changes | Orchestrate changes provider-first with validation |
+| `uncertainty-checklist` | Before presenting any generated code | Self-audit checklist for import/type/placeholder verification |
+
+## Max-Tier Anti-Hallucination Mode
+
+omni-link v0.3.0 introduces structural anti-hallucination safeguards across all layers:
+
+### Agent Prompts
+All three sub-agents (`validator`, `cross-repo-reviewer`, `evolution-strategist`) include mandatory Anti-Hallucination Protocol sections requiring uncertainty disclosure, CoT verification in `<thinking>` tags, and evidence-before-assertion discipline.
+
+### Validator Critic Agent
+A dedicated `validator` agent performs read-only verification of generated code:
+- Verifies every import resolves to a real file
+- Confirms every package exists in `package.json`
+- Validates every API call against the ecosystem manifest
+- Detects placeholders and phantom packages
+
+Dispatched via `/verify`. Returns PASS / FAIL / INCONCLUSIVE.
+
+### Neurosymbolic Rule Engine
+Hard rules enforced via `checkRules()` in the quality pipeline:
+- `no-fetch-without-catch` — fetch() must have error handling
+- `no-raw-env-access` — process.env.X needs a `??` fallback
+- `no-any-cast` — `as any` banned in production code
+- `no-hardcoded-secret` — API keys must not be inlined
+
+### Enriched Digest (Code Quotes)
+The ecosystem digest now includes actual type signatures and route signatures — not just counts. Claude can see the real field names and parameter types, eliminating hallucinated field access.
+
+### Dry-Run Mode
+Set `simulateOnly: true` in your omni-link config to run all operations in preview mode. Use `/apply` to execute for real after human review.
+
+### Uncertainty Checklist
+The `uncertainty-checklist` skill is a pre-presentation self-audit that Claude runs silently before showing code. It prevents overconfident wrong code from reaching the user.
 
 ## Aggressive Evolution Posture
 
@@ -67,6 +100,8 @@ omni-link is configured with an **aggressive evolution posture**. This means:
 | `/impact` | Analyze impact of uncommitted changes across repos |
 | `/health` | Full ecosystem health audit with per-repo scores |
 | `/evolve` | Run business evolution analysis, surface suggestions |
+| `/verify` | Dispatch Validator critic agent to review generated code |
+| `/apply`  | Execute operations previewed in dry-run (simulateOnly) mode |
 
 ## When In Doubt
 

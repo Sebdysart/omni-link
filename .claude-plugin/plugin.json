@@ -1,7 +1,7 @@
 {
   "name": "omni-link",
   "description": "Multi-repo AI ecosystem plugin — cross-repo grounding, anti-slop enforcement, and proactive business evolution for Claude Code",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "Sebastian Dysart"
   },

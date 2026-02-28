@@ -65,4 +65,29 @@ describe('Agent anti-hallucination protocol', () => {
     expect(content).toContain('anti-slop');
     expect(content).toContain('placeholder');
   });
+
+  it('skills/using-omni-link/SKILL.md documents max-tier features', () => {
+    const content = readFileSync(
+      resolve(process.cwd(), 'skills/using-omni-link/SKILL.md'), 'utf8',
+    );
+    expect(content).toContain('validator');
+    expect(content).toContain('/verify');
+    expect(content).toContain('/apply');
+    expect(content).toContain('uncertainty-checklist');
+    expect(content).toContain('simulateOnly');
+  });
+
+  it('skills/anti-slop-gate/SKILL.md references rule engine', () => {
+    const content = readFileSync(
+      resolve(process.cwd(), 'skills/anti-slop-gate/SKILL.md'), 'utf8',
+    );
+    expect(content).toContain('rule engine');
+  });
+
+  it('package.json version is 0.3.0', () => {
+    const pkg = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
+    );
+    expect(pkg.version).toBe('0.3.0');
+  });
 });

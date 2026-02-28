@@ -48,6 +48,18 @@ Catches common AI code generation failures.
 - `duplicate-block`: 3+ lines of duplicate code detected
 - `over-commenting`: Comment-to-code ratio exceeds 50%
 
+### 4. Neurosymbolic Rule Engine
+
+Hard rules enforced on generated code by the rule engine:
+
+**Blocks on (severity: error):**
+- `no-fetch-without-catch`: `fetch()` without `.catch()` or try-catch within 5 lines
+- `no-hardcoded-secret`: API key / token / password pattern hardcoded in source
+
+**Warns on (severity: warning):**
+- `no-raw-env-access`: `process.env.X` without `??` fallback
+- `no-any-cast`: TypeScript `as any` in production (non-test) files
+
 ## Check Workflow
 
 For every code block you generate:
