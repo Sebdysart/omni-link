@@ -159,10 +159,10 @@ describe('engine/index — scan()', () => {
 
     const result = scan(config);
 
-    // Scanner called once per repo, with the shared fileCache Map
+    // Scanner called once per repo, with the shared fileCache Map and optional manifestCache
     expect(scanRepo).toHaveBeenCalledTimes(2);
-    expect(scanRepo).toHaveBeenCalledWith(config.repos[0], expect.any(Map));
-    expect(scanRepo).toHaveBeenCalledWith(config.repos[1], expect.any(Map));
+    expect(scanRepo).toHaveBeenCalledWith(config.repos[0], expect.any(Map), expect.anything());
+    expect(scanRepo).toHaveBeenCalledWith(config.repos[1], expect.any(Map), expect.anything());
 
     // Grapher receives all manifests
     expect(buildEcosystemGraph).toHaveBeenCalledWith([m0, m1]);

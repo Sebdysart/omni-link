@@ -35,6 +35,7 @@ export interface FileCacheEntry {
  */
 export type FileCache = Map<string, FileCacheEntry>;
 
+import type { CacheManager } from '../context/cache-manager.js';
 import { detectLanguage } from './tree-sitter.js';
 import { extractExports, extractRoutes, extractProcedures } from './api-extractor.js';
 import { extractTypes, extractSchemas } from './type-extractor.js';
@@ -68,8 +69,24 @@ const SKIP_DIRS = new Set([
  *                  file path). Pass the same Map across multiple calls to skip
  *                  re-parsing unchanged files.
  */
-export function scanRepo(config: RepoConfig, fileCache?: FileCache): RepoManifest {
+export function scanRepo(config: RepoConfig, fileCache?: FileCache, manifestCache?: CacheManager): RepoManifest {
   const { name, path: repoPath, language } = config;
+
+  // ── Manifest cache check ─────────────────────────────────────────────────
+  // Only use the cached manifest when the working tree is clean — if there
+  // are uncommitted or untracked changes the cached snapshot is stale.
+  if (manifestCache) {
+    const headSha = gitExec(repoPath, 'rev-parse HEAD');
+    if (headSha) {
+      const diffOutput = gitExec(repoPath, 'status --porcelain');
+      const hasUncommittedChanges = diffOutput.trim().length > 0;
+      if (!hasUncommittedChanges) {
+        const cached = manifestCache.getCachedManifest(name, headSha);
+        if (cached) return cached;
+      }
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   // 1. Walk and collect supported files
   const filePaths = walkDirectory(repoPath);
@@ -212,6 +229,11 @@ export function scanRepo(config: RepoConfig, fileCache?: FileCache): RepoManifes
     },
     health,
   };
+
+  // Store manifest in disk cache for next session warm-start
+  if (manifestCache && manifest.gitState.headSha) {
+    manifestCache.setCachedManifest(name, manifest.gitState.headSha, manifest);
+  }
 
   return manifest;
 }

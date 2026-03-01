@@ -11,6 +11,7 @@ import type {
 
 import { scanRepo } from './scanner/index.js';
 import type { FileCache } from './scanner/index.js';
+import { CacheManager } from './context/cache-manager.js';
 import { buildEcosystemGraph } from './grapher/index.js';
 import { buildContext } from './context/index.js';
 import { analyzeEvolution } from './evolution/index.js';
@@ -59,9 +60,15 @@ export function scan(config: OmniLinkConfig): ScanResult {
   // Shared incremental cache for this pipeline run: unchanged files are
   // parsed only once even if referenced by multiple repos.
   const fileCache: FileCache = new Map();
+  const manifestCache: CacheManager | undefined = config.cache?.directory
+    ? new CacheManager(config.cache.directory)
+    : undefined;
+  if (manifestCache && config.cache.maxAgeDays) {
+    manifestCache.pruneOld(config.cache.maxAgeDays);
+  }
 
   // 1. Scan each repo to produce a manifest
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
 
   // 2. Build the ecosystem graph from all manifests
   const graph = buildEcosystemGraph(manifests);
@@ -84,7 +91,10 @@ export function impact(
 ): ImpactPath[] {
   assertNotSimulateOnly(config, 'impact');
   const fileCache: FileCache = new Map();
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
+  const manifestCache: CacheManager | undefined = config.cache?.directory
+    ? new CacheManager(config.cache.directory)
+    : undefined;
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
   const graph = buildEcosystemGraph(manifests);
   return analyzeImpact(graph, changedFiles);
 }
@@ -100,7 +110,10 @@ export function impact(
 export function impactFromUncommitted(config: OmniLinkConfig): ImpactPath[] {
   assertNotSimulateOnly(config, 'impact');
   const fileCache: FileCache = new Map();
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
+  const manifestCache: CacheManager | undefined = config.cache?.directory
+    ? new CacheManager(config.cache.directory)
+    : undefined;
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
   const graph = buildEcosystemGraph(manifests);
   // Collect every uncommitted file from every repo's git state
   const changedFiles = manifests.flatMap((m) =>
@@ -126,7 +139,10 @@ export interface HealthResult {
 export function health(config: OmniLinkConfig): HealthResult {
   assertNotSimulateOnly(config, 'health');
   const fileCache: FileCache = new Map();
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
+  const manifestCache: CacheManager | undefined = config.cache?.directory
+    ? new CacheManager(config.cache.directory)
+    : undefined;
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
   const graph = buildEcosystemGraph(manifests);
   return scoreEcosystemHealth(graph);
 }
@@ -139,7 +155,10 @@ export function health(config: OmniLinkConfig): HealthResult {
 export function evolve(config: OmniLinkConfig): EvolutionSuggestion[] {
   assertNotSimulateOnly(config, 'evolve');
   const fileCache: FileCache = new Map();
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
+  const manifestCache: CacheManager | undefined = config.cache?.directory
+    ? new CacheManager(config.cache.directory)
+    : undefined;
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
   const graph = buildEcosystemGraph(manifests);
   return analyzeEvolution(graph, config);
 }
@@ -167,7 +186,10 @@ export function qualityCheck(
   assertNotSimulateOnly(config, 'qualityCheck');
   // Find the repo this file belongs to (match by path prefix or repo name)
   const fileCache: FileCache = new Map();
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
+  const manifestCache: CacheManager | undefined = config.cache?.directory
+    ? new CacheManager(config.cache.directory)
+    : undefined;
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
 
   // Use the first manifest by default, or find by repo path in filename
   const manifest = manifests.find((m) => file.startsWith(m.path)) ?? manifests[0];

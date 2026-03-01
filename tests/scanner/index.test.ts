@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { scanRepo } from '../../engine/scanner/index.js';
 import type { RepoConfig, RepoManifest, FileScanResult } from '../../engine/types.js';
 import type { FileCache } from '../../engine/scanner/index.js';
+import { CacheManager } from '../../engine/context/cache-manager.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -346,5 +347,55 @@ describe('scanRepo incremental caching', () => {
     // Second call: no new files, same SHA1s — cache size stays the same
     scanRepo(config, cache);
     expect(cache.size).toBe(sizeAfterFirst);
+  });
+});
+
+describe('scanRepo — manifest cache', () => {
+  let tmpDir: string;
+  let config: RepoConfig;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omni-link-cache-test-'));
+    execSync('git init', { cwd: tmpDir, stdio: 'ignore' });
+    execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'ignore' });
+    execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'ignore' });
+    fs.writeFileSync(path.join(tmpDir, 'index.ts'), 'export const x = 1;\n');
+    execSync('git add -A', { cwd: tmpDir, stdio: 'ignore' });
+    execSync('git commit -m "init"', { cwd: tmpDir, stdio: 'ignore' });
+    config = { name: 'cache-repo', path: tmpDir, language: 'typescript', role: 'backend' };
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('stores manifest in cache on first scan and retrieves it on second scan', () => {
+    const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omni-link-mfcache-'));
+    try {
+      const cache = new CacheManager(cacheDir);
+
+      const manifest1 = scanRepo(config, new Map(), cache);
+      expect(manifest1.repoId).toBe('cache-repo');
+
+      const manifest2 = scanRepo(config, new Map(), cache);
+      expect(manifest2.repoId).toBe(manifest1.repoId);
+      expect(manifest2.gitState.headSha).toBe(manifest1.gitState.headSha);
+
+      const stored = cache.getCachedManifest('cache-repo', manifest1.gitState.headSha);
+      expect(stored).not.toBeNull();
+      expect(stored!.repoId).toBe('cache-repo');
+    } finally {
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+    }
+  });
+
+  it('skips cache gracefully when no CacheManager provided (backward compat)', () => {
+    const manifest = scanRepo(config, new Map());
+    expect(manifest.repoId).toBe('cache-repo');
+  });
+
+  it('skips cache gracefully when CacheManager is undefined', () => {
+    const manifest = scanRepo(config, new Map(), undefined);
+    expect(manifest.repoId).toBe('cache-repo');
   });
 });
