@@ -39,7 +39,7 @@ vi.mock('../engine/quality/health-scorer.js', () => ({
   scoreEcosystemHealth: vi.fn(),
 }));
 
-import { scan, impact, health, evolve, qualityCheck, SimulateOnlyError } from '../engine/index.js';
+import { scan, impact, impactFromUncommitted, health, evolve, qualityCheck, SimulateOnlyError } from '../engine/index.js';
 import { scanRepo } from '../engine/scanner/index.js';
 import { buildEcosystemGraph } from '../engine/grapher/index.js';
 import { buildContext } from '../engine/context/index.js';
@@ -270,6 +270,63 @@ describe('engine/index — evolve()', () => {
   });
 });
 
+describe('engine/index — impactFromUncommitted()', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('auto-detects uncommitted changes from manifest git state and runs impact analysis', () => {
+    const config = makeConfig(1);
+    const m0 = makeManifest('repo-0');
+    // Simulate repo-0 having two uncommitted files
+    m0.gitState.uncommittedChanges = ['src/api.ts', 'src/types.ts'];
+
+    const graph = makeGraph([m0]);
+    const impactPaths = [
+      {
+        trigger: { repo: 'repo-0', file: 'src/api.ts', change: 'uncommitted' },
+        affected: [{ repo: 'repo-0', file: 'src/consumer.ts', line: 5, reason: 'imports', severity: 'warning' as const }],
+      },
+    ];
+
+    vi.mocked(scanRepo).mockReturnValue(m0);
+    vi.mocked(buildEcosystemGraph).mockReturnValue(graph);
+    vi.mocked(analyzeImpact).mockReturnValue(impactPaths);
+
+    const result = impactFromUncommitted(config);
+
+    expect(scanRepo).toHaveBeenCalledTimes(1);
+    expect(buildEcosystemGraph).toHaveBeenCalledWith([m0]);
+    // analyzeImpact must receive the auto-detected changedFiles (both uncommitted files)
+    expect(analyzeImpact).toHaveBeenCalledWith(
+      graph,
+      expect.arrayContaining([
+        expect.objectContaining({ repo: 'repo-0', file: 'src/api.ts', change: 'uncommitted' }),
+        expect.objectContaining({ repo: 'repo-0', file: 'src/types.ts', change: 'uncommitted' }),
+      ]),
+    );
+    expect(result).toBe(impactPaths);
+  });
+
+  it('returns empty array when no uncommitted changes exist', () => {
+    const config = makeConfig(1);
+    const m0 = makeManifest('repo-0');
+    // No uncommitted changes
+    m0.gitState.uncommittedChanges = [];
+
+    const graph = makeGraph([m0]);
+
+    vi.mocked(scanRepo).mockReturnValue(m0);
+    vi.mocked(buildEcosystemGraph).mockReturnValue(graph);
+    vi.mocked(analyzeImpact).mockReturnValue([]);
+
+    const result = impactFromUncommitted(config);
+
+    expect(analyzeImpact).toHaveBeenCalledWith(graph, []);
+    expect(result).toEqual([]);
+  });
+});
+
 describe('engine/index — qualityCheck()', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -331,6 +388,10 @@ describe('engine/index — simulateOnly guard', () => {
 
   it('impact() throws SimulateOnlyError when simulateOnly is true', () => {
     expect(() => impact(simulateConfig(), [])).toThrow(SimulateOnlyError);
+  });
+
+  it('impactFromUncommitted() throws SimulateOnlyError when simulateOnly is true', () => {
+    expect(() => impactFromUncommitted(simulateConfig())).toThrow(SimulateOnlyError);
   });
 
   it('health() throws SimulateOnlyError when simulateOnly is true', () => {

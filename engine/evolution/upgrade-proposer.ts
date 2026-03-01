@@ -134,6 +134,19 @@ function gapToSuggestion(gap: GapFinding): EvolutionSuggestion {
 // ─── Bottleneck → Suggestion Mapping ────────────────────────────────────────
 
 function bottleneckToCategory(bn: BottleneckFinding): EvolutionSuggestion['category'] {
+  // Benchmark-derived findings encode their origin in the description prefix.
+  // The kind mapping used by benchmarkToBottleneckFindings() is lossy, so we
+  // infer the correct category from the benchmark category that was encoded into
+  // the kind:
+  //   security  → unbounded-query (should stay 'security')
+  //   performance → missing-pagination (should be 'performance', not 'scale')
+  if (bn.description.startsWith('[Best Practice]')) {
+    if (bn.kind === 'unbounded-query') return 'security';
+    if (bn.kind === 'missing-pagination') return 'performance';
+    // reliability → sync-in-async, observability/default → no-caching
+    return 'performance';
+  }
+
   switch (bn.kind) {
     case 'missing-pagination':
       return 'scale';
@@ -179,6 +192,13 @@ function bottleneckToEffort(bn: BottleneckFinding): EvolutionSuggestion['estimat
 }
 
 function bottleneckToTitle(bn: BottleneckFinding): string {
+  // Benchmark-derived findings encode the practice name as "[Best Practice] Name: suggestion".
+  // Extract it and use it directly so the title matches the actual recommendation.
+  const bpMatch = bn.description.match(/^\[Best Practice\] ([^:]+):/);
+  if (bpMatch) {
+    return `Implement ${bpMatch[1].trim()} in ${bn.repo}`;
+  }
+
   switch (bn.kind) {
     case 'missing-pagination':
       return `Add pagination to list endpoints in ${bn.repo}`;
@@ -197,6 +217,13 @@ function bottleneckToTitle(bn: BottleneckFinding): string {
 }
 
 function bottleneckToDescription(bn: BottleneckFinding): string {
+  // Benchmark-derived findings: "[Best Practice] Name: suggestion-text"
+  // Strip the prefix and return the suggestion text as a clean description.
+  const bpMatch = bn.description.match(/^\[Best Practice\] [^:]+: (.+)/);
+  if (bpMatch) {
+    return `${bpMatch[1].replace(/\.$/, '')}. Apply this best practice to improve ecosystem quality and match industry standards.`;
+  }
+
   switch (bn.kind) {
     case 'missing-pagination':
       return `${bn.description}. Without pagination, list endpoints can return unbounded data, causing memory pressure and slow response times at scale.`;

@@ -89,6 +89,30 @@ export function impact(
   return analyzeImpact(graph, changedFiles);
 }
 
+/**
+ * Analyze the impact of all uncommitted changes detected across repos.
+ * Auto-detects changed files from each repo's git state so callers do not
+ * need to supply the changed-file list explicitly.
+ *
+ * Intended for CLI use where the user wants to know "what does my current
+ * working-tree change break across the ecosystem?"
+ */
+export function impactFromUncommitted(config: OmniLinkConfig): ImpactPath[] {
+  assertNotSimulateOnly(config, 'impact');
+  const fileCache: FileCache = new Map();
+  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache));
+  const graph = buildEcosystemGraph(manifests);
+  // Collect every uncommitted file from every repo's git state
+  const changedFiles = manifests.flatMap((m) =>
+    m.gitState.uncommittedChanges.map((file) => ({
+      repo: m.repoId,
+      file,
+      change: 'uncommitted' as const,
+    })),
+  );
+  return analyzeImpact(graph, changedFiles);
+}
+
 // ---- Health Scoring ----
 
 export interface HealthResult {

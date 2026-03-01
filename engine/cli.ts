@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // engine/cli.ts — CLI entry point for omni-link
 
-import { scan, impact, health, evolve } from './index.js';
+import { scan, impactFromUncommitted, health, evolve } from './index.js';
 import { loadConfig, resolveConfigPath } from './config.js';
 
 const USAGE = `
@@ -93,7 +93,7 @@ function main(): void {
 
     case 'impact': {
       const config = resolveConfig(configPath);
-      const result = impact(config, []);
+      const result = impactFromUncommitted(config);
       console.log(JSON.stringify(result, null, 2));
       break;
     }
