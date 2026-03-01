@@ -183,6 +183,75 @@ function extractSwiftExports(source: string, file: string): ExportDef[] {
   return results;
 }
 
+/**
+ * Regex-scan Swift source for outbound API call sites:
+ * - URL path strings like "/api/users", "/v1/posts", "/trpc/..."
+ * - tRPC procedure name strings like "user.create", "post.getAll"
+ *
+ * Returns ExportDef entries whose `signature` contains the URL path or
+ * procedure name string. This lets mapApiContracts() detect iOS→backend
+ * bridges via findConsumerReferences() signature matching, without needing
+ * full AST parsing of call expressions.
+ */
+export function extractSwiftApiCallSites(source: string, file: string): ExportDef[] {
+  const results: ExportDef[] = [];
+  const lines = source.split('\n');
+
+  // URL path pattern: string literals that are API paths.
+  // Matches: "/api/...", "/v1/...", "/v2/...", "/trpc/..."
+  // Also matches bare paths starting with "/" followed by 3+ word chars (e.g., "/users")
+  const urlPathPattern = /"(\/(?:api|v\d+|trpc)\/[^"\\]*)"/g;
+
+  // tRPC procedure pattern: "namespace.procedureName" — dotted lowercase identifiers
+  // Matches things like "user.create", "post.getAll", "auth.login"
+  // Both parts must start with lowercase letter, contain only letters/digits
+  const trpcProcPattern = /"([a-z][a-zA-Z0-9]*\.[a-z][a-zA-Z0-9]*)"/g;
+
+  // Track seen values to deduplicate (same path appears in multiple methods)
+  const seen = new Set<string>();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // URL paths
+    urlPathPattern.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = urlPathPattern.exec(line)) !== null) {
+      const value = match[1];
+      const key = `url:${value}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        results.push({
+          name: value,
+          kind: 'constant',
+          signature: value,
+          file,
+          line: i + 1,
+        });
+      }
+    }
+
+    // tRPC procedure names
+    trpcProcPattern.lastIndex = 0;
+    while ((match = trpcProcPattern.exec(line)) !== null) {
+      const value = match[1];
+      const key = `proc:${value}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        results.push({
+          name: value,
+          kind: 'constant',
+          signature: value,
+          file,
+          line: i + 1,
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
 // ─── Routes ─────────────────────────────────────────────────────────────────
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);

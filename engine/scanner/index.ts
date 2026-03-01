@@ -37,7 +37,7 @@ export type FileCache = Map<string, FileCacheEntry>;
 
 import type { CacheManager } from '../context/cache-manager.js';
 import { detectLanguage } from './tree-sitter.js';
-import { extractExports, extractRoutes, extractProcedures } from './api-extractor.js';
+import { extractExports, extractRoutes, extractProcedures, extractSwiftApiCallSites } from './api-extractor.js';
 import { extractTypes, extractSchemas } from './type-extractor.js';
 import { detectConventions } from './convention-detector.js';
 import type { FileInfo } from './convention-detector.js';
@@ -165,6 +165,15 @@ export function scanRepo(config: RepoConfig, fileCache?: FileCache, manifestCach
     // ────────────────────────────────────────────────────────────────────
 
     allExports.push(...exports);
+
+    // For Swift consumer files, also extract outbound API call sites (URL strings,
+    // tRPC procedure names embedded in function bodies) so the grapher can detect
+    // cross-repo bridges like iOS → TypeScript backend.
+    if (lang === 'swift') {
+      const callSites = extractSwiftApiCallSites(source, relPath);
+      allExports.push(...callSites);
+    }
+
     allRoutes.push(...routes);
     allProcedures.push(...procedures);
     allTypes.push(...types);

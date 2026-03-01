@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractRoutes, extractExports, extractProcedures } from '../../engine/scanner/api-extractor.js';
+import { extractRoutes, extractExports, extractProcedures, extractSwiftApiCallSites } from '../../engine/scanner/api-extractor.js';
 
 describe('api-extractor', () => {
   describe('extractExports (TypeScript)', () => {
@@ -147,5 +147,74 @@ class UserService {
       const routes = extractRoutes(source, 'schema.graphql', 'graphql');
       expect(routes.some(r => r.handler === 'health' && r.method === 'QUERY')).toBe(true);
     });
+  });
+});
+
+describe('extractSwiftApiCallSites', () => {
+  it('extracts URL path strings from Swift source', () => {
+    const source = `
+class UserService {
+    func fetchUsers() async throws -> [User] {
+        return try await apiClient.get("/api/users")
+    }
+    func createUser(_ body: CreateUserBody) async throws -> User {
+        return try await apiClient.post("/api/users", body: body)
+    }
+}`;
+    const results = extractSwiftApiCallSites(source, 'Services/UserService.swift');
+    expect(results.length).toBeGreaterThan(0);
+    const urlEntry = results.find(r => r.signature.includes('/api/users'));
+    expect(urlEntry).toBeDefined();
+    expect(urlEntry!.file).toBe('Services/UserService.swift');
+    expect(urlEntry!.kind).toBe('constant');
+  });
+
+  it('extracts tRPC procedure names from Swift source', () => {
+    const source = `
+class PostService {
+    func createPost(body: CreatePostBody) async throws -> Post {
+        return try await trpcClient.mutation("post.create", body: body)
+    }
+    func listPosts() async throws -> [Post] {
+        return try await trpcClient.query("post.list")
+    }
+}`;
+    const results = extractSwiftApiCallSites(source, 'Services/PostService.swift');
+    const createEntry = results.find(r => r.signature === 'post.create');
+    const listEntry = results.find(r => r.signature === 'post.list');
+    expect(createEntry).toBeDefined();
+    expect(listEntry).toBeDefined();
+    expect(createEntry!.file).toBe('Services/PostService.swift');
+  });
+
+  it('returns empty array for Swift source with no API calls', () => {
+    const source = `
+struct User: Codable {
+    let id: String
+    let name: String
+}`;
+    const results = extractSwiftApiCallSites(source, 'Models/User.swift');
+    expect(results).toEqual([]);
+  });
+
+  it('does not extract non-API string literals', () => {
+    const source = `
+let greeting = "Hello world"
+let errorMessage = "Something went wrong"
+let version = "1.0.0"`;
+    const results = extractSwiftApiCallSites(source, 'test.swift');
+    expect(results).toHaveLength(0);
+  });
+
+  it('deduplicates repeated URL references in the same file', () => {
+    const source = `
+class Service {
+    func a() async throws { return try await client.get("/api/posts") }
+    func b() async throws { return try await client.get("/api/posts") }
+}`;
+    const results = extractSwiftApiCallSites(source, 'Services/Service.swift');
+    const posts = results.filter(r => r.signature === '/api/posts');
+    // Should only appear once (deduped by value+file key)
+    expect(posts).toHaveLength(1);
   });
 });

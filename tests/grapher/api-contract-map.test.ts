@@ -282,6 +282,51 @@ describe('mapApiContracts', () => {
     expect(profileBridge).toBeDefined();
   });
 
+  it('detects bridges when iOS consumer has call-site exports (URL path strings)', () => {
+    const backend = makeManifest({
+      repoId: 'backend',
+      apiSurface: {
+        routes: [
+          {
+            method: 'GET',
+            path: '/api/posts',
+            handler: 'getPosts',
+            file: 'src/routes/posts.ts',
+            line: 5,
+          },
+        ],
+        procedures: [],
+        exports: [],
+      },
+    });
+
+    const ios = makeManifest({
+      repoId: 'ios-app',
+      language: 'swift',
+      apiSurface: {
+        routes: [],
+        procedures: [],
+        // These simulate what extractSwiftApiCallSites() produces:
+        exports: [
+          {
+            name: '/api/posts',
+            kind: 'constant' as const,
+            signature: '/api/posts',
+            file: 'Services/PostService.swift',
+            line: 8,
+          },
+        ],
+      },
+    });
+
+    const bridges = mapApiContracts([backend, ios]);
+    expect(bridges.length).toBeGreaterThan(0);
+    const bridge = bridges.find(b => b.provider.route === 'GET /api/posts');
+    expect(bridge).toBeDefined();
+    expect(bridge!.consumer.repo).toBe('ios-app');
+    expect(bridge!.consumer.file).toBe('Services/PostService.swift');
+  });
+
   it('returns empty bridges when no routes or procedures', () => {
     const repoA = makeManifest({ repoId: 'repo-a' });
     const repoB = makeManifest({ repoId: 'repo-b' });
