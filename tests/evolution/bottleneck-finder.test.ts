@@ -343,6 +343,42 @@ describe('findBottlenecks', () => {
       expect(findings).toEqual([]);
     });
 
+    it('returns no findings for Swift repos even with spurious JS routes', () => {
+      const manifest = makeManifest({
+        repoId: 'ios-app',
+        language: 'swift',
+        apiSurface: {
+          // Spurious routes from window.get() in JS documentation files
+          routes: [
+            { method: 'GET', path: 'window', handler: '', file: 'HUSTLEXP-DOCS/reference/components/BottomSheet.js', line: 44 },
+            { method: 'GET', path: 'window', handler: '', file: 'HUSTLEXP-DOCS/reference/components/Modal.js', line: 12 },
+          ],
+          procedures: [],
+          exports: [],
+        },
+      });
+
+      const findings = findBottlenecks([manifest]);
+      expect(findings).toHaveLength(0);
+    });
+
+    it('returns no findings for markdown repos even with spurious JS routes', () => {
+      const manifest = makeManifest({
+        repoId: 'docs',
+        language: 'markdown',
+        apiSurface: {
+          routes: [
+            { method: 'GET', path: 'window', handler: '', file: 'reference/components/EntryScreen.js', line: 8 },
+          ],
+          procedures: [],
+          exports: [],
+        },
+      });
+
+      const findings = findBottlenecks([manifest]);
+      expect(findings).toHaveLength(0);
+    });
+
     it('handles manifests with proper patterns (clean report)', () => {
       const manifest = makeManifest({
         repoId: 'backend',

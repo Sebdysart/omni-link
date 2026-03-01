@@ -225,15 +225,35 @@ function detectNoQueue(manifest: RepoManifest): BottleneckFinding[] {
   }];
 }
 
+// ─── Client-Language Guard ──────────────────────────────────────────────────
+
+/**
+ * Languages that are inherently client-side or non-server. Repos with these
+ * languages are skipped by the bottleneck finder — their API surface data may
+ * contain spurious detections (e.g. JS documentation files inside an iOS repo
+ * that contain `window.get()` calls misidentified as HTTP list routes).
+ */
+const CLIENT_LANGUAGES = new Set([
+  'swift',
+  'kotlin',
+  'dart',
+  'objective-c',
+  'markdown',
+]);
+
 // ─── Main Entry Point ───────────────────────────────────────────────────────
 
 /**
  * Find performance bottleneck patterns from manifest data.
+ * Repos whose language is a known client-only language (swift, markdown, etc.)
+ * are skipped to avoid false positives from incidental JS files in those repos.
  */
 export function findBottlenecks(manifests: RepoManifest[]): BottleneckFinding[] {
   const findings: BottleneckFinding[] = [];
 
   for (const manifest of manifests) {
+    if (CLIENT_LANGUAGES.has(manifest.language.toLowerCase())) continue;
+
     findings.push(
       ...detectMissingPagination(manifest),
       ...detectNoCaching(manifest),
