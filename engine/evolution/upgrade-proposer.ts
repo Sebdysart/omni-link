@@ -34,6 +34,56 @@ function sortSuggestions(suggestions: EvolutionSuggestion[]): EvolutionSuggestio
   });
 }
 
+/**
+ * Deduplicate suggestions that represent the same best practice across multiple repos.
+ *
+ * Dedup key: `${category}:${title-without-" in <repo>"-suffix}`.
+ * Matching suggestions are merged:
+ *   - affectedRepos: union of all repos
+ *   - evidence: concatenated
+ *   - title: repo-specific suffix stripped when > 1 repo
+ *   - all other fields from the first (highest-ranked) occurrence
+ */
+function deduplicateSuggestions(suggestions: EvolutionSuggestion[]): EvolutionSuggestion[] {
+  const deduped = new Map<string, EvolutionSuggestion>();
+
+  for (const s of suggestions) {
+    // Strip " in <repoName>" suffix to produce a canonical title
+    // Pattern: " in " followed by one non-whitespace token at end of string
+    const titleBase = s.title.replace(/ in \S+$/, '').trim();
+    const key = `${s.category}:${titleBase}`;
+
+    const existing = deduped.get(key);
+    if (!existing) {
+      // First occurrence: clone to avoid mutating original
+      deduped.set(key, {
+        ...s,
+        affectedRepos: [...s.affectedRepos],
+        evidence: [...s.evidence],
+      });
+    } else {
+      // Merge: add any new repos
+      for (const repo of s.affectedRepos) {
+        if (!existing.affectedRepos.includes(repo)) {
+          existing.affectedRepos.push(repo);
+        }
+      }
+      // Merge evidence items (all unique per their source location)
+      existing.evidence.push(...s.evidence);
+    }
+  }
+
+  // Strip " in <repo>" suffix from merged (multi-repo) suggestion titles
+  const result = [...deduped.values()];
+  for (const s of result) {
+    if (s.affectedRepos.length > 1) {
+      s.title = s.title.replace(/ in \S+$/, '').trim();
+    }
+  }
+
+  return result;
+}
+
 // ─── Gap → Suggestion Mapping ───────────────────────────────────────────────
 
 function gapToCategory(gap: GapFinding): EvolutionSuggestion['category'] {
@@ -284,5 +334,5 @@ export function proposeUpgrades(
     suggestions.push(bottleneckToSuggestion(bn));
   }
 
-  return sortSuggestions(suggestions);
+  return deduplicateSuggestions(sortSuggestions(suggestions));
 }

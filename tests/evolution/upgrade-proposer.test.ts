@@ -167,4 +167,39 @@ describe('proposeUpgrades', () => {
       expect(s.affectedRepos).toEqual(unique);
     }
   });
+
+  it('deduplicates same-practice suggestions across repos, merging affectedRepos', () => {
+    // Simulate two benchmark findings for the same practice in different repos
+    const bottlenecks: BottleneckFinding[] = [
+      makeBottleneck({
+        kind: 'unbounded-query',
+        description: '[Best Practice] CORS configuration: Configure CORS headers.',
+        repo: 'backend',
+        severity: 'high',
+      }),
+      makeBottleneck({
+        kind: 'unbounded-query',
+        description: '[Best Practice] CORS configuration: Configure CORS headers.',
+        repo: 'ios-app',
+        severity: 'high',
+      }),
+    ];
+
+    const suggestions = proposeUpgrades([], bottlenecks, [makeManifest('backend'), makeManifest('ios-app')]);
+
+    // Must be exactly ONE CORS suggestion — not two
+    const corsSuggestions = suggestions.filter(s =>
+      s.title.toLowerCase().includes('cors') ||
+      s.description.toLowerCase().includes('cors')
+    );
+    expect(corsSuggestions.length).toBe(1);
+
+    // That one suggestion must reference both repos
+    expect(corsSuggestions[0].affectedRepos).toContain('backend');
+    expect(corsSuggestions[0].affectedRepos).toContain('ios-app');
+    expect(corsSuggestions[0].affectedRepos.length).toBe(2);
+
+    // Title must not have a repo-specific suffix when multi-repo
+    expect(corsSuggestions[0].title).not.toMatch(/ in \S+$/);
+  });
 });
