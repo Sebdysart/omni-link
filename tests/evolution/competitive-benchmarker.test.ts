@@ -356,6 +356,65 @@ describe('benchmarkAgainstBestPractices', () => {
     });
   });
 
+  describe('framework-aware benchmarks', () => {
+    it('marks CORS as present for Hono projects (cors() built-in via hono/cors)', () => {
+      const manifest = makeManifest({
+        repoId: 'hono-backend',
+        apiSurface: {
+          routes: [{ method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/index.ts', line: 5 }],
+          procedures: [],
+          exports: [],
+        },
+        dependencies: {
+          internal: [],
+          external: [{ name: 'hono', version: '^4.0.0', dev: false }],
+        },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      const cors = results.find(r => r.practice === 'CORS configuration');
+      // Hono bundles cors() — should never be 'missing'
+      expect(cors?.status).not.toBe('missing');
+    });
+
+    it('marks security headers as present for Hono projects (secureHeaders() built-in)', () => {
+      const manifest = makeManifest({
+        repoId: 'hono-backend',
+        apiSurface: {
+          routes: [{ method: 'GET', path: '/api/items', handler: 'getItems', file: 'src/index.ts', line: 5 }],
+          procedures: [],
+          exports: [],
+        },
+        dependencies: {
+          internal: [],
+          external: [{ name: 'hono', version: '^4.0.0', dev: false }],
+        },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      const helmet = results.find(r => r.practice === 'Security headers (Helmet)');
+      expect(helmet?.status).not.toBe('missing');
+    });
+
+    it('skips all server-specific checks for non-server repos (no routes, no procedures)', () => {
+      const manifest = makeManifest({
+        repoId: 'ios-app',
+        apiSurface: { routes: [], procedures: [], exports: [] },
+        dependencies: { internal: [], external: [] },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      // None of these server checks should fire for an iOS/frontend repo
+      expect(results.find(r => r.practice === 'CORS configuration')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Rate limiting')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Security headers (Helmet)')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Error handling middleware')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Structured logging')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Health check endpoint')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Request validation')).toBeUndefined();
+    });
+  });
+
   describe('framework-aware detection (Hono/Fastify)', () => {
     it('recognizes @hono/rate-limiter as rate limiting present', () => {
       const manifest = makeManifest({

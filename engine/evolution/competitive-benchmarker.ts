@@ -12,6 +12,27 @@ export interface BenchmarkResult {
   suggestion: string;
 }
 
+// ─── Framework + Repo-Type Helpers ───────────────────────────────────────────
+
+/**
+ * Returns true if the manifest uses Hono as its HTTP framework.
+ * Hono bundles cors() (hono/cors) and secureHeaders() (hono/secure-headers)
+ * as first-party middleware — they don't require separate package installs.
+ */
+function isHonoProject(manifest: RepoManifest): boolean {
+  return manifest.dependencies.external.some(d => d.name.toLowerCase() === 'hono');
+}
+
+/**
+ * Returns true if this repo is a pure consumer with no server surface
+ * (no HTTP routes, no tRPC procedures). iOS apps, frontend SPAs, and CLI
+ * tools fall into this category. Server-specific checks should be skipped.
+ */
+function isNonServerRepo(manifest: RepoManifest): boolean {
+  return manifest.apiSurface.routes.length === 0 &&
+    manifest.apiSurface.procedures.length === 0;
+}
+
 // ─── Practice Checkers ──────────────────────────────────────────────────────
 
 type PracticeChecker = (manifest: RepoManifest) => BenchmarkResult | null;
@@ -20,10 +41,11 @@ type PracticeChecker = (manifest: RepoManifest) => BenchmarkResult | null;
 
 // Keyword-based substring matching covers all frameworks:
 // express-rate-limit, rate-limiter-flexible, @hono/rate-limiter, hono-rate-limiter, bottleneck, p-throttle
-const RATE_LIMIT_KEYWORDS = ['rate-limit', 'ratelimit', 'rate_limit', 'throttle', 'limiter', 'bottleneck'];
+const RATE_LIMIT_KEYWORDS = ['rate-limit', 'ratelimit', 'rate_limit', 'throttle', 'limiter', 'bottleneck', '@hono/rate-limiter', 'hono-rate-limiter'];
 const RATE_LIMIT_PATTERNS = ['rate-limit', 'rate_limit', 'ratelimit', 'throttle'];
 
 function checkRateLimiting(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
   const hasPkg = manifest.dependencies.external.some(d => {
@@ -44,7 +66,20 @@ function checkRateLimiting(manifest: RepoManifest): BenchmarkResult | null {
 }
 
 function checkCors(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
+
+  // Hono provides cors() built-in via hono/cors (part of the hono package).
+  // Users import { cors } from 'hono/cors' — no separate cors package needed.
+  if (isHonoProject(manifest)) {
+    return {
+      practice: 'CORS configuration',
+      status: 'present',
+      repo: manifest.repoId,
+      category: 'security',
+      suggestion: 'CORS configuration is available via hono/cors middleware.',
+    };
+  }
 
   const hasPkg = manifest.dependencies.external.some(d =>
     d.name.toLowerCase() === 'cors' || d.name.toLowerCase().includes('cors')
@@ -66,7 +101,19 @@ function checkCors(manifest: RepoManifest): BenchmarkResult | null {
 const SECURITY_HEADER_KEYWORDS = ['helmet', 'secure-header', 'security-header'];
 
 function checkSecurityHeaders(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
+
+  // Hono provides secureHeaders() built-in — no separate helmet package needed.
+  if (isHonoProject(manifest)) {
+    return {
+      practice: 'Security headers (Helmet)',
+      status: 'present',
+      repo: manifest.repoId,
+      category: 'security',
+      suggestion: "Security headers available via Hono's built-in secureHeaders() middleware.",
+    };
+  }
 
   const hasPkg = manifest.dependencies.external.some(d => {
     const name = d.name.toLowerCase();
@@ -86,6 +133,7 @@ function checkSecurityHeaders(manifest: RepoManifest): BenchmarkResult | null {
 }
 
 function checkErrorHandlingMiddleware(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
   const errorHandling = manifest.conventions.errorHandling.toLowerCase();
@@ -106,6 +154,7 @@ function checkErrorHandlingMiddleware(manifest: RepoManifest): BenchmarkResult |
 const VALIDATION_PACKAGES = ['zod', 'joi', 'yup', 'class-validator', 'ajv', 'io-ts', 'superstruct'];
 
 function checkRequestValidation(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
   const hasValidationPkg = manifest.dependencies.external.some(d =>
@@ -151,6 +200,7 @@ function checkRequestValidation(manifest: RepoManifest): BenchmarkResult | null 
 const LOGGING_PACKAGES = ['winston', 'pino', 'bunyan', 'morgan', 'log4js', 'signale', 'consola', 'tslog', 'roarr', 'loglevel'];
 
 function checkLogging(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
   const hasPkg = manifest.dependencies.external.some(d =>
@@ -172,6 +222,7 @@ function checkLogging(manifest: RepoManifest): BenchmarkResult | null {
 // ─── General Best Practices ─────────────────────────────────────────────────
 
 function checkHealthEndpoint(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
   const hasHealth = manifest.apiSurface.routes.some(r => {
@@ -191,6 +242,7 @@ function checkHealthEndpoint(manifest: RepoManifest): BenchmarkResult | null {
 const PAGINATION_INDICATORS = ['paginate', 'paginated', 'pagination', 'page', 'paged', 'cursor', 'offset', 'limit'];
 
 function checkPagination(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   // Find list routes (GET without path params at end)
   const listRoutes = manifest.apiSurface.routes.filter(r => {
     if (r.method.toUpperCase() !== 'GET') return false;
@@ -241,6 +293,7 @@ function checkPagination(manifest: RepoManifest): BenchmarkResult | null {
 }
 
 function checkApiVersioning(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
   const versionedRoutes = manifest.apiSurface.routes.filter(r =>
@@ -279,6 +332,7 @@ function checkApiVersioning(manifest: RepoManifest): BenchmarkResult | null {
 // ─── tRPC Checks ────────────────────────────────────────────────────────────
 
 function checkTrpcValidation(manifest: RepoManifest): BenchmarkResult | null {
+  if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.procedures.length === 0) return null;
 
   const mutationProcs = manifest.apiSurface.procedures.filter(p => p.kind === 'mutation');
