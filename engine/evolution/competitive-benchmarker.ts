@@ -24,11 +24,34 @@ function isHonoProject(manifest: RepoManifest): boolean {
 }
 
 /**
- * Returns true if this repo is a pure consumer with no server surface
- * (no HTTP routes, no tRPC procedures). iOS apps, frontend SPAs, and CLI
- * tools fall into this category. Server-specific checks should be skipped.
+ * Languages that are inherently client-side or non-server. Repos whose
+ * configured language falls in this set are treated as non-server regardless
+ * of any route/procedure counts — which may be spurious (e.g. JS documentation
+ * files inside an iOS repo picked up by the route extractor).
+ */
+const CLIENT_LANGUAGES = new Set([
+  'swift',
+  'kotlin',
+  'dart',
+  'objective-c',
+  'markdown',
+]);
+
+/**
+ * Returns true if this repo is a pure consumer with no server surface.
+ * iOS apps, frontend SPAs, markdown docs, and CLI tools fall into this
+ * category. Server-specific benchmark checks are skipped for these repos.
+ *
+ * Two conditions trigger the non-server classification:
+ *   1. The manifest's language is a known client-only language (e.g. swift,
+ *      markdown). This guards against spurious route detections — e.g. JS
+ *      documentation component files inside an iOS repo that contain
+ *      `window.get(...)` patterns misidentified as HTTP routes.
+ *   2. The manifest has zero routes AND zero tRPC procedures (fallback for
+ *      TypeScript libraries, CLI tools, etc.).
  */
 function isNonServerRepo(manifest: RepoManifest): boolean {
+  if (CLIENT_LANGUAGES.has(manifest.language.toLowerCase())) return true;
   return manifest.apiSurface.routes.length === 0 &&
     manifest.apiSurface.procedures.length === 0;
 }

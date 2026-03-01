@@ -356,6 +356,72 @@ describe('benchmarkAgainstBestPractices', () => {
     });
   });
 
+  describe('client-language guard (iOS / markdown false positive fix)', () => {
+    it('skips all server checks for Swift repos even if spurious JS routes are present', () => {
+      const manifest = makeManifest({
+        repoId: 'ios-app',
+        language: 'swift',
+        apiSurface: {
+          // Spurious routes from window.get() in JS documentation files
+          routes: [
+            { method: 'GET', path: 'window', handler: '', file: 'HUSTLEXP-DOCS/reference/components/BottomSheet.js', line: 44 },
+            { method: 'GET', path: 'window', handler: '', file: 'HUSTLEXP-DOCS/reference/components/Modal.js', line: 12 },
+          ],
+          procedures: [],
+          exports: [],
+        },
+        dependencies: { internal: [], external: [] },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      expect(results.find(r => r.practice === 'CORS configuration')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Rate limiting')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Security headers (Helmet)')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Error handling middleware')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Structured logging')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Health check endpoint')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Request validation')).toBeUndefined();
+    });
+
+    it('skips all server checks for markdown repos even if spurious JS routes are present', () => {
+      const manifest = makeManifest({
+        repoId: 'docs',
+        language: 'markdown',
+        apiSurface: {
+          routes: [
+            { method: 'GET', path: 'window', handler: '', file: 'reference/components/EntryScreen.js', line: 8 },
+          ],
+          procedures: [],
+          exports: [],
+        },
+        dependencies: { internal: [], external: [] },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      expect(results.find(r => r.practice === 'CORS configuration')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Rate limiting')).toBeUndefined();
+      expect(results.find(r => r.practice === 'Security headers (Helmet)')).toBeUndefined();
+    });
+
+    it('still checks server practices for typescript repos with routes', () => {
+      const manifest = makeManifest({
+        repoId: 'backend',
+        language: 'typescript',
+        apiSurface: {
+          routes: [{ method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 1 }],
+          procedures: [],
+          exports: [],
+        },
+        dependencies: { internal: [], external: [] },
+      });
+
+      const results = benchmarkAgainstBestPractices([manifest]);
+      // Server checks SHOULD fire for TypeScript backends
+      expect(results.find(r => r.practice === 'Rate limiting')).toBeDefined();
+      expect(results.find(r => r.practice === 'CORS configuration')).toBeDefined();
+    });
+  });
+
   describe('framework-aware benchmarks', () => {
     it('marks CORS as present for Hono projects (cors() built-in via hono/cors)', () => {
       const manifest = makeManifest({
