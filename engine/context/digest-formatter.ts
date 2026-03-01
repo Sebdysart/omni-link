@@ -15,10 +15,20 @@ import { estimateTokens } from './token-pruner.js';
 /**
  * Format an EcosystemGraph (typically already pruned) into a human-readable
  * EcosystemDigest and markdown string for injection into the coding session.
+ *
+ * @param graph                 Pruned ecosystem graph
+ * @param config                Omni-link configuration
+ * @param evolutionOpportunities Pre-computed evolution suggestions (computed
+ *                              from the original graph before pruning)
+ * @param originalRepos         Original repo manifests before token-pruning
+ *                              (used so that commit history is not lost when
+ *                              the pruner strips commits to fit the budget)
  */
 export function formatDigest(
   graph: EcosystemGraph,
   config: OmniLinkConfig,
+  evolutionOpportunities: EvolutionSuggestion[] = [],
+  originalRepos?: RepoManifest[],
 ): { digest: EcosystemDigest; markdown: string } {
   const now = new Date().toISOString();
   const configSha = crypto
@@ -38,10 +48,11 @@ export function formatDigest(
   }));
 
   const contractStatus = buildContractStatus(graph);
-  const evolutionOpportunities: EvolutionSuggestion[] = []; // Populated by evolution engine later
   const conventionSummary = buildConventionSummary(graph.repos);
   const apiSurfaceSummary = buildApiSurfaceSummary(graph);
-  const recentChangesSummary = buildRecentChangesSummary(graph.repos);
+  // Use originalRepos (pre-pruning) for commit history so the token pruner
+  // stripping commits from the graph doesn't produce a "0 recent commits" summary.
+  const recentChangesSummary = buildRecentChangesSummary(originalRepos ?? graph.repos);
 
   // ─── Build markdown ────────────────────────────────────────────────────
 
@@ -95,9 +106,10 @@ export function formatDigest(
   }
   sections.push('');
 
-  // Recent Changes section
+  // Recent Changes section — use originalRepos so the token pruner stripping
+  // commits from the graph doesn't erase history from the markdown output.
   sections.push('## Recent Changes');
-  const allCommits = graph.repos.flatMap(repo =>
+  const allCommits = (originalRepos ?? graph.repos).flatMap(repo =>
     repo.gitState.recentCommits.map(c => ({
       repo: repo.repoId,
       sha: c.sha.slice(0, 7),

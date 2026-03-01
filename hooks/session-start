@@ -55,11 +55,16 @@ fi
 # ---------------------------------------------------------------------------
 DIGEST=""
 if [[ -f "${CLI}" ]]; then
-  DIGEST=$(node "${CLI}" scan --config "${CONFIG_PATH}" 2>/dev/null) || {
-    DIGEST="omni-link: scan failed — the engine encountered an error. Context will be partial."
+  # Capture stderr to a temp file so errors are surfaced in the digest rather
+  # than silently discarded (previously 2>/dev/null hid all scan failures).
+  SCAN_ERR_LOG=$(mktemp /tmp/omni-link-scan-err.XXXXXX)
+  DIGEST=$(node "${CLI}" scan --config "${CONFIG_PATH}" 2>"${SCAN_ERR_LOG}") || {
+    SCAN_ERR=$(head -5 "${SCAN_ERR_LOG}" 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+    DIGEST="omni-link: scan failed${SCAN_ERR:+ — ${SCAN_ERR}}. Context will be partial. Check ${CONFIG_PATH} and ensure all repo paths are accessible."
   }
+  rm -f "${SCAN_ERR_LOG}"
 else
-  DIGEST="omni-link: dist/cli.js not found — run 'npm run build' in the plugin root."
+  DIGEST="omni-link: dist/cli.js not found — run 'npm run build' in the plugin root (${PLUGIN_ROOT})."
 fi
 
 # ---------------------------------------------------------------------------

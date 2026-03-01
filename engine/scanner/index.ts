@@ -272,7 +272,7 @@ function extractGitState(repoPath: string): RepoManifest['gitState'] {
   }
 
   // Recent commits
-  const logOutput = gitExec(repoPath, 'log --oneline -n 20 --format="%H|%s|%an|%aI"');
+  const logOutput = gitExec(repoPath, 'log -n 20 --format="%H|%s|%an|%aI"');
   const recentCommits: CommitSummary[] = [];
   for (const line of logOutput.split('\n')) {
     const trimmed = line.trim();

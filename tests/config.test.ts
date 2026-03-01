@@ -18,7 +18,10 @@ describe('config', () => {
   });
 
   it('resolveConfigPath returns null if no config found', () => {
-    const result = resolveConfigPath(tmpDir);
+    // Pass a fake homeDir so the function cannot fall through to the real
+    // ~/.claude/omni-link.json that may exist on the developer's machine.
+    const fakeHome = path.join(os.tmpdir(), 'omni-link-test-fake-home');
+    const result = resolveConfigPath(tmpDir, fakeHome);
     expect(result).toBeNull();
   });
 

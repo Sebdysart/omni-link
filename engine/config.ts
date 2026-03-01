@@ -25,11 +25,11 @@ export const DEFAULT_CONFIG: Omit<OmniLinkConfig, 'repos'> = {
   },
 };
 
-export function resolveConfigPath(cwd: string): string | null {
+export function resolveConfigPath(cwd: string, homeDir: string = os.homedir()): string | null {
   const localPath = path.join(cwd, '.omni-link.json');
   if (fs.existsSync(localPath)) return localPath;
 
-  const globalPath = path.join(os.homedir(), '.claude', 'omni-link.json');
+  const globalPath = path.join(homeDir, '.claude', 'omni-link.json');
   if (fs.existsSync(globalPath)) return globalPath;
 
   return null;
