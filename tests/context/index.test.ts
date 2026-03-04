@@ -259,11 +259,25 @@ describe('buildContext', () => {
     const { digest } = buildContext(graph, config);
 
     // The token count should be within the budget (with some tolerance for overhead)
-    // The pruner trims to budget, but the formatter adds section headers,
-    // so the final markdown may be slightly over the raw pruned content.
-    // The digest.tokenCount is the token estimate of the final markdown.
     expect(digest.tokenCount).toBeDefined();
     expect(typeof digest.tokenCount).toBe('number');
+    expect(digest.tokenCount).toBeLessThanOrEqual(config.context.tokenBudget);
+  });
+
+  it('hard-limits the final digest even with extremely small budgets', () => {
+    const graph = makeLargeGraph();
+    const config = makeConfig({
+      context: {
+        tokenBudget: 80,
+        prioritize: 'changed-files-first',
+        includeRecentCommits: 20,
+      },
+    });
+
+    const { digest, markdown } = buildContext(graph, config);
+
+    expect(digest.tokenCount).toBeLessThanOrEqual(config.context.tokenBudget);
+    expect(markdown.length).toBeGreaterThan(0);
   });
 
   it('preserves contract mismatches even with tight budget', () => {

@@ -10,7 +10,7 @@ describe('core types', () => {
   it('OmniLinkConfig is structurally valid', () => {
     const config: OmniLinkConfig = {
       repos: [{ name: 'test-backend', path: '/tmp/test-backend', language: 'typescript', role: 'backend' }],
-      evolution: { aggressiveness: 'aggressive', maxSuggestionsPerSession: 5, categories: ['features', 'performance'] },
+      evolution: { aggressiveness: 'aggressive', maxSuggestionsPerSession: 5, categories: ['feature', 'performance'] },
       quality: { blockOnFailure: true, requireTestsForNewCode: true, conventionStrictness: 'strict' },
       context: { tokenBudget: 8000, prioritize: 'changed-files-first', includeRecentCommits: 20 },
       cache: { directory: '/tmp/cache', maxAgeDays: 7 },

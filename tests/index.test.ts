@@ -67,7 +67,7 @@ function makeConfig(repoCount = 2): OmniLinkConfig {
     evolution: {
       aggressiveness: 'moderate',
       maxSuggestionsPerSession: 5,
-      categories: ['features', 'performance'],
+      categories: ['feature', 'performance'],
     },
     quality: {
       blockOnFailure: true,
@@ -247,7 +247,7 @@ describe('engine/index — evolve()', () => {
     const suggestions = [
       {
         id: 'sug-1',
-        category: 'features' as const,
+        category: 'feature' as const,
         title: 'Add pagination',
         description: 'Missing pagination on /api/users',
         evidence: [],
@@ -350,7 +350,7 @@ describe('engine/index — qualityCheck()', () => {
     const result = qualityCheck(code, file, config);
 
     expect(scanRepo).toHaveBeenCalledTimes(1);
-    expect(checkReferences).toHaveBeenCalledWith(code, file, m0);
+    expect(checkReferences).toHaveBeenCalledWith(code, file, m0, [m0]);
     expect(validateConventions).toHaveBeenCalledWith(code, file, m0);
     expect(detectSlop).toHaveBeenCalledWith(code, m0);
 

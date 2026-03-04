@@ -130,6 +130,41 @@ export function doFoo() {
       expect(fileViolation!.message).toContain('foo-service');
       expect(fileViolation!.line).toBe(1);
     });
+
+    it('normalizes absolute file paths before resolving relative imports', () => {
+      const code = `import { UserService } from './services/user-service.js';`;
+
+      const manifest = makeManifest({
+        path: '/repos/test-repo',
+        apiSurface: {
+          routes: [],
+          procedures: [],
+          exports: [
+            {
+              name: 'UserService',
+              kind: 'class',
+              signature: 'class UserService',
+              file: 'src/services/user-service.ts',
+              line: 1,
+            },
+          ],
+        },
+        dependencies: {
+          internal: [
+            {
+              from: 'src/index.ts',
+              to: 'src/services/user-service.ts',
+              imports: ['UserService'],
+            },
+          ],
+          external: [],
+        },
+      });
+
+      const result = checkReferences(code, '/repos/test-repo/src/index.ts', manifest);
+      expect(result.valid).toBe(true);
+      expect(result.violations).toHaveLength(0);
+    });
   });
 
   describe('export name validation', () => {
@@ -271,6 +306,43 @@ export async function fetchData() {
       const routeViolations = result.violations.filter(v => v.kind === 'unknown-route');
       expect(routeViolations).toHaveLength(0);
     });
+
+    it('validates routes across the configured ecosystem', () => {
+      const code = `export async function fetchUsers() {
+  const res = await fetch('/api/v1/users');
+  return res.json();
+}`;
+
+      const consumer = makeManifest({
+        repoId: 'frontend',
+        apiSurface: {
+          routes: [],
+          procedures: [],
+          exports: [],
+        },
+      });
+
+      const provider = makeManifest({
+        repoId: 'backend',
+        apiSurface: {
+          routes: [
+            {
+              method: 'GET',
+              path: '/api/v1/users',
+              handler: 'getUsers',
+              file: 'src/routes/users.ts',
+              line: 10,
+            },
+          ],
+          procedures: [],
+          exports: [],
+        },
+      });
+
+      const result = checkReferences(code, 'src/client.ts', consumer, [consumer, provider]);
+      const routeViolations = result.violations.filter(v => v.kind === 'unknown-route');
+      expect(routeViolations).toHaveLength(0);
+    });
   });
 
   describe('procedure validation', () => {
@@ -409,6 +481,48 @@ export function greet(user: User): string {
 
       const result = checkReferences(code, 'src/greet.ts', manifest);
       expect(result.valid).toBe(true);
+    });
+
+    it('parses Swift imports and route strings', () => {
+      const code = `import Foundation
+import TotallyFakeKit
+
+class UserService {
+    func fetchUsers() async throws {
+        let url = URL(string: "\\(baseURL)/api/users")!
+        _ = url
+    }
+
+    func fetchMissing() async throws {
+        let url = URL(string: "\\(baseURL)/api/missing")!
+        _ = url
+    }
+}`;
+
+      const manifest = makeManifest({
+        language: 'swift',
+        apiSurface: {
+          routes: [
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes/users.ts',
+              line: 1,
+            },
+          ],
+          procedures: [],
+          exports: [],
+        },
+        dependencies: {
+          internal: [],
+          external: [{ name: 'NetworkingKit', version: '^1.0.0', dev: false }],
+        },
+      });
+
+      const result = checkReferences(code, 'Sources/UserService.swift', manifest);
+      expect(result.valid).toBe(false);
+      expect(result.violations.some(v => v.kind === 'unknown-route' && v.message.includes('/api/missing'))).toBe(true);
     });
   });
 });

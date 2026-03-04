@@ -27,9 +27,25 @@ const NODE_BUILTINS = new Set([
   'worker_threads', 'zlib',
 ]);
 
+const SWIFT_STANDARD_MODULES = new Set([
+  'Foundation',
+  'SwiftUI',
+  'UIKit',
+  'Combine',
+  'CoreData',
+  'CoreGraphics',
+  'Dispatch',
+  'MapKit',
+  'Photos',
+  'StoreKit',
+  'Swift',
+  'Testing',
+  'XCTest',
+]);
+
 function isBuiltinModule(specifier: string): boolean {
   if (specifier.startsWith('node:')) return true;
-  return NODE_BUILTINS.has(specifier);
+  return NODE_BUILTINS.has(specifier) || SWIFT_STANDARD_MODULES.has(specifier);
 }
 
 // ─── Import Parsing ──────────────────────────────────────────────────────────
@@ -142,6 +158,20 @@ function parseImports(code: string): ParsedImport[] {
         isNamespace: false,
         line: lineNum,
       });
+      continue;
+    }
+
+    // Swift imports: import Foundation / import MyPackage
+    const swiftImportMatch = line.match(/^import\s+([A-Za-z_][\w.]*)$/);
+    if (swiftImportMatch) {
+      imports.push({
+        specifier: swiftImportMatch[1],
+        names: [],
+        isTypeOnly: false,
+        isDefault: false,
+        isNamespace: false,
+        line: lineNum,
+      });
     }
   }
 
@@ -162,6 +192,14 @@ interface ParsedApiCall {
 function parseApiCalls(code: string): ParsedApiCall[] {
   const calls: ParsedApiCall[] = [];
   const lines = code.split('\n');
+  const seen = new Set<string>();
+
+  const addCall = (kind: ParsedApiCall['kind'], value: string, line: number) => {
+    const key = `${kind}:${value}:${line}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    calls.push({ kind, value, line });
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -178,24 +216,54 @@ function parseApiCalls(code: string): ParsedApiCall[] {
       pattern.lastIndex = 0;
       let match: RegExpExecArray | null;
       while ((match = pattern.exec(line)) !== null) {
-        calls.push({ kind: 'route', value: match[1], line: lineNum });
+        addCall('route', match[1], lineNum);
       }
     }
 
-    // tRPC procedure calls: trpc.procedureName.query() / .mutate() / .subscribe()
-    // Also: client.procedureName.query()
-    const trpcPattern = /\.\s*(\w+)\s*\.\s*(?:query|mutate|subscribe|useQuery|useMutation)\s*\(/g;
-    let trpcMatch: RegExpExecArray | null;
-    while ((trpcMatch = trpcPattern.exec(line)) !== null) {
-      const procName = trpcMatch[1];
-      // Skip common non-procedure names
-      if (!['prototype', 'constructor', 'then', 'catch', 'finally'].includes(procName)) {
-        calls.push({ kind: 'procedure', value: procName, line: lineNum });
+    const stringLiteralPattern = /["'`](.*?)["'`]/g;
+    let literalMatch: RegExpExecArray | null;
+    while ((literalMatch = stringLiteralPattern.exec(line)) !== null) {
+      const path = extractRoutePath(literalMatch[1]);
+      if (path) {
+        addCall('route', path, lineNum);
       }
+    }
+
+    // tRPC procedure calls: trpc.user.getProfile.query() / client.user.create.mutate()
+    const trpcChainPattern =
+      /\b(?:trpc|client|api|rpc)((?:\.[A-Za-z_]\w*)+)\.(?:query|mutate|subscribe|useQuery|useMutation)\s*\(/g;
+    let trpcChainMatch: RegExpExecArray | null;
+    while ((trpcChainMatch = trpcChainPattern.exec(line)) !== null) {
+      const procName = trpcChainMatch[1].slice(1);
+      if (!['prototype', 'constructor', 'then', 'catch', 'finally'].includes(procName)) {
+        addCall('procedure', procName, lineNum);
+      }
+    }
+
+    const trpcStringPattern =
+      /(?:query|mutation|mutate|subscribe)\s*\(\s*["']([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)+)["']/g;
+    let trpcStringMatch: RegExpExecArray | null;
+    while ((trpcStringMatch = trpcStringPattern.exec(line)) !== null) {
+      addCall('procedure', trpcStringMatch[1], lineNum);
     }
   }
 
   return calls;
+}
+
+function extractRoutePath(value: string): string | null {
+  if (!value) return null;
+
+  try {
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return new URL(value).pathname.replace(/\/$/, '');
+    }
+  } catch {
+    // Fall through to substring extraction.
+  }
+
+  const match = value.match(/\/(?:api|v\d+|trpc)\/[A-Za-z0-9_./:{}-]*/);
+  return match ? match[0].replace(/\/$/, '') : null;
 }
 
 // ─── Path Resolution ─────────────────────────────────────────────────────────
@@ -226,17 +294,37 @@ function resolveRelativeImport(specifier: string, fromFile: string): string {
     }
   }
 
-  let resolved = parts.join('/');
+  return parts.join('/');
+}
 
-  // Normalize extension: .js → .ts, .jsx → .tsx (for TypeScript projects)
-  resolved = resolved.replace(/\.js$/, '.ts').replace(/\.jsx$/, '.tsx');
+function normalizeFilePath(file: string, repoPath: string): string {
+  const normalized = file.replace(/\\/g, '/');
+  const normalizedRepo = repoPath.replace(/\\/g, '/');
 
-  // If no extension, try .ts
-  if (!/\.\w+$/.test(resolved)) {
-    resolved += '.ts';
+  if (normalized.startsWith(normalizedRepo)) {
+    const relative = normalized.slice(normalizedRepo.length).replace(/^\/+/, '');
+    return relative || normalized;
   }
 
-  return resolved;
+  return normalized;
+}
+
+function getImportCandidates(resolvedPath: string): string[] {
+  const candidates = new Set<string>([resolvedPath]);
+
+  if (resolvedPath.endsWith('.js')) candidates.add(resolvedPath.replace(/\.js$/, '.ts'));
+  if (resolvedPath.endsWith('.jsx')) candidates.add(resolvedPath.replace(/\.jsx$/, '.tsx'));
+
+  if (!/\.\w+$/.test(resolvedPath)) {
+    for (const ext of ['.ts', '.tsx', '.js', '.jsx', '.swift', '.py', '.go', '.rs', '.java']) {
+      candidates.add(`${resolvedPath}${ext}`);
+      candidates.add(`${resolvedPath}/index${ext}`);
+    }
+  } else {
+    candidates.add(resolvedPath.replace(/\.\w+$/, '/index$&'));
+  }
+
+  return [...candidates];
 }
 
 /**
@@ -313,10 +401,12 @@ export function checkReferences(
   proposedCode: string,
   file: string,
   manifest: RepoManifest,
+  ecosystem: RepoManifest[] = [manifest],
 ): ReferenceCheckResult {
   const violations: ReferenceViolation[] = [];
   const knownFiles = getKnownFiles(manifest);
   const externalPackages = new Set(manifest.dependencies.external.map(d => d.name));
+  const normalizedFile = normalizeFilePath(file, manifest.path);
 
   // ─── Check Imports ──────────────────────────────────────────────────
 
@@ -328,14 +418,8 @@ export function checkReferences(
 
     // Check if it's a relative import (local file)
     if (imp.specifier.startsWith('.') || imp.specifier.startsWith('/')) {
-      const resolvedPath = resolveRelativeImport(imp.specifier, file);
-
-      // Check if the file exists in the manifest
-      // Try with and without index.ts for directory imports
-      const candidates = [
-        resolvedPath,
-        resolvedPath.replace(/\.ts$/, '/index.ts'),
-      ];
+      const resolvedPath = resolveRelativeImport(imp.specifier, normalizedFile);
+      const candidates = getImportCandidates(resolvedPath);
 
       const matchedFile = candidates.find(c => knownFiles.has(c));
 
@@ -379,8 +463,12 @@ export function checkReferences(
   // ─── Check API Calls ───────────────────────────────────────────────
 
   const apiCalls = parseApiCalls(proposedCode);
-  const knownRoutes = new Set(manifest.apiSurface.routes.map(r => r.path));
-  const knownProcedures = new Set(manifest.apiSurface.procedures.map(p => p.name));
+  const knownRoutes = new Set(
+    ecosystem.flatMap((repo) => repo.apiSurface.routes.map((route) => route.path)),
+  );
+  const knownProcedures = new Set(
+    ecosystem.flatMap((repo) => repo.apiSurface.procedures.map((procedure) => procedure.name)),
+  );
 
   for (const call of apiCalls) {
     if (call.kind === 'route') {

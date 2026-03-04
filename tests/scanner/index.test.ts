@@ -126,6 +126,13 @@ export type User = z.infer<typeof userSchema>;
     expect(manifest.gitState.uncommittedChanges.length).toBeGreaterThan(0);
   });
 
+  it('detects untracked files as uncommitted changes', () => {
+    fs.writeFileSync(path.join(tmpDir, 'src', 'new-file.ts'), 'export const value = 1;\n');
+
+    const manifest = scanRepo(config);
+    expect(manifest.gitState.uncommittedChanges).toContain('src/new-file.ts');
+  });
+
   it('extracts exports from all files', () => {
     const manifest = scanRepo(config);
     const exportNames = manifest.apiSurface.exports.map((e) => e.name);

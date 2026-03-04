@@ -4,6 +4,25 @@ import { createParser } from './tree-sitter.js';
 
 // ─── Type Extraction ────────────────────────────────────────────────────────
 
+function lineNumberForIndex(source: string, index: number): number {
+  return source.slice(0, index).split('\n').length;
+}
+
+function findMatchingBrace(source: string, openBraceIndex: number): number {
+  let depth = 0;
+
+  for (let index = openBraceIndex; index < source.length; index++) {
+    const char = source[index];
+    if (char === '{') depth += 1;
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+
+  return -1;
+}
+
 /**
  * Extract type/interface/struct definitions from source code.
  * - TypeScript: interface_declaration, type_alias_declaration
@@ -24,6 +43,15 @@ export function extractTypes(
   }
   if (language === 'python') {
     return extractPythonTypes(source, file, repo);
+  }
+  if (language === 'go') {
+    return extractGoTypes(source, file, repo);
+  }
+  if (language === 'rust') {
+    return extractRustTypes(source, file, repo);
+  }
+  if (language === 'java') {
+    return extractJavaTypes(source, file, repo);
   }
   return [];
 }
@@ -287,6 +315,160 @@ function extractPythonFields(body: any): TypeField[] {
   }
 
   return fields;
+}
+
+// ─── Go Types ───────────────────────────────────────────────────────────────
+
+function extractGoTypes(source: string, file: string, repo: string): TypeDef[] {
+  const results: TypeDef[] = [];
+  const typePattern = /^\s*type\s+([A-Za-z_]\w*)\s+(struct|interface)\s*\{([\s\S]*?)^\s*\}/gm;
+
+  let match: RegExpExecArray | null;
+  while ((match = typePattern.exec(source)) !== null) {
+    const [, name, kind, body] = match;
+    results.push({
+      name,
+      fields: kind === 'struct' ? extractGoFields(body) : [],
+      source: { repo, file, line: lineNumberForIndex(source, match.index) },
+    });
+  }
+
+  return results;
+}
+
+function extractGoFields(body: string): TypeField[] {
+  const fields: TypeField[] = [];
+
+  for (const line of body.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//')) continue;
+
+    const fieldMatch = trimmed.match(/^([A-Za-z_]\w*)\s+([^`/][^`]*)/);
+    if (!fieldMatch) continue;
+
+    fields.push({
+      name: fieldMatch[1],
+      type: fieldMatch[2].trim().replace(/\s+`.*$/, ''),
+      optional: false,
+    });
+  }
+
+  return fields;
+}
+
+// ─── Rust Types ─────────────────────────────────────────────────────────────
+
+function extractRustTypes(source: string, file: string, repo: string): TypeDef[] {
+  const results: TypeDef[] = [];
+  const structPattern = /^\s*(?:pub\s+)?struct\s+([A-Za-z_]\w*)\s*\{([\s\S]*?)^\s*\}/gm;
+  const enumPattern = /^\s*(?:pub\s+)?enum\s+([A-Za-z_]\w*)\s*\{/gm;
+
+  let match: RegExpExecArray | null;
+  while ((match = structPattern.exec(source)) !== null) {
+    results.push({
+      name: match[1],
+      fields: extractRustFields(match[2]),
+      source: { repo, file, line: lineNumberForIndex(source, match.index) },
+    });
+  }
+
+  while ((match = enumPattern.exec(source)) !== null) {
+    results.push({
+      name: match[1],
+      fields: [],
+      source: { repo, file, line: lineNumberForIndex(source, match.index) },
+    });
+  }
+
+  return results;
+}
+
+function extractRustFields(body: string): TypeField[] {
+  const fields: TypeField[] = [];
+
+  for (const line of body.split('\n')) {
+    const trimmed = line.trim().replace(/,$/, '');
+    if (!trimmed || trimmed.startsWith('//')) continue;
+
+    const fieldMatch = trimmed.match(/^(?:pub\s+)?([A-Za-z_]\w*)\s*:\s*(.+)$/);
+    if (!fieldMatch) continue;
+
+    const type = fieldMatch[2].trim();
+    fields.push({
+      name: fieldMatch[1],
+      type,
+      optional: /^Option\s*</.test(type),
+    });
+  }
+
+  return fields;
+}
+
+// ─── Java Types ─────────────────────────────────────────────────────────────
+
+function extractJavaTypes(source: string, file: string, repo: string): TypeDef[] {
+  const results: TypeDef[] = [];
+  const classPattern =
+    /^\s*(?:public\s+)?(?:abstract\s+|final\s+)?(class|interface|enum|record)\s+([A-Za-z_]\w*)\s*(?:\(([^)]*)\))?\s*\{/gm;
+
+  let match: RegExpExecArray | null;
+  while ((match = classPattern.exec(source)) !== null) {
+    const [, kind, name, recordArgs] = match;
+    const openBraceIndex = classPattern.lastIndex - 1;
+    const closeBraceIndex = findMatchingBrace(source, openBraceIndex);
+    if (closeBraceIndex === -1) continue;
+
+    const body = source.slice(openBraceIndex + 1, closeBraceIndex);
+    results.push({
+      name,
+      fields: kind === 'record'
+        ? extractJavaRecordFields(recordArgs ?? '')
+        : kind === 'enum'
+          ? []
+          : extractJavaFields(body),
+      source: { repo, file, line: lineNumberForIndex(source, match.index) },
+    });
+
+    classPattern.lastIndex = closeBraceIndex + 1;
+  }
+
+  return results;
+}
+
+function extractJavaFields(body: string): TypeField[] {
+  const fields: TypeField[] = [];
+  const fieldPattern =
+    /^\s*(?:public|private|protected)\s+(?:static\s+|final\s+|volatile\s+|transient\s+)*([A-Za-z0-9_<>\[\], ?]+)\s+([A-Za-z_]\w*)\s*;/gm;
+
+  let match: RegExpExecArray | null;
+  while ((match = fieldPattern.exec(body)) !== null) {
+    fields.push({
+      name: match[2],
+      type: match[1].trim(),
+      optional: false,
+    });
+  }
+
+  return fields;
+}
+
+function extractJavaRecordFields(args: string): TypeField[] {
+  if (!args.trim()) return [];
+
+  return args
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const tokens = part.split(/\s+/);
+      const name = tokens[tokens.length - 1];
+      const type = tokens.slice(0, -1).join(' ');
+      return {
+        name,
+        type,
+        optional: false,
+      };
+    });
 }
 
 // ─── Schema Extraction ──────────────────────────────────────────────────────

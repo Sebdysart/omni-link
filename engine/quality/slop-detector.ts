@@ -28,9 +28,25 @@ const NODE_BUILTINS = new Set([
   'worker_threads', 'zlib',
 ]);
 
+const SWIFT_STANDARD_MODULES = new Set([
+  'Foundation',
+  'SwiftUI',
+  'UIKit',
+  'Combine',
+  'CoreData',
+  'CoreGraphics',
+  'Dispatch',
+  'MapKit',
+  'Photos',
+  'StoreKit',
+  'Swift',
+  'Testing',
+  'XCTest',
+]);
+
 function isBuiltinModule(specifier: string): boolean {
   if (specifier.startsWith('node:')) return true;
-  return NODE_BUILTINS.has(specifier);
+  return NODE_BUILTINS.has(specifier) || SWIFT_STANDARD_MODULES.has(specifier);
 }
 
 // ─── Placeholder Detection ───────────────────────────────────────────────────
@@ -124,6 +140,15 @@ function extractExternalImports(code: string): Array<{ packageName: string; line
         : specifier.split('/')[0];
 
       imports.push({ packageName, line: i + 1 });
+      continue;
+    }
+
+    // Swift import statements
+    const swiftImportMatch = line.match(/^import\s+([A-Za-z_][\w.]*)$/);
+    if (swiftImportMatch) {
+      const specifier = swiftImportMatch[1];
+      if (isBuiltinModule(specifier)) continue;
+      imports.push({ packageName: specifier, line: i + 1 });
     }
   }
 

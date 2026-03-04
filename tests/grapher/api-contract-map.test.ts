@@ -111,6 +111,46 @@ describe('compareTypes', () => {
     expect(compareTypes(provider, consumer)).toBe('mismatch');
   });
 
+  it('returns mismatch when matching field names have incompatible types', () => {
+    const provider: TypeDef = {
+      name: 'User',
+      fields: [
+        { name: 'id', type: 'string' },
+        { name: 'age', type: 'number' },
+      ],
+      source: { repo: 'backend', file: 'types.ts', line: 1 },
+    };
+    const consumer: TypeDef = {
+      name: 'User',
+      fields: [
+        { name: 'id', type: 'string' },
+        { name: 'age', type: 'string' },
+      ],
+      source: { repo: 'ios-app', file: 'User.swift', line: 1 },
+    };
+
+    expect(compareTypes(provider, consumer)).toBe('mismatch');
+  });
+
+  it('treats looser consumer optionality as compatible', () => {
+    const provider: TypeDef = {
+      name: 'User',
+      fields: [
+        { name: 'id', type: 'string', optional: false },
+      ],
+      source: { repo: 'backend', file: 'types.ts', line: 1 },
+    };
+    const consumer: TypeDef = {
+      name: 'User',
+      fields: [
+        { name: 'id', type: 'String?', optional: true },
+      ],
+      source: { repo: 'ios-app', file: 'User.swift', line: 1 },
+    };
+
+    expect(compareTypes(provider, consumer)).toBe('compatible');
+  });
+
   it('returns exact for empty field sets', () => {
     const provider: TypeDef = {
       name: 'Empty',

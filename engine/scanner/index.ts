@@ -37,7 +37,13 @@ export type FileCache = Map<string, FileCacheEntry>;
 
 import type { CacheManager } from '../context/cache-manager.js';
 import { detectLanguage } from './tree-sitter.js';
-import { extractExports, extractRoutes, extractProcedures, extractSwiftApiCallSites } from './api-extractor.js';
+import {
+  extractExports,
+  extractRoutes,
+  extractProcedures,
+  extractScriptApiCallSites,
+  extractSwiftApiCallSites,
+} from './api-extractor.js';
 import { extractTypes, extractSchemas } from './type-extractor.js';
 import { detectConventions } from './convention-detector.js';
 import type { FileInfo } from './convention-detector.js';
@@ -166,9 +172,14 @@ export function scanRepo(config: RepoConfig, fileCache?: FileCache, manifestCach
 
     allExports.push(...exports);
 
-    // For Swift consumer files, also extract outbound API call sites (URL strings,
-    // tRPC procedure names embedded in function bodies) so the grapher can detect
-    // cross-repo bridges like iOS → TypeScript backend.
+    // Consumer files can embed outbound API references in function bodies rather
+    // than in their exported signatures. Capture those call sites explicitly so
+    // bridge detection works for real clients, not just mocked test signatures.
+    if (lang === 'typescript' || lang === 'tsx' || lang === 'javascript') {
+      const callSites = extractScriptApiCallSites(source, relPath);
+      allExports.push(...callSites);
+    }
+
     if (lang === 'swift') {
       const callSites = extractSwiftApiCallSites(source, relPath);
       allExports.push(...callSites);
@@ -296,8 +307,13 @@ function extractGitState(repoPath: string): RepoManifest['gitState'] {
   // Uncommitted changes (both staged and unstaged)
   const diffOutput = gitExec(repoPath, 'diff --name-only');
   const stagedOutput = gitExec(repoPath, 'diff --cached --name-only');
+  const untrackedOutput = gitExec(repoPath, 'ls-files --others --exclude-standard');
   const changedFiles = new Set<string>();
-  for (const line of [...diffOutput.split('\n'), ...stagedOutput.split('\n')]) {
+  for (const line of [
+    ...diffOutput.split('\n'),
+    ...stagedOutput.split('\n'),
+    ...untrackedOutput.split('\n'),
+  ]) {
     const trimmed = line.trim();
     if (trimmed) changedFiles.add(trimmed);
   }

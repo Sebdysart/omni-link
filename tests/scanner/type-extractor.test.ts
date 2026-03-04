@@ -60,6 +60,49 @@ class User(BaseModel):
     expect(types[0].name).toBe('User');
   });
 
+  it('extracts Go structs', () => {
+    const source = `
+type User struct {
+  ID string
+  Name string
+}
+`;
+    const types = extractTypes(source, 'user.go', 'go', 'backend');
+    expect(types).toHaveLength(1);
+    expect(types[0].name).toBe('User');
+    expect(types[0].fields).toHaveLength(2);
+  });
+
+  it('extracts Rust structs', () => {
+    const source = `
+pub struct User {
+  pub id: String,
+  pub email: String,
+}
+`;
+    const types = extractTypes(source, 'user.rs', 'rust', 'backend');
+    expect(types).toHaveLength(1);
+    expect(types[0].name).toBe('User');
+    expect(types[0].fields).toHaveLength(2);
+  });
+
+  it('extracts Java classes and record fields', () => {
+    const classSource = `
+public class User {
+  private String id;
+  private String email;
+}
+`;
+    const classTypes = extractTypes(classSource, 'User.java', 'java', 'backend');
+    expect(classTypes).toHaveLength(1);
+    expect(classTypes[0].name).toBe('User');
+    expect(classTypes[0].fields).toHaveLength(2);
+
+    const recordSource = `public record UserRecord(String id, String email) { }`;
+    const recordTypes = extractTypes(recordSource, 'UserRecord.java', 'java', 'backend');
+    expect(recordTypes[0].fields).toHaveLength(2);
+  });
+
   describe('inheritance tracking', () => {
     it('captures single extends on interface', () => {
       const source = `interface Dog extends Animal { breed: string; }`;

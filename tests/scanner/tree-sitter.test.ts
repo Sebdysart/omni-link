@@ -23,6 +23,12 @@ describe('tree-sitter parser factory', () => {
     expect(tree.rootNode.hasError).toBe(false);
   });
 
+  it('throws a clear error for graphql parser requests', () => {
+    expect(() => createParser('graphql')).toThrow(
+      'Tree-sitter parser unavailable for language: graphql',
+    );
+  });
+
   it('throws for unsupported language', () => {
     expect(() => createParser('cobol')).toThrow('Unsupported language: cobol');
   });
@@ -35,6 +41,7 @@ describe('tree-sitter parser factory', () => {
     expect(detectLanguage('foo.go')).toBe('go');
     expect(detectLanguage('foo.rs')).toBe('rust');
     expect(detectLanguage('foo.java')).toBe('java');
+    expect(detectLanguage('foo.graphql')).toBe('graphql');
     expect(detectLanguage('foo.js')).toBe('javascript');
     expect(detectLanguage('foo.jsx')).toBe('javascript');
   });
@@ -44,6 +51,7 @@ describe('tree-sitter parser factory', () => {
     expect(langs).toContain('typescript');
     expect(langs).toContain('swift');
     expect(langs).toContain('python');
-    expect(langs.length).toBeGreaterThanOrEqual(7);
+    expect(langs).toContain('graphql');
+    expect(langs.length).toBeGreaterThanOrEqual(8);
   });
 });

@@ -4,6 +4,7 @@ import type {
   RepoManifest,
   ApiBridge,
   TypeDef,
+  TypeField,
   RouteDefinition,
   ProcedureDef,
 } from '../types.js';
@@ -19,25 +20,127 @@ export function compareTypes(
   providerType: TypeDef,
   consumerType: TypeDef
 ): 'exact' | 'compatible' | 'mismatch' {
-  const providerFields = new Set(providerType.fields.map(f => f.name));
-  const consumerFields = new Set(consumerType.fields.map(f => f.name));
+  const providerFields = new Map(providerType.fields.map((field) => [field.name, field]));
+  let isExact = true;
 
-  // Check if consumer has any fields not in provider
-  let consumerHasExtra = false;
-  for (const field of consumerFields) {
-    if (!providerFields.has(field)) {
-      consumerHasExtra = true;
-      break;
-    }
+  for (const consumerField of consumerType.fields) {
+    const providerField = providerFields.get(consumerField.name);
+    if (!providerField) return 'mismatch';
+
+    const compatibility = compareFieldDefinitions(providerField, consumerField);
+    if (compatibility === 'mismatch') return 'mismatch';
+    if (compatibility === 'compatible') isExact = false;
   }
 
-  if (consumerHasExtra) return 'mismatch';
+  if (consumerType.fields.length !== providerType.fields.length) {
+    isExact = false;
+  }
 
-  // All consumer fields exist in provider
-  if (consumerFields.size === providerFields.size) return 'exact';
+  return isExact ? 'exact' : 'compatible';
+}
 
-  // Consumer is a subset
+export function compareFieldDefinitions(
+  providerField: TypeField,
+  consumerField: TypeField,
+): 'exact' | 'compatible' | 'mismatch' {
+  const providerType = normalizeTypeForComparison(providerField.type);
+  const consumerType = normalizeTypeForComparison(consumerField.type);
+
+  if (providerType !== consumerType) return 'mismatch';
+
+  const providerOptional = isOptionalField(providerField);
+  const consumerOptional = isOptionalField(consumerField);
+
+  if (providerOptional === consumerOptional) return 'exact';
+  if (providerOptional && !consumerOptional) return 'mismatch';
   return 'compatible';
+}
+
+function isOptionalField(field: TypeField): boolean {
+  if (field.optional === true) return true;
+  const raw = field.type.replace(/\s+/g, '');
+  return (
+    raw.endsWith('?') ||
+    /^Optional<.+>$/.test(raw) ||
+    /^Option<.+>$/.test(raw) ||
+    /^Nullable<.+>$/.test(raw) ||
+    /^Maybe<.+>$/.test(raw)
+  );
+}
+
+export function normalizeTypeForComparison(type: string): string {
+  let normalized = type.trim().replace(/\s+/g, '');
+
+  const unwrapOptional = (): void => {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      if (normalized.endsWith('?')) {
+        normalized = normalized.slice(0, -1);
+        changed = true;
+      }
+
+      const wrapperMatch = normalized.match(/^(Optional|Option|Nullable|Maybe)<(.+)>$/);
+      if (wrapperMatch) {
+        normalized = wrapperMatch[2];
+        changed = true;
+      }
+    }
+  };
+
+  const canonicalize = (value: string): string => {
+    const noWhitespace = value.trim().replace(/\s+/g, '');
+
+    const arrayMatch =
+      noWhitespace.match(/^Array<(.+)>$/) ??
+      noWhitespace.match(/^Vec<(.+)>$/) ??
+      noWhitespace.match(/^List<(.+)>$/) ??
+      noWhitespace.match(/^\[(.+)\]$/);
+    if (arrayMatch) {
+      return `array<${canonicalize(arrayMatch[1])}>`;
+    }
+
+    if (noWhitespace.endsWith('[]')) {
+      return `array<${canonicalize(noWhitespace.slice(0, -2))}>`;
+    }
+
+    const primitive = noWhitespace.toLowerCase();
+    if (['string', 'str', '&str', 'java.lang.string'].includes(primitive)) return 'string';
+    if (['bool', 'boolean'].includes(primitive)) return 'boolean';
+    if (
+      [
+        'number',
+        'int',
+        'int32',
+        'int64',
+        'int16',
+        'int8',
+        'integer',
+        'uint',
+        'uint32',
+        'uint64',
+        'usize',
+        'isize',
+        'float',
+        'float32',
+        'float64',
+        'double',
+        'decimal',
+        'cgfloat',
+      ].includes(primitive)
+    ) {
+      return 'number';
+    }
+    if (['date', 'datetime', 'instant', 'timestamp'].includes(primitive)) return 'datetime';
+    if (['object', 'map<string,unknown>', 'record<string,unknown>'].includes(primitive)) {
+      return 'object';
+    }
+
+    return primitive;
+  };
+
+  unwrapOptional();
+  return canonicalize(normalized);
 }
 
 /**

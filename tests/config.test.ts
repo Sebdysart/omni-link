@@ -59,6 +59,17 @@ describe('config', () => {
     expect(config.context.tokenBudget).toBe(DEFAULT_CONFIG.context.tokenBudget);
   });
 
+  it('normalizes legacy evolution category names', () => {
+    const configPath = path.join(tmpDir, '.omni-link.json');
+    fs.writeFileSync(configPath, JSON.stringify({
+      repos: [{ name: 'test', path: '/tmp/test', language: 'typescript', role: 'backend' }],
+      evolution: { categories: ['features', 'performance'] },
+    }));
+
+    const config = loadConfig(configPath);
+    expect(config.evolution.categories).toEqual(['feature', 'performance']);
+  });
+
   it('loadConfig throws on invalid JSON', () => {
     const configPath = path.join(tmpDir, '.omni-link.json');
     fs.writeFileSync(configPath, 'not json');

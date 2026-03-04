@@ -181,6 +181,23 @@ import { config } from '../config.js';`;
       const phantoms = result.issues.filter(i => i.kind === 'phantom-import');
       expect(phantoms).toHaveLength(0);
     });
+
+    it('detects unknown Swift package imports while allowing standard modules', () => {
+      const code = `import Foundation
+import TotallyFakeKit`;
+
+      const manifest = makeManifest({
+        language: 'swift',
+        dependencies: {
+          internal: [],
+          external: [{ name: 'Alamofire', version: '^1.0.0', dev: false }],
+        },
+      });
+
+      const result = detectSlop(code, manifest);
+      expect(result.issues.some(i => i.kind === 'phantom-import' && i.message.includes('TotallyFakeKit'))).toBe(true);
+      expect(result.issues.some(i => i.kind === 'phantom-import' && i.message.includes('Foundation'))).toBe(false);
+    });
   });
 
   describe('duplicate block detection', () => {

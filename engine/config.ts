@@ -7,7 +7,7 @@ export const DEFAULT_CONFIG: Omit<OmniLinkConfig, 'repos'> = {
   evolution: {
     aggressiveness: 'aggressive',
     maxSuggestionsPerSession: 5,
-    categories: ['features', 'performance', 'monetization', 'scale', 'security'],
+    categories: ['feature', 'performance', 'monetization', 'scale', 'security'],
   },
   quality: {
     blockOnFailure: true,
@@ -66,9 +66,16 @@ export function loadConfig(configPath: string): OmniLinkConfig {
     );
   }
 
+  const evolution = { ...DEFAULT_CONFIG.evolution, ...raw.evolution };
+  if (Array.isArray(evolution.categories)) {
+    evolution.categories = evolution.categories.map((category: string) =>
+      category === 'features' ? 'feature' : category,
+    );
+  }
+
   return {
     repos: raw.repos,
-    evolution: { ...DEFAULT_CONFIG.evolution, ...raw.evolution },
+    evolution,
     quality: { ...DEFAULT_CONFIG.quality, ...raw.quality },
     context: { ...DEFAULT_CONFIG.context, ...raw.context },
     cache: { ...DEFAULT_CONFIG.cache, ...raw.cache },

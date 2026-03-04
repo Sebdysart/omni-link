@@ -203,10 +203,14 @@ export function qualityCheck(
     };
   }
 
-  const references = checkReferences(code, file, manifest);
-  const conventions = validateConventions(code, file, manifest);
+  const normalizedFile = file.startsWith(manifest.path)
+    ? file.slice(manifest.path.length).replace(/^[/\\]+/, '')
+    : file.replace(/\\/g, '/');
+
+  const references = checkReferences(code, normalizedFile, manifest, manifests);
+  const conventions = validateConventions(code, normalizedFile, manifest);
   const slop = detectSlop(code, manifest);
-  const rules = checkRules(code, file);
+  const rules = checkRules(code, normalizedFile);
 
   return { references, conventions, slop, rules };
 }

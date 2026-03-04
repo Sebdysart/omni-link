@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { extractRoutes, extractExports, extractProcedures, extractSwiftApiCallSites } from '../../engine/scanner/api-extractor.js';
+import {
+  extractRoutes,
+  extractExports,
+  extractProcedures,
+  extractScriptApiCallSites,
+  extractSwiftApiCallSites,
+} from '../../engine/scanner/api-extractor.js';
 
 describe('api-extractor', () => {
   describe('extractExports (TypeScript)', () => {
@@ -91,6 +97,48 @@ class UserService {
     });
   });
 
+  describe('extractExports (Go/Rust/Java)', () => {
+    it('extracts exported Go functions and structs', () => {
+      const source = `
+type User struct {
+    ID string
+}
+
+func GetUser() User {
+    return User{}
+}`;
+      const exports = extractExports(source, 'user.go', 'go');
+      expect(exports.find((entry) => entry.name === 'User')).toBeDefined();
+      expect(exports.find((entry) => entry.name === 'GetUser')?.kind).toBe('function');
+    });
+
+    it('extracts exported Rust items', () => {
+      const source = `
+pub struct User {
+    pub id: String,
+}
+
+pub fn get_user() -> User {
+    User { id: String::new() }
+}`;
+      const exports = extractExports(source, 'lib.rs', 'rust');
+      expect(exports.find((entry) => entry.name === 'User')).toBeDefined();
+      expect(exports.find((entry) => entry.name === 'get_user')?.kind).toBe('function');
+    });
+
+    it('extracts public Java classes and methods', () => {
+      const source = `
+public class UserService {
+    public User getUser() {
+        return new User();
+    }
+}`;
+      const exports = extractExports(source, 'UserService.java', 'java');
+      expect(exports.find((entry) => entry.name === 'UserService')).toBeDefined();
+      expect(exports.find((entry) => entry.name === 'getUser')?.kind).toBe('function');
+    });
+  });
+
   describe('GraphQL extraction', () => {
     it('extracts Query fields from GraphQL schema as routes', () => {
       const source = `
@@ -151,6 +199,16 @@ class UserService {
 });
 
 describe('extractSwiftApiCallSites', () => {
+  it('extracts route paths from TypeScript client call sites', () => {
+    const source = `
+export async function fetchUsers() {
+  const res = await fetch(\`\${baseUrl}/api/users\`);
+  return res.json();
+}`;
+    const results = extractScriptApiCallSites(source, 'src/client.ts');
+    expect(results.some((entry) => entry.signature === '/api/users')).toBe(true);
+  });
+
   it('extracts URL path strings from Swift source', () => {
     const source = `
 class UserService {
@@ -216,5 +274,17 @@ class Service {
     const posts = results.filter(r => r.signature === '/api/posts');
     // Should only appear once (deduped by value+file key)
     expect(posts).toHaveLength(1);
+  });
+
+  it('extracts interpolated Swift base URLs', () => {
+    const source = `
+class Service {
+    func load() async throws {
+        let url = URL(string: "\\(baseURL)/api/users")!
+        _ = url
+    }
+}`;
+    const results = extractSwiftApiCallSites(source, 'Services/Service.swift');
+    expect(results.some((entry) => entry.signature === '/api/users')).toBe(true);
   });
 });

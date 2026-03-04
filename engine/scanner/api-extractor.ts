@@ -4,6 +4,10 @@ import { createParser } from './tree-sitter.js';
 
 // ─── Exports ────────────────────────────────────────────────────────────────
 
+function lineNumberForIndex(source: string, index: number): number {
+  return source.slice(0, index).split('\n').length;
+}
+
 /**
  * Extract exported symbols from source code.
  * - TypeScript: walks export_statement nodes
@@ -14,11 +18,20 @@ export function extractExports(
   file: string,
   language: string,
 ): ExportDef[] {
-  if (language === 'typescript' || language === 'tsx') {
+  if (language === 'typescript' || language === 'tsx' || language === 'javascript') {
     return extractTSExports(source, file, language);
   }
   if (language === 'swift') {
     return extractSwiftExports(source, file);
+  }
+  if (language === 'go') {
+    return extractGoExports(source, file);
+  }
+  if (language === 'rust') {
+    return extractRustExports(source, file);
+  }
+  if (language === 'java') {
+    return extractJavaExports(source, file);
   }
   return [];
 }
@@ -183,6 +196,179 @@ function extractSwiftExports(source: string, file: string): ExportDef[] {
   return results;
 }
 
+function extractGoExports(source: string, file: string): ExportDef[] {
+  const results: ExportDef[] = [];
+  const typePattern = /^\s*type\s+([A-Z]\w*)\s+(struct|interface)\b/gm;
+  const funcPattern = /^\s*func\s+(?:\([^)]*\)\s*)?([A-Z]\w*)\s*\(/gm;
+
+  let match: RegExpExecArray | null;
+  while ((match = typePattern.exec(source)) !== null) {
+    results.push({
+      name: match[1],
+      kind: match[2] === 'struct' ? 'class' : 'interface',
+      signature: match[0].trim(),
+      file,
+      line: lineNumberForIndex(source, match.index),
+    });
+  }
+
+  while ((match = funcPattern.exec(source)) !== null) {
+    results.push({
+      name: match[1],
+      kind: 'function',
+      signature: match[0].trim(),
+      file,
+      line: lineNumberForIndex(source, match.index),
+    });
+  }
+
+  return results;
+}
+
+function extractRustExports(source: string, file: string): ExportDef[] {
+  const results: ExportDef[] = [];
+  const patterns: Array<{ pattern: RegExp; kind: ExportDef['kind'] }> = [
+    { pattern: /^\s*pub\s+fn\s+([A-Za-z_]\w*)\s*\(/gm, kind: 'function' },
+    { pattern: /^\s*pub\s+struct\s+([A-Za-z_]\w*)\b/gm, kind: 'class' },
+    { pattern: /^\s*pub\s+enum\s+([A-Za-z_]\w*)\b/gm, kind: 'enum' },
+    { pattern: /^\s*pub\s+trait\s+([A-Za-z_]\w*)\b/gm, kind: 'interface' },
+    { pattern: /^\s*pub\s+const\s+([A-Za-z_]\w*)\b/gm, kind: 'constant' },
+    { pattern: /^\s*pub\s+type\s+([A-Za-z_]\w*)\b/gm, kind: 'type' },
+  ];
+
+  for (const { pattern, kind } of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source)) !== null) {
+      results.push({
+        name: match[1],
+        kind,
+        signature: match[0].trim(),
+        file,
+        line: lineNumberForIndex(source, match.index),
+      });
+    }
+  }
+
+  return results;
+}
+
+function extractJavaExports(source: string, file: string): ExportDef[] {
+  const results: ExportDef[] = [];
+  const typePattern =
+    /^\s*public\s+(?:abstract\s+|final\s+)?(class|interface|enum|record)\s+([A-Za-z_]\w*)\b/gm;
+  const methodPattern =
+    /^\s*public\s+(?:static\s+|final\s+|synchronized\s+|abstract\s+)*[A-Za-z_<>\[\], ?]+\s+([A-Za-z_]\w*)\s*\([^;{)]*\)\s*(?:throws\s+[A-Za-z0-9_., ]+)?\s*\{/gm;
+
+  let match: RegExpExecArray | null;
+  while ((match = typePattern.exec(source)) !== null) {
+    const kindMap: Record<string, ExportDef['kind']> = {
+      class: 'class',
+      interface: 'interface',
+      enum: 'enum',
+      record: 'class',
+    };
+    results.push({
+      name: match[2],
+      kind: kindMap[match[1]] ?? 'class',
+      signature: match[0].trim(),
+      file,
+      line: lineNumberForIndex(source, match.index),
+    });
+  }
+
+  while ((match = methodPattern.exec(source)) !== null) {
+    const name = match[1];
+    if (name === 'if' || name === 'for' || name === 'while' || name === 'switch') continue;
+    results.push({
+      name,
+      kind: 'function',
+      signature: match[0].trim(),
+      file,
+      line: lineNumberForIndex(source, match.index),
+    });
+  }
+
+  return results;
+}
+
+function extractRoutePathFromLiteral(value: string): string | null {
+  if (!value) return null;
+
+  try {
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return new URL(value).pathname;
+    }
+  } catch {
+    // Ignore invalid URLs and continue with substring extraction.
+  }
+
+  const pathMatch = value.match(/\/(?:api|v\d+|trpc)\/[A-Za-z0-9_./:{}-]*/);
+  if (!pathMatch) return null;
+
+  return pathMatch[0].replace(/\/$/, '');
+}
+
+function makeCallSiteExport(value: string, file: string, line: number): ExportDef {
+  return {
+    name: value,
+    kind: 'constant',
+    signature: value,
+    file,
+    line,
+  };
+}
+
+export function extractScriptApiCallSites(source: string, file: string): ExportDef[] {
+  const results: ExportDef[] = [];
+  const seen = new Set<string>();
+  const lines = source.split('\n');
+  const stringLiteralPattern = /["'`](.*?)["'`]/g;
+  const trpcChainPattern =
+    /\b(?:trpc|client|api|rpc)((?:\.[A-Za-z_]\w*)+)\.(?:query|mutate|subscribe|useQuery|useMutation)\s*\(/g;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    stringLiteralPattern.lastIndex = 0;
+    let stringMatch: RegExpExecArray | null;
+    while ((stringMatch = stringLiteralPattern.exec(line)) !== null) {
+      const literalValue = stringMatch[1];
+      const path = extractRoutePathFromLiteral(literalValue);
+      if (path) {
+        const key = `route:${path}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push(makeCallSiteExport(path, file, i + 1));
+        }
+      }
+
+      if (
+        (line.includes('trpc') || line.includes('query(') || line.includes('mutation(') || line.includes('subscribe(')) &&
+        /^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)+$/.test(literalValue)
+      ) {
+        const key = `proc:${literalValue}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push(makeCallSiteExport(literalValue, file, i + 1));
+        }
+      }
+    }
+
+    trpcChainPattern.lastIndex = 0;
+    let chainMatch: RegExpExecArray | null;
+    while ((chainMatch = trpcChainPattern.exec(line)) !== null) {
+      const procedure = chainMatch[1].slice(1);
+      const key = `proc:${procedure}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        results.push(makeCallSiteExport(procedure, file, i + 1));
+      }
+    }
+  }
+
+  return results;
+}
+
 /**
  * Regex-scan Swift source for outbound API call sites:
  * - URL path strings like "/api/users", "/v1/posts", "/trpc/..."
@@ -200,7 +386,7 @@ export function extractSwiftApiCallSites(source: string, file: string): ExportDe
   // URL path pattern: string literals that are API paths.
   // Matches: "/api/...", "/v1/...", "/v2/...", "/trpc/..."
   // Also matches bare paths starting with "/" followed by 3+ word chars (e.g., "/users")
-  const urlPathPattern = /"(\/(?:api|v\d+|trpc)\/[^"\\]*)"/g;
+  const urlPathPattern = /"(?:[^"\\]|\\.)*(\/(?:api|v\d+|trpc)\/[^"\\]*)"/g;
 
   // tRPC procedure pattern: "namespace.procedureName" — dotted lowercase identifiers
   // Matches things like "user.create", "post.getAll", "auth.login"
@@ -221,13 +407,7 @@ export function extractSwiftApiCallSites(source: string, file: string): ExportDe
       const key = `url:${value}`;
       if (!seen.has(key)) {
         seen.add(key);
-        results.push({
-          name: value,
-          kind: 'constant',
-          signature: value,
-          file,
-          line: i + 1,
-        });
+        results.push(makeCallSiteExport(value, file, i + 1));
       }
     }
 
@@ -236,15 +416,12 @@ export function extractSwiftApiCallSites(source: string, file: string): ExportDe
     while ((match = trpcProcPattern.exec(line)) !== null) {
       const value = match[1];
       const key = `proc:${value}`;
-      if (!seen.has(key)) {
+      if (
+        !seen.has(key) &&
+        (line.includes('trpc') || line.includes('query(') || line.includes('mutation(') || line.includes('subscribe('))
+      ) {
         seen.add(key);
-        results.push({
-          name: value,
-          kind: 'constant',
-          signature: value,
-          file,
-          line: i + 1,
-        });
+        results.push(makeCallSiteExport(value, file, i + 1));
       }
     }
   }

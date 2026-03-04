@@ -254,6 +254,75 @@ describe('buildEcosystemGraph', () => {
     expect(extraFieldMismatch).toBeDefined();
   });
 
+  it('records type-mismatch findings when shared fields change type', () => {
+    const backend = makeManifest({
+      repoId: 'backend',
+      apiSurface: {
+        routes: [
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes.ts',
+            line: 5,
+            outputType: 'User',
+          },
+        ],
+        procedures: [],
+        exports: [],
+      },
+      typeRegistry: {
+        types: [
+          {
+            name: 'User',
+            fields: [
+              { name: 'id', type: 'string' },
+              { name: 'age', type: 'number' },
+            ],
+            source: { repo: 'backend', file: 'src/types.ts', line: 1 },
+          },
+        ],
+        schemas: [],
+        models: [],
+      },
+    });
+
+    const consumer = makeManifest({
+      repoId: 'mobile',
+      apiSurface: {
+        routes: [],
+        procedures: [],
+        exports: [
+          {
+            name: 'loadUsers',
+            kind: 'function',
+            signature: 'GET /api/users',
+            file: 'Services/UserService.swift',
+            line: 10,
+          },
+        ],
+      },
+      typeRegistry: {
+        types: [
+          {
+            name: 'User',
+            fields: [
+              { name: 'id', type: 'String' },
+              { name: 'age', type: 'String' },
+            ],
+            source: { repo: 'mobile', file: 'Models/User.swift', line: 1 },
+          },
+        ],
+        schemas: [],
+        models: [],
+      },
+    });
+
+    const graph = buildEcosystemGraph([backend, consumer]);
+
+    expect(graph.contractMismatches.some((m) => m.kind === 'type-mismatch' && m.provider.field === 'age')).toBe(true);
+  });
+
   it('populates internal deps within each manifest', () => {
     const backend = makeManifest({
       repoId: 'backend',

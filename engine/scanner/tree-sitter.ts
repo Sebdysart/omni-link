@@ -13,8 +13,9 @@ const LANGUAGE_MAP: Record<string, () => any> = {
   go: () => require('tree-sitter-go'),
   rust: () => require('tree-sitter-rust'),
   java: () => require('tree-sitter-java'),
-  graphql: () => require('tree-sitter-graphql'),
 };
+
+const MANUAL_LANGUAGE_SUPPORT = ['graphql'];
 
 const EXTENSION_MAP: Record<string, string> = {
   '.ts': 'typescript',
@@ -38,7 +39,12 @@ const EXTENSION_MAP: Record<string, string> = {
  */
 export function createParser(language: string): any {
   const loader = LANGUAGE_MAP[language];
-  if (!loader) throw new Error(`Unsupported language: ${language}`);
+  if (!loader) {
+    if (MANUAL_LANGUAGE_SUPPORT.includes(language)) {
+      throw new Error(`Tree-sitter parser unavailable for language: ${language}`);
+    }
+    throw new Error(`Unsupported language: ${language}`);
+  }
   const parser = new Parser();
   parser.setLanguage(loader());
   return parser;
@@ -59,5 +65,5 @@ export function detectLanguage(filePath: string): string | null {
  * Returns all supported language identifiers.
  */
 export function getSupportedLanguages(): string[] {
-  return Object.keys(LANGUAGE_MAP);
+  return [...Object.keys(LANGUAGE_MAP), ...MANUAL_LANGUAGE_SUPPORT];
 }

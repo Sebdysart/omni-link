@@ -9,7 +9,7 @@ import type {
 } from '../types.js';
 
 import { buildInternalDeps, detectCrossRepoDeps } from './dependency-graph.js';
-import { mapApiContracts, compareTypes } from './api-contract-map.js';
+import { mapApiContracts, compareFieldDefinitions } from './api-contract-map.js';
 import { analyzeImpact } from './impact-analyzer.js';
 import { mapTypeFlows } from './type-flow.js';
 
@@ -100,6 +100,32 @@ function findContractMismatches(bridges: ApiBridge[], manifests: RepoManifest[])
 
     const providerFieldNames = new Set(providerType.fields.map(f => f.name));
     const consumerFieldNames = new Set(consumerType.fields.map(f => f.name));
+
+    for (const providerField of providerType.fields) {
+      const consumerField = consumerType.fields.find((field) => field.name === providerField.name);
+      if (!consumerField) continue;
+
+      const compatibility = compareFieldDefinitions(providerField, consumerField);
+      if (compatibility === 'exact') continue;
+
+      mismatches.push({
+        kind: 'type-mismatch',
+        description: `Field '${providerField.name}' differs between provider ${bridge.provider.repo} and consumer ${bridge.consumer.repo}`,
+        provider: {
+          repo: bridge.provider.repo,
+          file: providerType.source.file,
+          line: providerType.source.line,
+          field: providerField.name,
+        },
+        consumer: {
+          repo: bridge.consumer.repo,
+          file: consumerType.source.file,
+          line: consumerType.source.line,
+          field: providerField.name,
+        },
+        severity: compatibility === 'mismatch' ? 'breaking' : 'warning',
+      });
+    }
 
     // Find fields in consumer that are not in provider (extra fields)
     for (const field of consumerType.fields) {
