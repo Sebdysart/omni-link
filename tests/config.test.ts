@@ -7,8 +7,12 @@ import * as os from 'os';
 describe('config', () => {
   const tmpDir = path.join(os.tmpdir(), 'omni-link-test-config');
 
-  beforeEach(() => { fs.mkdirSync(tmpDir, { recursive: true }); });
-  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+  beforeEach(() => {
+    fs.mkdirSync(tmpDir, { recursive: true });
+  });
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
 
   it('resolveConfigPath finds local .omni-link.json first', () => {
     const localConfig = path.join(tmpDir, '.omni-link.json');
@@ -31,13 +35,16 @@ describe('config', () => {
     expect(result.errors).toContain('repos: must have at least 1 repo');
   });
 
-  it('validateConfig rejects more than 4 repos', () => {
-    const repos = Array.from({ length: 5 }, (_, i) => ({
-      name: `repo-${i}`, path: `/tmp/repo-${i}`, language: 'typescript', role: 'backend',
+  it('validateConfig rejects more than 10 repos', () => {
+    const repos = Array.from({ length: 11 }, (_, i) => ({
+      name: `repo-${i}`,
+      path: `/tmp/repo-${i}`,
+      language: 'typescript',
+      role: 'backend',
     }));
     const result = validateConfig({ repos });
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain('repos: maximum 4 repos allowed');
+    expect(result.errors).toContain('repos: maximum 10 repos allowed');
   });
 
   it('validateConfig accepts valid config', () => {
@@ -50,9 +57,12 @@ describe('config', () => {
 
   it('loadConfig merges with defaults', () => {
     const configPath = path.join(tmpDir, '.omni-link.json');
-    fs.writeFileSync(configPath, JSON.stringify({
-      repos: [{ name: 'test', path: '/tmp/test', language: 'typescript', role: 'backend' }],
-    }));
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({
+        repos: [{ name: 'test', path: '/tmp/test', language: 'typescript', role: 'backend' }],
+      }),
+    );
     const config = loadConfig(configPath);
     expect(config.repos).toHaveLength(1);
     expect(config.evolution.aggressiveness).toBe(DEFAULT_CONFIG.evolution.aggressiveness);
@@ -61,10 +71,13 @@ describe('config', () => {
 
   it('normalizes legacy evolution category names', () => {
     const configPath = path.join(tmpDir, '.omni-link.json');
-    fs.writeFileSync(configPath, JSON.stringify({
-      repos: [{ name: 'test', path: '/tmp/test', language: 'typescript', role: 'backend' }],
-      evolution: { categories: ['features', 'performance'] },
-    }));
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({
+        repos: [{ name: 'test', path: '/tmp/test', language: 'typescript', role: 'backend' }],
+        evolution: { categories: ['features', 'performance'] },
+      }),
+    );
 
     const config = loadConfig(configPath);
     expect(config.evolution.categories).toEqual(['feature', 'performance']);

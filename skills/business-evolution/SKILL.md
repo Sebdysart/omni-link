@@ -23,6 +23,7 @@ Execute the evolution analysis:
 ```
 
 This runs the full evolution pipeline:
+
 1. **Gap Analyzer**: Finds incomplete CRUD operations, dead exports, orphaned schemas, routes without handlers
 2. **Bottleneck Finder**: Detects missing pagination, caching gaps, rate limiting absence, unbounded queries, sync-in-async patterns
 3. **Competitive Benchmarker**: Compares against stack best practices (security headers, input validation, error handling, logging, monitoring)
@@ -30,13 +31,13 @@ This runs the full evolution pipeline:
 
 ## Suggestion Categories
 
-| Category | What It Covers |
-|----------|---------------|
-| `feature` | Incomplete features, missing CRUD operations, dead routes, orphaned UI |
-| `performance` | Missing pagination, caching, query optimization, async patterns |
-| `monetization` | Revenue opportunities identified from existing code patterns |
-| `scale` | Rate limiting, connection pooling, queue usage, horizontal scaling |
-| `security` | Missing auth checks, input validation, security headers, secrets exposure |
+| Category       | What It Covers                                                            |
+| -------------- | ------------------------------------------------------------------------- |
+| `feature`      | Incomplete features, missing CRUD operations, dead routes, orphaned UI    |
+| `performance`  | Missing pagination, caching, query optimization, async patterns           |
+| `monetization` | Revenue opportunities identified from existing code patterns              |
+| `scale`        | Rate limiting, connection pooling, queue usage, horizontal scaling        |
+| `security`     | Missing auth checks, input validation, security headers, secrets exposure |
 
 ## Suggestion Presentation Format
 
@@ -63,6 +64,7 @@ Every suggestion MUST include at least one evidence citation. Evidence is a spec
 **Required format:** `repo/path/to/file.ts:lineNumber` followed by a description of what was found.
 
 **Rules:**
+
 - NEVER fabricate evidence. If you cannot cite a real file and line, do not make the suggestion.
 - Evidence must come from the most recent scan. If the digest is stale, run `/scan` first.
 - Multiple evidence points strengthen a suggestion. Include all relevant findings.

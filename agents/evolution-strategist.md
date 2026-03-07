@@ -71,9 +71,11 @@ Return strategic analysis in this structure:
 ## Strategic Analysis: [Topic]
 
 ### Current State
+
 [Summary of what the codebase currently does, with file:line evidence]
 
 ### Industry Context
+
 [What best practices and competitors do, with sources]
 
 ### Opportunities
@@ -85,12 +87,15 @@ Return strategic analysis in this structure:
 **Risk:** [low/medium/high] — [what could go wrong]
 
 **Evidence from codebase:**
+
 - `[repo]/[file]:[line]` — [finding]
 
 **Industry benchmark:**
+
 - [source/reference] — [what others do]
 
 **Implementation roadmap:**
+
 1. [Phase 1 — MVP] ([timeframe])
    - [specific step]
    - [specific step]
@@ -98,13 +103,16 @@ Return strategic analysis in this structure:
    - [specific step]
 
 #### 2. [Next Opportunity]
+
 ...
 
 ### Recommended Priority Order
+
 1. [Opportunity] — [reason it's first]
 2. [Opportunity] — [reason it's second]
 3. [Opportunity] — [reason it's third]
 
 ### Strategic Trade-offs
+
 [What you gain vs. what you give up for each path]
 ```

@@ -37,8 +37,8 @@ export type UserId = string;
 `;
       const exports = extractExports(source, 'test.ts', 'typescript');
       expect(exports).toHaveLength(2);
-      expect(exports.find(e => e.name === 'User')?.kind).toBe('interface');
-      expect(exports.find(e => e.name === 'UserId')?.kind).toBe('type');
+      expect(exports.find((e) => e.name === 'User')?.kind).toBe('interface');
+      expect(exports.find((e) => e.name === 'UserId')?.kind).toBe('type');
     });
   });
 
@@ -91,9 +91,9 @@ class UserService {
 }
 `;
       const exports = extractExports(source, 'User.swift', 'swift');
-      expect(exports.find(e => e.name === 'fetchUser')).toBeDefined();
-      expect(exports.find(e => e.name === 'UserDTO')?.kind).toBe('class');
-      expect(exports.find(e => e.name === 'UserService')?.kind).toBe('class');
+      expect(exports.find((e) => e.name === 'fetchUser')).toBeDefined();
+      expect(exports.find((e) => e.name === 'UserDTO')?.kind).toBe('class');
+      expect(exports.find((e) => e.name === 'UserService')?.kind).toBe('class');
     });
   });
 
@@ -231,10 +231,10 @@ public class UserService {
     }
   `;
       const routes = extractRoutes(source, 'schema.graphql', 'graphql');
-      expect(routes.find(r => r.handler === 'users')).toBeDefined();
-      expect(routes.find(r => r.handler === 'post')).toBeDefined();
-      expect(routes.find(r => r.handler === 'users')?.method).toBe('QUERY');
-      expect(routes.find(r => r.handler === 'post')?.method).toBe('QUERY');
+      expect(routes.find((r) => r.handler === 'users')).toBeDefined();
+      expect(routes.find((r) => r.handler === 'post')).toBeDefined();
+      expect(routes.find((r) => r.handler === 'users')?.method).toBe('QUERY');
+      expect(routes.find((r) => r.handler === 'post')?.method).toBe('QUERY');
     });
 
     it('extracts Mutation fields from GraphQL schema as routes', () => {
@@ -245,10 +245,10 @@ public class UserService {
     }
   `;
       const routes = extractRoutes(source, 'schema.graphql', 'graphql');
-      expect(routes.find(r => r.handler === 'createUser')).toBeDefined();
-      expect(routes.find(r => r.handler === 'deletePost')).toBeDefined();
-      expect(routes.find(r => r.handler === 'createUser')?.method).toBe('MUTATION');
-      expect(routes.find(r => r.handler === 'deletePost')?.method).toBe('MUTATION');
+      expect(routes.find((r) => r.handler === 'createUser')).toBeDefined();
+      expect(routes.find((r) => r.handler === 'deletePost')).toBeDefined();
+      expect(routes.find((r) => r.handler === 'createUser')?.method).toBe('MUTATION');
+      expect(routes.find((r) => r.handler === 'deletePost')?.method).toBe('MUTATION');
     });
 
     it('extracts Subscription fields from GraphQL schema as routes', () => {
@@ -258,8 +258,8 @@ public class UserService {
     }
   `;
       const routes = extractRoutes(source, 'schema.graphql', 'graphql');
-      expect(routes.find(r => r.handler === 'messageAdded')).toBeDefined();
-      expect(routes.find(r => r.handler === 'messageAdded')?.method).toBe('SUBSCRIPTION');
+      expect(routes.find((r) => r.handler === 'messageAdded')).toBeDefined();
+      expect(routes.find((r) => r.handler === 'messageAdded')?.method).toBe('SUBSCRIPTION');
     });
 
     it('does not extract non-root type fields as routes', () => {
@@ -276,7 +276,7 @@ public class UserService {
     it('extracts fields from single-line type block', () => {
       const source = `type Query { health: Boolean }`;
       const routes = extractRoutes(source, 'schema.graphql', 'graphql');
-      expect(routes.some(r => r.handler === 'health' && r.method === 'QUERY')).toBe(true);
+      expect(routes.some((r) => r.handler === 'health' && r.method === 'QUERY')).toBe(true);
     });
   });
 });
@@ -333,7 +333,7 @@ class UserService {
 }`;
     const results = extractSwiftApiCallSites(source, 'Services/UserService.swift');
     expect(results.length).toBeGreaterThan(0);
-    const urlEntry = results.find(r => r.signature.includes('/api/users'));
+    const urlEntry = results.find((r) => r.signature.includes('/api/users'));
     expect(urlEntry).toBeDefined();
     expect(urlEntry!.file).toBe('Services/UserService.swift');
     expect(urlEntry!.kind).toBe('constant');
@@ -350,8 +350,8 @@ class PostService {
     }
 }`;
     const results = extractSwiftApiCallSites(source, 'Services/PostService.swift');
-    const createEntry = results.find(r => r.signature === 'post.create');
-    const listEntry = results.find(r => r.signature === 'post.list');
+    const createEntry = results.find((r) => r.signature === 'post.create');
+    const listEntry = results.find((r) => r.signature === 'post.list');
     expect(createEntry).toBeDefined();
     expect(listEntry).toBeDefined();
     expect(createEntry!.file).toBe('Services/PostService.swift');
@@ -383,7 +383,7 @@ class Service {
     func b() async throws { return try await client.get("/api/posts") }
 }`;
     const results = extractSwiftApiCallSites(source, 'Services/Service.swift');
-    const posts = results.filter(r => r.signature === '/api/posts');
+    const posts = results.filter((r) => r.signature === '/api/posts');
     // Should only appear once (deduped by value+file key)
     expect(posts).toHaveLength(1);
   });

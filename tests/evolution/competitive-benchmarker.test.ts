@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { benchmarkAgainstBestPractices } from '../../engine/evolution/competitive-benchmarker.js';
-import type { BenchmarkResult } from '../../engine/evolution/competitive-benchmarker.js';
 import type { RepoManifest } from '../../engine/types.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -59,7 +58,13 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 10 },
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],
@@ -78,7 +83,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const rateLimitResult = results.find(r => r.practice.toLowerCase().includes('rate limit'));
+      const rateLimitResult = results.find((r) => r.practice.toLowerCase().includes('rate limit'));
 
       expect(rateLimitResult).toBeDefined();
       expect(rateLimitResult!.status).toBe('missing');
@@ -91,21 +96,25 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],
         },
         dependencies: {
           internal: [],
-          external: [
-            { name: 'express-rate-limit', version: '^7.0.0', dev: false },
-          ],
+          external: [{ name: 'express-rate-limit', version: '^7.0.0', dev: false }],
         },
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const rateLimitResult = results.find(r => r.practice.toLowerCase().includes('rate limit'));
+      const rateLimitResult = results.find((r) => r.practice.toLowerCase().includes('rate limit'));
 
       expect(rateLimitResult).toBeDefined();
       expect(rateLimitResult!.status).toBe('present');
@@ -117,7 +126,13 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/data', handler: 'getData', file: 'src/routes.ts', line: 5 },
+            {
+              method: 'GET',
+              path: '/api/data',
+              handler: 'getData',
+              file: 'src/routes.ts',
+              line: 5,
+            },
           ],
           procedures: [],
           exports: [],
@@ -129,8 +144,10 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const securityResult = results.find(r =>
-        r.practice.toLowerCase().includes('security header') || r.practice.toLowerCase().includes('helmet')
+      const securityResult = results.find(
+        (r) =>
+          r.practice.toLowerCase().includes('security header') ||
+          r.practice.toLowerCase().includes('helmet'),
       );
 
       expect(securityResult).toBeDefined();
@@ -143,22 +160,28 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/data', handler: 'getData', file: 'src/routes.ts', line: 5 },
+            {
+              method: 'GET',
+              path: '/api/data',
+              handler: 'getData',
+              file: 'src/routes.ts',
+              line: 5,
+            },
           ],
           procedures: [],
           exports: [],
         },
         dependencies: {
           internal: [],
-          external: [
-            { name: 'helmet', version: '^7.0.0', dev: false },
-          ],
+          external: [{ name: 'helmet', version: '^7.0.0', dev: false }],
         },
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const securityResult = results.find(r =>
-        r.practice.toLowerCase().includes('security header') || r.practice.toLowerCase().includes('helmet')
+      const securityResult = results.find(
+        (r) =>
+          r.practice.toLowerCase().includes('security header') ||
+          r.practice.toLowerCase().includes('helmet'),
       );
 
       expect(securityResult).toBeDefined();
@@ -171,7 +194,13 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 10 },
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],
@@ -188,7 +217,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const validationResult = results.find(r => r.practice.toLowerCase().includes('validation'));
+      const validationResult = results.find((r) => r.practice.toLowerCase().includes('validation'));
 
       expect(validationResult).toBeDefined();
       expect(validationResult!.status).toBe('missing');
@@ -202,7 +231,13 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],
@@ -210,7 +245,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const healthResult = results.find(r => r.practice.toLowerCase().includes('health check'));
+      const healthResult = results.find((r) => r.practice.toLowerCase().includes('health check'));
 
       expect(healthResult).toBeDefined();
       expect(healthResult!.status).toBe('missing');
@@ -222,8 +257,20 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/health', handler: 'healthCheck', file: 'src/routes.ts', line: 1 },
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
+            {
+              method: 'GET',
+              path: '/health',
+              handler: 'healthCheck',
+              file: 'src/routes.ts',
+              line: 1,
+            },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],
@@ -231,7 +278,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const healthResult = results.find(r => r.practice.toLowerCase().includes('health check'));
+      const healthResult = results.find((r) => r.practice.toLowerCase().includes('health check'));
 
       expect(healthResult).toBeDefined();
       expect(healthResult!.status).toBe('present');
@@ -243,8 +290,20 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
-            { method: 'GET', path: '/api/posts', handler: 'getPosts', file: 'src/routes.ts', line: 20 },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes.ts',
+              line: 10,
+            },
+            {
+              method: 'GET',
+              path: '/api/posts',
+              handler: 'getPosts',
+              file: 'src/routes.ts',
+              line: 20,
+            },
           ],
           procedures: [],
           exports: [],
@@ -252,7 +311,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const paginationResult = results.find(r => r.practice.toLowerCase().includes('pagination'));
+      const paginationResult = results.find((r) => r.practice.toLowerCase().includes('pagination'));
 
       expect(paginationResult).toBeDefined();
       expect(paginationResult!.status).toBe('missing');
@@ -266,19 +325,50 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/health', handler: 'healthCheck', file: 'src/routes.ts', line: 1 },
-            { method: 'GET', path: '/api/v1/users', handler: 'getUsersPaginated', file: 'src/routes.ts', line: 10, outputType: 'PaginatedUserList' },
-            { method: 'POST', path: '/api/v1/users', handler: 'createUser', file: 'src/routes.ts', line: 20, inputType: 'CreateUserInput' },
+            {
+              method: 'GET',
+              path: '/health',
+              handler: 'healthCheck',
+              file: 'src/routes.ts',
+              line: 1,
+            },
+            {
+              method: 'GET',
+              path: '/api/v1/users',
+              handler: 'getUsersPaginated',
+              file: 'src/routes.ts',
+              line: 10,
+              outputType: 'PaginatedUserList',
+            },
+            {
+              method: 'POST',
+              path: '/api/v1/users',
+              handler: 'createUser',
+              file: 'src/routes.ts',
+              line: 20,
+              inputType: 'CreateUserInput',
+            },
           ],
           procedures: [],
           exports: [
-            { name: 'errorHandler', kind: 'function', signature: 'function errorHandler()', file: 'src/middleware.ts', line: 1 },
+            {
+              name: 'errorHandler',
+              kind: 'function',
+              signature: 'function errorHandler()',
+              file: 'src/middleware.ts',
+              line: 1,
+            },
           ],
         },
         typeRegistry: {
           types: [],
           schemas: [
-            { name: 'CreateUserInput', kind: 'zod', fields: [], source: { repo: 'backend', file: 'src/schemas.ts', line: 1 } },
+            {
+              name: 'CreateUserInput',
+              kind: 'zod',
+              fields: [],
+              source: { repo: 'backend', file: 'src/schemas.ts', line: 1 },
+            },
           ],
           models: [],
         },
@@ -302,7 +392,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const presentCount = results.filter(r => r.status === 'present').length;
+      const presentCount = results.filter((r) => r.status === 'present').length;
       const totalCount = results.length;
 
       // Should be mostly present
@@ -317,7 +407,13 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'typescript',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/data', handler: 'getData', file: 'src/routes.ts', line: 5 },
+            {
+              method: 'GET',
+              path: '/api/data',
+              handler: 'getData',
+              file: 'src/routes.ts',
+              line: 5,
+            },
           ],
           procedures: [],
           exports: [],
@@ -364,8 +460,20 @@ describe('benchmarkAgainstBestPractices', () => {
         apiSurface: {
           // Spurious routes from window.get() in JS documentation files
           routes: [
-            { method: 'GET', path: 'window', handler: '', file: 'HUSTLEXP-DOCS/reference/components/BottomSheet.js', line: 44 },
-            { method: 'GET', path: 'window', handler: '', file: 'HUSTLEXP-DOCS/reference/components/Modal.js', line: 12 },
+            {
+              method: 'GET',
+              path: 'window',
+              handler: '',
+              file: 'HUSTLEXP-DOCS/reference/components/BottomSheet.js',
+              line: 44,
+            },
+            {
+              method: 'GET',
+              path: 'window',
+              handler: '',
+              file: 'HUSTLEXP-DOCS/reference/components/Modal.js',
+              line: 12,
+            },
           ],
           procedures: [],
           exports: [],
@@ -374,13 +482,13 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      expect(results.find(r => r.practice === 'CORS configuration')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Rate limiting')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Security headers (Helmet)')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Error handling middleware')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Structured logging')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Health check endpoint')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Request validation')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'CORS configuration')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Rate limiting')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Security headers (Helmet)')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Error handling middleware')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Structured logging')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Health check endpoint')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Request validation')).toBeUndefined();
     });
 
     it('skips all server checks for markdown repos even if spurious JS routes are present', () => {
@@ -389,7 +497,13 @@ describe('benchmarkAgainstBestPractices', () => {
         language: 'markdown',
         apiSurface: {
           routes: [
-            { method: 'GET', path: 'window', handler: '', file: 'reference/components/EntryScreen.js', line: 8 },
+            {
+              method: 'GET',
+              path: 'window',
+              handler: '',
+              file: 'reference/components/EntryScreen.js',
+              line: 8,
+            },
           ],
           procedures: [],
           exports: [],
@@ -398,9 +512,9 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      expect(results.find(r => r.practice === 'CORS configuration')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Rate limiting')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Security headers (Helmet)')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'CORS configuration')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Rate limiting')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Security headers (Helmet)')).toBeUndefined();
     });
 
     it('still checks server practices for typescript repos with routes', () => {
@@ -408,7 +522,15 @@ describe('benchmarkAgainstBestPractices', () => {
         repoId: 'backend',
         language: 'typescript',
         apiSurface: {
-          routes: [{ method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 1 }],
+          routes: [
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes.ts',
+              line: 1,
+            },
+          ],
           procedures: [],
           exports: [],
         },
@@ -417,8 +539,8 @@ describe('benchmarkAgainstBestPractices', () => {
 
       const results = benchmarkAgainstBestPractices([manifest]);
       // Server checks SHOULD fire for TypeScript backends
-      expect(results.find(r => r.practice === 'Rate limiting')).toBeDefined();
-      expect(results.find(r => r.practice === 'CORS configuration')).toBeDefined();
+      expect(results.find((r) => r.practice === 'Rate limiting')).toBeDefined();
+      expect(results.find((r) => r.practice === 'CORS configuration')).toBeDefined();
     });
   });
 
@@ -427,7 +549,15 @@ describe('benchmarkAgainstBestPractices', () => {
       const manifest = makeManifest({
         repoId: 'hono-backend',
         apiSurface: {
-          routes: [{ method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/index.ts', line: 5 }],
+          routes: [
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/index.ts',
+              line: 5,
+            },
+          ],
           procedures: [],
           exports: [],
         },
@@ -438,7 +568,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const cors = results.find(r => r.practice === 'CORS configuration');
+      const cors = results.find((r) => r.practice === 'CORS configuration');
       // Hono bundles cors() — should never be 'missing'
       expect(cors?.status).not.toBe('missing');
     });
@@ -447,7 +577,15 @@ describe('benchmarkAgainstBestPractices', () => {
       const manifest = makeManifest({
         repoId: 'hono-backend',
         apiSurface: {
-          routes: [{ method: 'GET', path: '/api/items', handler: 'getItems', file: 'src/index.ts', line: 5 }],
+          routes: [
+            {
+              method: 'GET',
+              path: '/api/items',
+              handler: 'getItems',
+              file: 'src/index.ts',
+              line: 5,
+            },
+          ],
           procedures: [],
           exports: [],
         },
@@ -458,7 +596,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const helmet = results.find(r => r.practice === 'Security headers (Helmet)');
+      const helmet = results.find((r) => r.practice === 'Security headers (Helmet)');
       expect(helmet?.status).not.toBe('missing');
     });
 
@@ -471,13 +609,13 @@ describe('benchmarkAgainstBestPractices', () => {
 
       const results = benchmarkAgainstBestPractices([manifest]);
       // None of these server checks should fire for an iOS/frontend repo
-      expect(results.find(r => r.practice === 'CORS configuration')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Rate limiting')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Security headers (Helmet)')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Error handling middleware')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Structured logging')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Health check endpoint')).toBeUndefined();
-      expect(results.find(r => r.practice === 'Request validation')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'CORS configuration')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Rate limiting')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Security headers (Helmet)')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Error handling middleware')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Structured logging')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Health check endpoint')).toBeUndefined();
+      expect(results.find((r) => r.practice === 'Request validation')).toBeUndefined();
     });
   });
 
@@ -486,8 +624,17 @@ describe('benchmarkAgainstBestPractices', () => {
       const manifest = makeManifest({
         repoId: 'hono-backend',
         apiSurface: {
-          routes: [{ method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/index.ts', line: 1 }],
-          procedures: [], exports: [],
+          routes: [
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/index.ts',
+              line: 1,
+            },
+          ],
+          procedures: [],
+          exports: [],
         },
         dependencies: {
           internal: [],
@@ -496,7 +643,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const rl = results.find(r => r.practice.toLowerCase().includes('rate limit'));
+      const rl = results.find((r) => r.practice.toLowerCase().includes('rate limit'));
       expect(rl).toBeDefined();
       expect(rl!.status).toBe('present');
     });
@@ -505,8 +652,17 @@ describe('benchmarkAgainstBestPractices', () => {
       const manifest = makeManifest({
         repoId: 'hono-backend',
         apiSurface: {
-          routes: [{ method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/index.ts', line: 1 }],
-          procedures: [], exports: [],
+          routes: [
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/index.ts',
+              line: 1,
+            },
+          ],
+          procedures: [],
+          exports: [],
         },
         dependencies: {
           internal: [],
@@ -515,7 +671,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const rl = results.find(r => r.practice.toLowerCase().includes('rate limit'));
+      const rl = results.find((r) => r.practice.toLowerCase().includes('rate limit'));
       expect(rl).toBeDefined();
       expect(rl!.status).toBe('present');
     });
@@ -524,8 +680,11 @@ describe('benchmarkAgainstBestPractices', () => {
       const manifest = makeManifest({
         repoId: 'fastify-backend',
         apiSurface: {
-          routes: [{ method: 'GET', path: '/api/data', handler: 'getData', file: 'src/index.ts', line: 1 }],
-          procedures: [], exports: [],
+          routes: [
+            { method: 'GET', path: '/api/data', handler: 'getData', file: 'src/index.ts', line: 1 },
+          ],
+          procedures: [],
+          exports: [],
         },
         dependencies: {
           internal: [],
@@ -534,8 +693,10 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const sec = results.find(r =>
-        r.practice.toLowerCase().includes('security header') || r.practice.toLowerCase().includes('helmet')
+      const sec = results.find(
+        (r) =>
+          r.practice.toLowerCase().includes('security header') ||
+          r.practice.toLowerCase().includes('helmet'),
       );
       expect(sec).toBeDefined();
       expect(sec!.status).toBe('present');
@@ -545,8 +706,17 @@ describe('benchmarkAgainstBestPractices', () => {
       const manifest = makeManifest({
         repoId: 'hono-backend',
         apiSurface: {
-          routes: [{ method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/index.ts', line: 1 }],
-          procedures: [], exports: [],
+          routes: [
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/index.ts',
+              line: 1,
+            },
+          ],
+          procedures: [],
+          exports: [],
         },
         dependencies: {
           internal: [],
@@ -555,7 +725,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const log = results.find(r => r.practice.toLowerCase().includes('logging'));
+      const log = results.find((r) => r.practice.toLowerCase().includes('logging'));
       expect(log).toBeDefined();
       expect(log!.status).toBe('present');
     });
@@ -564,8 +734,17 @@ describe('benchmarkAgainstBestPractices', () => {
       const manifest = makeManifest({
         repoId: 'hono-backend',
         apiSurface: {
-          routes: [{ method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/index.ts', line: 1 }],
-          procedures: [], exports: [],
+          routes: [
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/index.ts',
+              line: 1,
+            },
+          ],
+          procedures: [],
+          exports: [],
         },
         dependencies: {
           internal: [],
@@ -574,7 +753,7 @@ describe('benchmarkAgainstBestPractices', () => {
       });
 
       const results = benchmarkAgainstBestPractices([manifest]);
-      const cors = results.find(r => r.practice.toLowerCase().includes('cors'));
+      const cors = results.find((r) => r.practice.toLowerCase().includes('cors'));
       expect(cors).toBeDefined();
       expect(cors!.status).toBe('present');
     });

@@ -127,14 +127,16 @@ function makeTypeLineage(name: string): TypeLineage {
   };
 }
 
-function makeGraph(opts: {
-  commitCount?: number;
-  bridgeCount?: number;
-  mismatchCount?: number;
-  typeLineageCount?: number;
-  impactCount?: number;
-  typeCount?: number;
-} = {}): EcosystemGraph {
+function makeGraph(
+  opts: {
+    commitCount?: number;
+    bridgeCount?: number;
+    mismatchCount?: number;
+    typeLineageCount?: number;
+    impactCount?: number;
+    typeCount?: number;
+  } = {},
+): EcosystemGraph {
   const {
     commitCount = 5,
     bridgeCount = 3,
@@ -182,7 +184,9 @@ function makeGraph(opts: {
   return {
     repos: [backend, ios],
     bridges: Array.from({ length: bridgeCount }, (_, i) => makeBridge(i)),
-    sharedTypes: Array.from({ length: typeLineageCount }, (_, i) => makeTypeLineage(`SharedType${i}`)),
+    sharedTypes: Array.from({ length: typeLineageCount }, (_, i) =>
+      makeTypeLineage(`SharedType${i}`),
+    ),
     contractMismatches: Array.from({ length: mismatchCount }, (_, i) => makeMismatch(i)),
     impactPaths: Array.from({ length: impactCount }, (_, i) => makeImpactPath(i)),
   };
@@ -321,11 +325,17 @@ describe('focus mode', () => {
     const withFocus = pruneToTokenBudget(graph, 200, 'changed-files-first', 'commits');
     const withoutFocus = pruneToTokenBudget(graph, 200, 'changed-files-first');
 
-    const focusDroppedCommits = withFocus.droppedItems.filter(d => d.startsWith('commit:')).length;
-    const focusDroppedTypes = withFocus.droppedItems.filter(d => d.startsWith('type:')).length;
+    const focusDroppedCommits = withFocus.droppedItems.filter((d) =>
+      d.startsWith('commit:'),
+    ).length;
+    const focusDroppedTypes = withFocus.droppedItems.filter((d) => d.startsWith('type:')).length;
 
-    const defaultDroppedCommits = withoutFocus.droppedItems.filter(d => d.startsWith('commit:')).length;
-    const defaultDroppedTypes = withoutFocus.droppedItems.filter(d => d.startsWith('type:')).length;
+    const defaultDroppedCommits = withoutFocus.droppedItems.filter((d) =>
+      d.startsWith('commit:'),
+    ).length;
+    const defaultDroppedTypes = withoutFocus.droppedItems.filter((d) =>
+      d.startsWith('type:'),
+    ).length;
 
     // focus='commits': commits should be preserved — fewer commits dropped than in default
     expect(focusDroppedCommits).toBeLessThanOrEqual(defaultDroppedCommits);
@@ -335,10 +345,12 @@ describe('focus mode', () => {
 
     // The pruned graph with focus should have at least as many commits as without focus
     const focusRemainingCommits = withFocus.graph.repos.reduce(
-      (sum, r) => sum + r.gitState.recentCommits.length, 0,
+      (sum, r) => sum + r.gitState.recentCommits.length,
+      0,
     );
     const defaultRemainingCommits = withoutFocus.graph.repos.reduce(
-      (sum, r) => sum + r.gitState.recentCommits.length, 0,
+      (sum, r) => sum + r.gitState.recentCommits.length,
+      0,
     );
     expect(focusRemainingCommits).toBeGreaterThanOrEqual(defaultRemainingCommits);
   });
@@ -358,18 +370,22 @@ describe('focus mode', () => {
     const withFocus = pruneToTokenBudget(graph, 200, 'changed-files-first', 'api-surface');
     const withoutFocus = pruneToTokenBudget(graph, 200, 'changed-files-first');
 
-    const focusDroppedRoutes = withFocus.droppedItems.filter(d => d.startsWith('route:')).length;
-    const defaultDroppedRoutes = withoutFocus.droppedItems.filter(d => d.startsWith('route:')).length;
+    const focusDroppedRoutes = withFocus.droppedItems.filter((d) => d.startsWith('route:')).length;
+    const defaultDroppedRoutes = withoutFocus.droppedItems.filter((d) =>
+      d.startsWith('route:'),
+    ).length;
 
     // focus='api-surface': routes should be preserved — fewer or equal routes dropped vs default
     expect(focusDroppedRoutes).toBeLessThanOrEqual(defaultDroppedRoutes);
 
     // With focus='api-surface', remaining routes should be >= default remaining routes
     const focusRemainingRoutes = withFocus.graph.repos.reduce(
-      (sum, r) => sum + r.apiSurface.routes.length, 0,
+      (sum, r) => sum + r.apiSurface.routes.length,
+      0,
     );
     const defaultRemainingRoutes = withoutFocus.graph.repos.reduce(
-      (sum, r) => sum + r.apiSurface.routes.length, 0,
+      (sum, r) => sum + r.apiSurface.routes.length,
+      0,
     );
     expect(focusRemainingRoutes).toBeGreaterThanOrEqual(defaultRemainingRoutes);
   });

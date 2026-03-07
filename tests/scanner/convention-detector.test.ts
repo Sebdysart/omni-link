@@ -12,9 +12,7 @@ describe('convention-detector', () => {
   });
 
   it('detects snake_case naming in Python', () => {
-    const files = [
-      { path: 'src/user_service.py', exports: ['create_user', 'delete_user'] },
-    ];
+    const files = [{ path: 'src/user_service.py', exports: ['create_user', 'delete_user'] }];
     const conventions = detectConventions(files, 'python');
     expect(conventions.naming).toBe('snake_case');
   });

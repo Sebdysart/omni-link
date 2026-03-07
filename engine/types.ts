@@ -96,12 +96,7 @@ export interface ModelDef {
   source: { repo: string; file: string; line: number };
 }
 
-export type NamingConvention =
-  | 'camelCase'
-  | 'snake_case'
-  | 'PascalCase'
-  | 'kebab-case'
-  | 'mixed';
+export type NamingConvention = 'camelCase' | 'snake_case' | 'PascalCase' | 'kebab-case' | 'mixed';
 
 export interface InternalDep {
   from: string;
@@ -222,6 +217,7 @@ export interface EcosystemDigest {
   conventionSummary: Record<string, string>;
   apiSurfaceSummary: string;
   recentChangesSummary: string;
+  architectureDiagram?: string;
   tokenCount: number;
 }
 

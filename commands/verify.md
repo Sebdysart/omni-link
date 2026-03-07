@@ -24,6 +24,7 @@ The Validator agent runs automatically after code generation when anti-hallucina
 ```
 
 This dispatches the `validator` agent with:
+
 - The most recently generated code block as input
 - The current ecosystem digest as reference
 - Read-only access to scan the actual codebase for verification
@@ -33,12 +34,15 @@ This dispatches the `validator` agent with:
 The Validator returns one of three verdicts:
 
 ### PASS
+
 All checks passed. Imports verified, API calls confirmed, no placeholders, no phantom packages. Code is safe to present or commit.
 
 ### FAIL
+
 One or more error-severity violations found. The specific violations are listed with line numbers and fix instructions. **Do not commit until the main agent fixes all violations and re-runs /verify.**
 
 ### INCONCLUSIVE
+
 The Validator could not fully verify one or more references (e.g., files outside the scanned repos, dynamic imports). Treat as FAIL for cross-repo code; treat as advisory for within-repo code.
 
 ## After a FAIL
@@ -55,6 +59,7 @@ Run `/scan` to refresh the ecosystem manifest, then run `/verify` again. If stil
 ## Anti-Hallucination Guarantee
 
 When `/verify` returns PASS, you have a structural guarantee that:
+
 - Every import path resolves to a real file in the scanned codebase
 - Every package name is in the project dependency list
 - Every API call targets a route that exists in the manifest

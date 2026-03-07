@@ -21,12 +21,14 @@ This skill handles planning work that spans multiple repositories. It ensures ta
 Changes MUST be ordered so that the **provider** (the repo that defines the API/type) is updated before the **consumer** (the repo that calls/uses it).
 
 **Correct order:**
+
 1. Shared types / schemas (if a shared-types repo exists)
 2. Backend / API provider
 3. Frontend / mobile client (consumer)
 4. Tests across all repos
 
 **Wrong order:**
+
 - Updating the iOS client before the backend endpoint exists
 - Changing a shared type without updating the provider first
 
@@ -112,6 +114,7 @@ After each phase, validate:
 4. **No regressions**: Has the health score degraded? (Run `/health`)
 
 If validation fails at any checkpoint:
+
 - STOP the plan
 - Identify the mismatch
 - Fix it before proceeding to the next phase

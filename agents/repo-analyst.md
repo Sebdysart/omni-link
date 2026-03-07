@@ -78,34 +78,40 @@ Return analysis in this structure:
 ## Repo Analysis: [repo-name]
 
 ### Structure
+
 - Language: [detected]
 - Entry points: [list]
 - Key directories: [list with purpose]
 - File count: [number]
 
 ### Dependency Health
+
 - Internal imports: [count] chains
 - Circular dependencies: [count] — [details if any]
 - Orphaned files: [count] — [list]
 - Top external dependencies: [top 5 by usage]
 
 ### Dead Code
+
 - Unused exports: [count]
 - Safe to remove: [list with files]
 - Needs verification: [list — may be dynamically referenced]
 
 ### Test Coverage
+
 - Tested modules: [count]/[total]
 - Critical untested paths: [list]
 - Suggested test additions: [list]
 
 ### TODO Burden
+
 - Total: [count]
 - By category: [TODO: N, FIXME: N, HACK: N]
 - Stale (>30 days): [count]
 - Sample: [top 3 most important]
 
 ### Recommendations
+
 1. [Highest priority action]
 2. [Second priority]
 3. [Third priority]

@@ -13,6 +13,7 @@
 ### Task 1: Bake Uncertainty + CoT Instructions into All Agent Files
 
 **Files:**
+
 - Modify: `agents/cross-repo-reviewer.md`
 - Modify: `agents/evolution-strategist.md`
 - Modify: `agents/repo-analyst.md`
@@ -100,6 +101,7 @@ git commit -m "feat: add anti-hallucination protocol to all agent prompts"
 ### Task 2: Create the Validator Agent
 
 **Files:**
+
 - Create: `agents/validator.md`
 
 **Context:** A Validator agent is a dedicated critic sub-agent whose only job is to examine generated code and return a structured PASS/FAIL verdict. It is dispatched by the `/verify` command (Task 3). It has access only to Read, Grep, Glob — it cannot modify files.
@@ -128,7 +130,7 @@ Expected: FAIL — validator.md does not exist.
 
 **Step 3: Create `agents/validator.md`**
 
-```markdown
+````markdown
 ---
 name: validator
 description: Critic agent that examines generated code for hallucinated imports, phantom packages, unverified API calls, and placeholder patterns. Returns a structured PASS/FAIL verdict.
@@ -159,27 +161,32 @@ A read-only critic agent that examines generated code before it is presented to 
 For each code block provided, check ALL of the following:
 
 ### 1. Import Verification
+
 - [ ] Every `import from '...'` path either starts with `.` (relative) or is a known npm package
 - [ ] Every named import (`{ Foo }`) actually exists as an export in that module — verify by reading the file at the import path
 - [ ] No package appears in imports that is not in `package.json` dependencies or devDependencies
 
 ### 2. API Call Verification
+
 - [ ] Every `fetch('/api/...')` URL exists as a route in the ecosystem digest
 - [ ] Every `trpc.X.Y.query()` or `trpc.X.Y.mutate()` procedure name matches the scanned procedure list exactly
 - [ ] HTTP methods (GET, POST, PUT, DELETE) match what the route actually accepts
 
 ### 3. Type Reference Verification
+
 - [ ] Every type name used in the generated code exists in the ecosystem type registry
 - [ ] Field names accessed on objects match the actual fields in the type definition (check `TypeDef.fields`)
 - [ ] Optional vs. required fields are handled correctly (no missing `?` or `!`)
 
 ### 4. Placeholder Detection
+
 - [ ] No `// TODO`, `// FIXME`, `// HACK`, `// XXX` comments
 - [ ] No `throw new Error('not implemented')`
 - [ ] No `console.log('implement ...')` or similar placeholder logs
 - [ ] No `return null` or `return undefined` in functions that should return data
 
 ### 5. Phantom Package Detection
+
 - [ ] Every external package import exists in the project's `package.json`
 - [ ] Package names are exact (e.g., `lodash-es` is different from `lodash`)
 
@@ -191,6 +198,7 @@ Return the verdict in this exact format:
 ## Validator Verdict: [PASS / FAIL]
 
 ### Checks Run
+
 - [x] Import verification
 - [x] API call verification
 - [x] Type reference verification
@@ -204,8 +212,10 @@ Return the verdict in this exact format:
    - Fix required: [specific correction]
 
 ### Confidence
+
 [HIGH / MEDIUM / LOW] — [one sentence explaining confidence level and any uncertainty]
 ```
+````
 
 ## Iron Laws
 
@@ -214,13 +224,14 @@ Return the verdict in this exact format:
 3. **Never modify files.** This agent reads and reports only.
 4. **Cite line numbers.** Every violation must include the line number in the generated code.
 5. **Express uncertainty.** If you cannot verify an import because the target file is outside the scanned repos, say INCONCLUSIVE with explanation — never guess PASS.
-```
+
+````
 
 **Step 4: Run test to verify it passes**
 
 ```bash
 npx vitest run tests/agents/anti-hallucination-prefix.test.ts
-```
+````
 
 Expected: PASS — all tests pass including the new validator.md test.
 
@@ -236,6 +247,7 @@ git commit -m "feat: add validator critic agent for anti-hallucination review"
 ### Task 3: Create the /verify Slash Command
 
 **Files:**
+
 - Create: `commands/verify.md`
 
 **Context:** The `/verify` command lets users explicitly request a validation pass on code Claude just generated. It reads the code from the conversation context, dispatches the Validator agent, and presents the structured PASS/FAIL verdict.
@@ -285,9 +297,10 @@ Dispatch the **Validator** critic agent against the most recently generated code
 ## Execution
 
 The Validator agent runs automatically after code generation when anti-hallucination mode is active. To trigger manually:
-
 ```
+
 /verify
+
 ```
 
 This dispatches the `validator` agent with:
@@ -350,6 +363,7 @@ git commit -m "feat: add /verify command dispatching validator critic agent"
 ### Task 4: Neurosymbolic Rule Engine
 
 **Files:**
+
 - Create: `engine/quality/rule-engine.ts`
 - Create: `tests/quality/rule-engine.test.ts`
 - Modify: `engine/index.ts` (add `ruleViolations` to `QualityCheckResult`)
@@ -379,7 +393,7 @@ describe('checkRules', () => {
   it('flags fetch() without error handling', () => {
     const code = `const data = await fetch('/api/users');\nconsole.log(data);`;
     const result = checkRules(code, 'src/app.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-fetch-without-catch');
+    const violation = result.violations.find((v) => v.ruleId === 'no-fetch-without-catch');
     expect(violation).toBeDefined();
     expect(violation!.severity).toBe('error');
   });
@@ -387,14 +401,14 @@ describe('checkRules', () => {
   it('flags process.env access without fallback', () => {
     const code = `const key = process.env.SECRET_KEY;\nconsole.log(key);`;
     const result = checkRules(code, 'src/config.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-raw-env-access');
+    const violation = result.violations.find((v) => v.ruleId === 'no-raw-env-access');
     expect(violation).toBeDefined();
   });
 
   it('flags TypeScript as any cast in non-test files', () => {
     const code = `const x = response as any;\nx.doSomething();`;
     const result = checkRules(code, 'src/service.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-any-cast');
+    const violation = result.violations.find((v) => v.ruleId === 'no-any-cast');
     expect(violation).toBeDefined();
     expect(violation!.severity).toBe('warning');
   });
@@ -402,14 +416,14 @@ describe('checkRules', () => {
   it('does NOT flag as any in test files', () => {
     const code = `const x = response as any;\nx.doSomething();`;
     const result = checkRules(code, 'tests/service.test.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-any-cast');
+    const violation = result.violations.find((v) => v.ruleId === 'no-any-cast');
     expect(violation).toBeUndefined();
   });
 
   it('flags hardcoded secret patterns', () => {
     const code = `const apiKey = 'sk-1234567890abcdef1234567890abcdef';`;
     const result = checkRules(code, 'src/config.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-hardcoded-secret');
+    const violation = result.violations.find((v) => v.ruleId === 'no-hardcoded-secret');
     expect(violation).toBeDefined();
     expect(violation!.severity).toBe('error');
   });
@@ -464,7 +478,9 @@ export interface RuleCheckResult {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isTestFile(file: string): boolean {
-  return /\.(test|spec)\.[tj]s$/.test(file) || file.includes('/tests/') || file.includes('/__tests__/');
+  return (
+    /\.(test|spec)\.[tj]s$/.test(file) || file.includes('/tests/') || file.includes('/__tests__/')
+  );
 }
 
 function findLineNumber(lines: string[], index: number): number {
@@ -487,7 +503,8 @@ const noFetchWithoutCatch: HardRule = {
 
       // Check if this line or next 5 lines contain .catch( or are inside try {
       const window = lines.slice(Math.max(0, i - 3), i + 6).join('\n');
-      const hasCatch = window.includes('.catch(') || window.includes('try {') || window.includes('try{');
+      const hasCatch =
+        window.includes('.catch(') || window.includes('try {') || window.includes('try{');
       if (!hasCatch) {
         violations.push({
           ruleId: 'no-fetch-without-catch',
@@ -618,7 +635,7 @@ export function checkRules(
     violations.push(...rule.check(code, file));
   }
 
-  const hasError = violations.some(v => v.severity === 'error');
+  const hasError = violations.some((v) => v.severity === 'error');
 
   return {
     passed: !hasError,
@@ -640,17 +657,20 @@ Expected: PASS — all 7 tests pass.
 In `engine/index.ts`, add to `QualityCheckResult` and `qualityCheck()`:
 
 At the top imports, add:
+
 ```typescript
 import { checkRules } from './quality/rule-engine.js';
 import type { RuleCheckResult } from './quality/rule-engine.js';
 ```
 
 Also add to `export type { ... }`:
+
 ```typescript
 RuleCheckResult,
 ```
 
 Change `QualityCheckResult` interface from:
+
 ```typescript
 export interface QualityCheckResult {
   references: ReferenceCheckResult;
@@ -658,7 +678,9 @@ export interface QualityCheckResult {
   slop: SlopCheckResult;
 }
 ```
+
 To:
+
 ```typescript
 export interface QualityCheckResult {
   references: ReferenceCheckResult;
@@ -669,31 +691,37 @@ export interface QualityCheckResult {
 ```
 
 In `qualityCheck()` return statement, change:
+
 ```typescript
-  return { references, conventions, slop };
+return { references, conventions, slop };
 ```
+
 To:
+
 ```typescript
-  const rules = checkRules(code, file);
-  return { references, conventions, slop, rules };
+const rules = checkRules(code, file);
+return { references, conventions, slop, rules };
 ```
 
 And for the early-return `if (!manifest)` case, change:
+
 ```typescript
-    return {
-      references: { valid: true, violations: [] },
-      conventions: { valid: true, violations: [] },
-      slop: { clean: true, issues: [] },
-    };
+return {
+  references: { valid: true, violations: [] },
+  conventions: { valid: true, violations: [] },
+  slop: { clean: true, issues: [] },
+};
 ```
+
 To:
+
 ```typescript
-    return {
-      references: { valid: true, violations: [] },
-      conventions: { valid: true, violations: [] },
-      slop: { clean: true, issues: [] },
-      rules: { passed: true, violations: [] },
-    };
+return {
+  references: { valid: true, violations: [] },
+  conventions: { valid: true, violations: [] },
+  slop: { clean: true, issues: [] },
+  rules: { passed: true, violations: [] },
+};
 ```
 
 **Step 6: Run all tests to confirm nothing broke**
@@ -716,6 +744,7 @@ git commit -m "feat: add neurosymbolic rule engine with no-fetch-without-catch, 
 ### Task 5: Enrich Digest with Code Quote Snippets
 
 **Files:**
+
 - Modify: `engine/context/digest-formatter.ts`
 - Modify: `tests/context/digest-formatter.test.ts`
 
@@ -737,11 +766,13 @@ it('digest markdown includes Key Type Signatures section when types present', ()
     source: { repo: 'backend', file: 'src/types.ts', line: 10 },
   };
   const graph = makeGraph({
-    sharedTypes: [{
-      concept: 'UserProfile',
-      instances: [{ repo: 'backend', type }],
-      alignment: 'aligned',
-    }],
+    sharedTypes: [
+      {
+        concept: 'UserProfile',
+        instances: [{ repo: 'backend', type }],
+        alignment: 'aligned',
+      },
+    ],
   });
   const { markdown } = formatDigest(graph, makeConfig());
   expect(markdown).toContain('## Key Type Signatures');
@@ -752,21 +783,25 @@ it('digest markdown includes Key Type Signatures section when types present', ()
 
 it('digest markdown includes API Route Signatures section when routes present', () => {
   const graph = makeGraph({
-    repos: [makeRepo({
-      apiSurface: {
-        routes: [{
-          method: 'POST',
-          path: '/api/users',
-          handler: 'createUser',
-          file: 'src/routes/users.ts',
-          line: 42,
-          inputType: 'CreateUserInput',
-          outputType: 'UserProfile',
-        }],
-        procedures: [],
-        exports: [],
-      },
-    })],
+    repos: [
+      makeRepo({
+        apiSurface: {
+          routes: [
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes/users.ts',
+              line: 42,
+              inputType: 'CreateUserInput',
+              outputType: 'UserProfile',
+            },
+          ],
+          procedures: [],
+          exports: [],
+        },
+      }),
+    ],
   });
   const { markdown } = formatDigest(graph, makeConfig());
   expect(markdown).toContain('## API Route Signatures');
@@ -789,7 +824,7 @@ Expected: FAIL — the "Key Type Signatures" and "API Route Signatures" sections
 
 Add this helper function before the final `return { digest, markdown }`:
 
-```typescript
+````typescript
 function buildKeyTypeSignatures(graph: EcosystemGraph): string {
   if (graph.sharedTypes.length === 0) return '';
 
@@ -821,8 +856,8 @@ function buildKeyTypeSignatures(graph: EcosystemGraph): string {
 }
 
 function buildApiRouteSignatures(graph: EcosystemGraph): string {
-  const allRoutes = graph.repos.flatMap(r =>
-    r.apiSurface.routes.map(route => ({ repoId: r.repoId, route })),
+  const allRoutes = graph.repos.flatMap((r) =>
+    r.apiSurface.routes.map((route) => ({ repoId: r.repoId, route })),
   );
   if (allRoutes.length === 0) return '';
 
@@ -848,23 +883,23 @@ function buildApiRouteSignatures(graph: EcosystemGraph): string {
 
   return lines.join('\n');
 }
-```
+````
 
 Then in `formatDigest()`, after the `## Conventions` section push calls, add:
 
 ```typescript
-  // Key Type Signatures section (code quotes for grounding)
-  const typeSignatures = buildKeyTypeSignatures(graph);
-  if (typeSignatures) {
-    sections.push('');
-    sections.push(typeSignatures);
-  }
+// Key Type Signatures section (code quotes for grounding)
+const typeSignatures = buildKeyTypeSignatures(graph);
+if (typeSignatures) {
+  sections.push('');
+  sections.push(typeSignatures);
+}
 
-  // API Route Signatures section
-  const routeSignatures = buildApiRouteSignatures(graph);
-  if (routeSignatures) {
-    sections.push(routeSignatures);
-  }
+// API Route Signatures section
+const routeSignatures = buildApiRouteSignatures(graph);
+if (routeSignatures) {
+  sections.push(routeSignatures);
+}
 ```
 
 **Step 4: Run the tests**
@@ -895,6 +930,7 @@ git commit -m "feat: enrich digest with key type signatures and API route signat
 ### Task 6: Dry-Run / Simulate Mode
 
 **Files:**
+
 - Modify: `engine/types.ts` (add `simulateOnly?: boolean` to `OmniLinkConfig`)
 - Create: `engine/quality/simulate-guard.ts`
 - Create: `tests/quality/simulate-guard.test.ts`
@@ -915,7 +951,11 @@ function makeConfig(overrides: Partial<OmniLinkConfig> = {}): OmniLinkConfig {
   return {
     repos: [],
     evolution: { aggressiveness: 'moderate', maxSuggestionsPerSession: 5, categories: [] },
-    quality: { blockOnFailure: false, requireTestsForNewCode: false, conventionStrictness: 'moderate' },
+    quality: {
+      blockOnFailure: false,
+      requireTestsForNewCode: false,
+      conventionStrictness: 'moderate',
+    },
     context: { tokenBudget: 4000, prioritize: 'changed-files-first', includeRecentCommits: 5 },
     cache: { directory: '.cache', maxAgeDays: 1 },
     ...overrides,
@@ -996,7 +1036,7 @@ export interface OmniLinkConfig {
     directory: string;
     maxAgeDays: number;
   };
-  simulateOnly?: boolean;  // ← ADD THIS LINE
+  simulateOnly?: boolean; // ← ADD THIS LINE
 }
 ```
 
@@ -1017,7 +1057,7 @@ export class SimulateOnlyError extends Error {
   constructor(operation: string) {
     super(
       `[simulate-only] The '${operation}' operation was blocked because simulateOnly is enabled. ` +
-      `Review the plan and run /apply to execute for real.`,
+        `Review the plan and run /apply to execute for real.`,
     );
     this.name = 'SimulateOnlyError';
     this.operation = operation;
@@ -1076,6 +1116,7 @@ git commit -m "feat: add dry-run simulate-only mode with SimulateOnlyError guard
 ### Task 7: /apply Command + Uncertainty Checklist Skill
 
 **Files:**
+
 - Create: `commands/apply.md`
 - Create: `skills/uncertainty-checklist/SKILL.md`
 
@@ -1095,7 +1136,8 @@ it('commands/apply.md exists and references simulate-only mode', () => {
 
 it('skills/uncertainty-checklist/SKILL.md exists with checklist items', () => {
   const content = readFileSync(
-    resolve(process.cwd(), 'skills/uncertainty-checklist/SKILL.md'), 'utf8',
+    resolve(process.cwd(), 'skills/uncertainty-checklist/SKILL.md'),
+    'utf8',
   );
   expect(content).toContain('verified');
   expect(content).toContain('manifest');
@@ -1114,7 +1156,7 @@ Expected: FAIL — files don't exist.
 
 **Step 3: Create `commands/apply.md`**
 
-```markdown
+````markdown
 ---
 name: apply
 description: Execute operations that were previewed in simulate-only (dry-run) mode. Run /verify first, then /apply to commit the changes.
@@ -1140,6 +1182,7 @@ If any prerequisite is not met, resolve it before running `/apply`.
 ```bash
 omni-link apply --config <auto-detect>
 ```
+````
 
 This temporarily sets `simulateOnly: false` for the current execution, runs the full pipeline, and then restores the `simulateOnly: true` setting. It does NOT permanently change your config.
 
@@ -1165,7 +1208,8 @@ Run `/verify` again on any pending generated code to confirm it validates agains
 ## Disabling Dry-Run Permanently
 
 To disable dry-run mode entirely, remove or set `"simulateOnly": false` in your `~/.claude/omni-link.json` or `.omni-link.json` config file.
-```
+
+````
 
 **Step 4: Create `skills/uncertainty-checklist/SKILL.md`**
 
@@ -1230,13 +1274,15 @@ Work through each item in `<thinking>` tags. Only present code when all items pa
 
 If you find issues during the checklist, do NOT present the broken code. Instead:
 
-```
+````
+
 Before presenting this code, my uncertainty checklist flagged:
 
 1. [IMPORT] `./services/user-service` — I haven't verified this file exists. Running /scan to confirm.
 2. [TYPE] `UserProfile.phoneNumber` — the digest shows UserProfile has `id`, `email`, `role` but I cannot confirm `phoneNumber` without reading the type file.
 
 Pausing to verify before presenting.
+
 ```
 
 ## The Core Principle
@@ -1266,6 +1312,7 @@ git commit -m "feat: add /apply command and uncertainty-checklist self-audit ski
 ### Task 8: Update Meta-Skill + Version Bump to 0.3.0
 
 **Files:**
+
 - Modify: `skills/using-omni-link/SKILL.md`
 - Modify: `skills/anti-slop-gate/SKILL.md`
 - Modify: `package.json`
@@ -1280,9 +1327,7 @@ Add to `tests/agents/anti-hallucination-prefix.test.ts`:
 
 ```typescript
 it('skills/using-omni-link/SKILL.md documents max-tier features', () => {
-  const content = readFileSync(
-    resolve(process.cwd(), 'skills/using-omni-link/SKILL.md'), 'utf8',
-  );
+  const content = readFileSync(resolve(process.cwd(), 'skills/using-omni-link/SKILL.md'), 'utf8');
   expect(content).toContain('validator');
   expect(content).toContain('/verify');
   expect(content).toContain('/apply');
@@ -1291,16 +1336,12 @@ it('skills/using-omni-link/SKILL.md documents max-tier features', () => {
 });
 
 it('skills/anti-slop-gate/SKILL.md references rule engine', () => {
-  const content = readFileSync(
-    resolve(process.cwd(), 'skills/anti-slop-gate/SKILL.md'), 'utf8',
-  );
+  const content = readFileSync(resolve(process.cwd(), 'skills/anti-slop-gate/SKILL.md'), 'utf8');
   expect(content).toContain('rule engine');
 });
 
 it('package.json version is 0.3.0', () => {
-  const pkg = JSON.parse(
-    readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
-  );
+  const pkg = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'));
   expect(pkg.version).toBe('0.3.0');
 });
 ```
@@ -1316,11 +1357,13 @@ Expected: FAIL — meta-skill doesn't have new features documented.
 **Step 3: Update `skills/using-omni-link/SKILL.md`**
 
 Add the following to the Skill Registry table (after the existing rows):
+
 ```
 | `uncertainty-checklist` | Before presenting any generated code | Self-audit checklist for import/type/placeholder verification |
 ```
 
 Add the following to the Available Commands table (after the existing rows):
+
 ```
 | `/verify` | Dispatch Validator critic agent to review generated code |
 | `/apply`  | Execute operations previewed in dry-run (simulateOnly) mode |
@@ -1334,10 +1377,13 @@ Add a new section after the "Skill Registry" section:
 omni-link v0.3.0 introduces structural anti-hallucination safeguards across all layers:
 
 ### Agent Prompts
+
 All three sub-agents (`validator`, `cross-repo-reviewer`, `evolution-strategist`) include mandatory Anti-Hallucination Protocol sections requiring uncertainty disclosure, CoT verification in `<thinking>` tags, and evidence-before-assertion discipline.
 
 ### Validator Critic Agent
+
 A dedicated `validator` agent performs read-only verification of generated code:
+
 - Verifies every import resolves to a real file
 - Confirms every package exists in `package.json`
 - Validates every API call against the ecosystem manifest
@@ -1346,19 +1392,24 @@ A dedicated `validator` agent performs read-only verification of generated code:
 Dispatched via `/verify`. Returns PASS / FAIL / INCONCLUSIVE.
 
 ### Neurosymbolic Rule Engine
+
 Hard rules enforced via `checkRules()` in the quality pipeline:
+
 - `no-fetch-without-catch` — fetch() must have error handling
 - `no-raw-env-access` — process.env.X needs a `??` fallback
 - `no-any-cast` — `as any` banned in production code
 - `no-hardcoded-secret` — API keys must not be inlined
 
 ### Enriched Digest (Code Quotes)
+
 The ecosystem digest now includes actual type signatures and route signatures — not just counts. Claude can see the real field names and parameter types, eliminating hallucinated field access.
 
 ### Dry-Run Mode
+
 Set `simulateOnly: true` in your omni-link config to run all operations in preview mode. Use `/apply` to execute for real after human review.
 
 ### Uncertainty Checklist
+
 The `uncertainty-checklist` skill is a pre-presentation self-audit that Claude runs silently before showing code. It prevents overconfident wrong code from reaching the user.
 ```
 
@@ -1372,10 +1423,12 @@ After the existing "### 3. Slop Detector" section, add:
 Hard rules enforced on generated code by the rule engine:
 
 **Blocks on (severity: error):**
+
 - `no-fetch-without-catch`: `fetch()` without `.catch()` or try-catch within 5 lines
 - `no-hardcoded-secret`: API key / token / password pattern hardcoded in source
 
 **Warns on (severity: warning):**
+
 - `no-raw-env-access`: `process.env.X` without `??` fallback
 - `no-any-cast`: TypeScript `as any` in production (non-test) files
 ```
@@ -1416,15 +1469,15 @@ git push
 
 ## Summary of Changes
 
-| Task | What Gets Built | Files |
-|------|----------------|-------|
-| 1 | Anti-hallucination protocol in all agent prompts | `agents/*.md` |
-| 2 | Validator critic agent | `agents/validator.md` |
-| 3 | `/verify` slash command | `commands/verify.md` |
-| 4 | Neurosymbolic rule engine (4 hard rules + wiring) | `engine/quality/rule-engine.ts`, `engine/index.ts` |
-| 5 | Code quote enrichment in digest (types + routes) | `engine/context/digest-formatter.ts` |
-| 6 | Dry-run simulate-only mode | `engine/types.ts`, `engine/quality/simulate-guard.ts`, `engine/index.ts` |
-| 7 | `/apply` command + uncertainty-checklist skill | `commands/apply.md`, `skills/uncertainty-checklist/SKILL.md` |
-| 8 | Meta-skill docs update + v0.3.0 bump | `skills/using-omni-link/SKILL.md`, `skills/anti-slop-gate/SKILL.md`, `package.json`, plugin configs |
+| Task | What Gets Built                                   | Files                                                                                               |
+| ---- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1    | Anti-hallucination protocol in all agent prompts  | `agents/*.md`                                                                                       |
+| 2    | Validator critic agent                            | `agents/validator.md`                                                                               |
+| 3    | `/verify` slash command                           | `commands/verify.md`                                                                                |
+| 4    | Neurosymbolic rule engine (4 hard rules + wiring) | `engine/quality/rule-engine.ts`, `engine/index.ts`                                                  |
+| 5    | Code quote enrichment in digest (types + routes)  | `engine/context/digest-formatter.ts`                                                                |
+| 6    | Dry-run simulate-only mode                        | `engine/types.ts`, `engine/quality/simulate-guard.ts`, `engine/index.ts`                            |
+| 7    | `/apply` command + uncertainty-checklist skill    | `commands/apply.md`, `skills/uncertainty-checklist/SKILL.md`                                        |
+| 8    | Meta-skill docs update + v0.3.0 bump              | `skills/using-omni-link/SKILL.md`, `skills/anti-slop-gate/SKILL.md`, `package.json`, plugin configs |
 
 **No new npm packages required.** All implementations use only Node.js builtins and existing project dependencies.

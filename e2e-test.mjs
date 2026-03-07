@@ -55,7 +55,7 @@ ok(`resolveConfigPath found: ${configPath}`);
 
 const config = loadConfig(configPath);
 ok(`loadConfig parsed ${config.repos.length} repos`);
-config.repos.forEach(r => info(`  repo`, `${r.name} (${r.language}) at ${r.path}`));
+config.repos.forEach((r) => info(`  repo`, `${r.name} (${r.language}) at ${r.path}`));
 
 // ─── 1. Scan Pipeline ─────────────────────────────────────────────────────────
 
@@ -80,7 +80,10 @@ for (const m of manifests) {
   const exportCount = m.apiSurface.exports.length;
   const typeCount = m.typeRegistry.types.length;
   const schemaCount = m.typeRegistry.schemas.length;
-  info(`  ${m.repoId}`, `routes=${routeCount} procs=${procCount} exports=${exportCount} types=${typeCount} schemas=${schemaCount} branch=${m.gitState.branch}`);
+  info(
+    `  ${m.repoId}`,
+    `routes=${routeCount} procs=${procCount} exports=${exportCount} types=${typeCount} schemas=${schemaCount} branch=${m.gitState.branch}`,
+  );
 
   typeof m.repoId === 'string' && m.repoId.length > 0
     ? ok(`${m.repoId}: manifest has repoId`)
@@ -98,7 +101,9 @@ typeof graph === 'object' && Array.isArray(graph.repos)
 
 // Context digest
 typeof context.digest === 'object' && typeof context.markdown === 'string'
-  ? ok(`Context digest generated (${context.digest.tokenCount} tokens, markdown ${context.markdown.length} chars)`)
+  ? ok(
+      `Context digest generated (${context.digest.tokenCount} tokens, markdown ${context.markdown.length} chars)`,
+    )
   : fail('Context missing digest or markdown');
 
 context.digest.tokenCount > 0
@@ -114,16 +119,22 @@ const scanResult2 = scan(config);
 const scan2Ms = Math.round(performance.now() - t1);
 
 ok(`Second scan() completed in ${scan2Ms}ms (first was ${scanMs}ms)`);
-info('  cache effect', scan2Ms <= scanMs
-  ? 'second scan ≤ first (cache working or same speed)'
-  : `second scan slower by ${scan2Ms - scanMs}ms (may be OS cache warming)`);
+info(
+  '  cache effect',
+  scan2Ms <= scanMs
+    ? 'second scan ≤ first (cache working or same speed)'
+    : `second scan slower by ${scan2Ms - scanMs}ms (may be OS cache warming)`,
+);
 
 // Both should produce same manifest data
 const m1 = scanResult.manifests[0];
 const m2 = scanResult2.manifests[0];
 m1.repoId === m2.repoId && m1.gitState.headSha === m2.gitState.headSha
   ? ok(`Both scans produce identical manifests for ${m1.repoId}`)
-  : fail('Manifests differ between scans', `sha1=${m1.gitState.headSha} sha2=${m2.gitState.headSha}`);
+  : fail(
+      'Manifests differ between scans',
+      `sha1=${m1.gitState.headSha} sha2=${m2.gitState.headSha}`,
+    );
 
 // ─── 3. Type Inheritance Tracking (new — Task 6) ─────────────────────────────
 
@@ -140,7 +151,9 @@ for (const m of manifests) {
 }
 // Note: if no interfaces with extends exist in the scanned repos, this is still OK
 // We just verify the field exists on types that have it
-ok(`TypeDef.extends field tracked (${inheritedTypeFound ? 'found inherited types in repos' : 'no extends found in repos — field exists but unused'})`);
+ok(
+  `TypeDef.extends field tracked (${inheritedTypeFound ? 'found inherited types in repos' : 'no extends found in repos — field exists but unused'})`,
+);
 
 // ─── 4. Health Scoring ────────────────────────────────────────────────────────
 
@@ -161,7 +174,10 @@ typeof healthResult.perRepo === 'object'
   : fail('Missing perRepo scores');
 
 for (const [repo, score] of Object.entries(healthResult.perRepo)) {
-  info(`  ${repo}`, `score=${typeof score === 'number' ? score.toFixed(1) : JSON.stringify(score).slice(0, 60)}`);
+  info(
+    `  ${repo}`,
+    `score=${typeof score === 'number' ? score.toFixed(1) : JSON.stringify(score).slice(0, 60)}`,
+  );
 }
 
 // ─── 5. Evolution Suggestions ─────────────────────────────────────────────────
@@ -200,8 +216,8 @@ const bottlenecks = findBottlenecks(manifests);
 
 info('  total bottleneck findings', bottlenecks.length);
 
-const staleKinds = bottlenecks.filter(f =>
-  f.kind === 'unbounded-query' && f.description.toLowerCase().includes('rate')
+const staleKinds = bottlenecks.filter(
+  (f) => f.kind === 'unbounded-query' && f.description.toLowerCase().includes('rate'),
 );
 staleKinds.length === 0
   ? ok('No stale unbounded-query kind for rate-limit findings')
@@ -215,14 +231,15 @@ for (const b of bottlenecks) {
 
 section('7. Competitive Benchmarker — framework-aware detection');
 
-const { benchmarkAgainstBestPractices } = await import('./dist/evolution/competitive-benchmarker.js');
+const { benchmarkAgainstBestPractices } =
+  await import('./dist/evolution/competitive-benchmarker.js');
 const benchmarks = benchmarkAgainstBestPractices(manifests);
 
 info('  total benchmark results', benchmarks.length);
 
-const missingCount = benchmarks.filter(b => b.status === 'missing').length;
-const presentCount = benchmarks.filter(b => b.status === 'present').length;
-const partialCount = benchmarks.filter(b => b.status === 'partial').length;
+const missingCount = benchmarks.filter((b) => b.status === 'missing').length;
+const presentCount = benchmarks.filter((b) => b.status === 'present').length;
+const partialCount = benchmarks.filter((b) => b.status === 'partial').length;
 
 ok(`Benchmark results: ${presentCount} present, ${partialCount} partial, ${missingCount} missing`);
 
@@ -253,30 +270,43 @@ const gqlSchema = `
 
 const gqlRoutes = extractRoutes(gqlSchema, 'schema.graphql', 'graphql', 'test-repo');
 
-const queries = gqlRoutes.filter(r => r.method === 'QUERY');
-const mutations = gqlRoutes.filter(r => r.method === 'MUTATION');
-const subscriptions = gqlRoutes.filter(r => r.method === 'SUBSCRIPTION');
+const queries = gqlRoutes.filter((r) => r.method === 'QUERY');
+const mutations = gqlRoutes.filter((r) => r.method === 'MUTATION');
+const subscriptions = gqlRoutes.filter((r) => r.method === 'SUBSCRIPTION');
 
 queries.length === 2
-  ? ok(`Query extraction: ${queries.map(r => r.handler).join(', ')}`)
-  : fail(`Expected 2 Query fields, got ${queries.length}`, queries.map(r => r.handler).join(', '));
+  ? ok(`Query extraction: ${queries.map((r) => r.handler).join(', ')}`)
+  : fail(
+      `Expected 2 Query fields, got ${queries.length}`,
+      queries.map((r) => r.handler).join(', '),
+    );
 
 mutations.length === 2
-  ? ok(`Mutation extraction: ${mutations.map(r => r.handler).join(', ')}`)
-  : fail(`Expected 2 Mutation fields, got ${mutations.length}`, mutations.map(r => r.handler).join(', '));
+  ? ok(`Mutation extraction: ${mutations.map((r) => r.handler).join(', ')}`)
+  : fail(
+      `Expected 2 Mutation fields, got ${mutations.length}`,
+      mutations.map((r) => r.handler).join(', '),
+    );
 
 subscriptions.length === 1
-  ? ok(`Subscription extraction: ${subscriptions.map(r => r.handler).join(', ')}`)
+  ? ok(`Subscription extraction: ${subscriptions.map((r) => r.handler).join(', ')}`)
   : fail(`Expected 1 Subscription field, got ${subscriptions.length}`);
 
-const userFields = gqlRoutes.filter(r => ['id', 'name'].includes(r.handler));
+const userFields = gqlRoutes.filter((r) => ['id', 'name'].includes(r.handler));
 userFields.length === 0
   ? ok('Non-root type User not extracted (correct)')
-  : fail(`Non-root type User incorrectly extracted: ${userFields.map(r => r.handler).join(', ')}`);
+  : fail(
+      `Non-root type User incorrectly extracted: ${userFields.map((r) => r.handler).join(', ')}`,
+    );
 
 // Single-line block
-const singleLine = extractRoutes('type Query { health: Boolean }', 'schema.graphql', 'graphql', 'test-repo');
-singleLine.some(r => r.handler === 'health' && r.method === 'QUERY')
+const singleLine = extractRoutes(
+  'type Query { health: Boolean }',
+  'schema.graphql',
+  'graphql',
+  'test-repo',
+);
+singleLine.some((r) => r.handler === 'health' && r.method === 'QUERY')
   ? ok('Single-line type block extraction works')
   : fail('Single-line type block not extracted');
 
@@ -292,11 +322,32 @@ const abstractCode = `
   class E extends F {}
 `;
 
-const slopResult = detectSlop(abstractCode, manifests[0] ?? { repoId: 'test', path: '', language: 'typescript', gitState: { branch: 'main', headSha: '', uncommittedChanges: [], recentCommits: [] }, apiSurface: { routes: [], procedures: [], exports: [] }, typeRegistry: { types: [], schemas: [], models: [] }, conventions: { naming: 'camelCase', fileOrganization: '', errorHandling: '', patterns: [], testingPatterns: '' }, dependencies: { internal: [], external: [] }, health: { testCoverage: null, lintErrors: 0, typeErrors: 0, todoCount: 0, deadCode: [] } });
+const slopResult = detectSlop(
+  abstractCode,
+  manifests[0] ?? {
+    repoId: 'test',
+    path: '',
+    language: 'typescript',
+    gitState: { branch: 'main', headSha: '', uncommittedChanges: [], recentCommits: [] },
+    apiSurface: { routes: [], procedures: [], exports: [] },
+    typeRegistry: { types: [], schemas: [], models: [] },
+    conventions: {
+      naming: 'camelCase',
+      fileOrganization: '',
+      errorHandling: '',
+      patterns: [],
+      testingPatterns: '',
+    },
+    dependencies: { internal: [], external: [] },
+    health: { testCoverage: null, lintErrors: 0, typeErrors: 0, todoCount: 0, deadCode: [] },
+  },
+);
 
-const overAbstractionIssues = slopResult.issues.filter(i => i.kind === 'over-abstraction');
+const overAbstractionIssues = slopResult.issues.filter((i) => i.kind === 'over-abstraction');
 overAbstractionIssues.length > 0
-  ? ok(`Over-abstraction detected (${overAbstractionIssues.length} issue(s): ${overAbstractionIssues[0].message.slice(0, 60)})`)
+  ? ok(
+      `Over-abstraction detected (${overAbstractionIssues.length} issue(s): ${overAbstractionIssues[0].message.slice(0, 60)})`,
+    )
   : fail('Over-abstraction not detected on 3+ extends code');
 
 // Generic constraints should NOT fire
@@ -306,10 +357,12 @@ const cleanCode = `
   type IsString<T> = T extends string ? true : false;
 `;
 const cleanResult = detectSlop(cleanCode, manifests[0] ?? {});
-const falsePositive = cleanResult.issues.filter(i => i.kind === 'over-abstraction');
+const falsePositive = cleanResult.issues.filter((i) => i.kind === 'over-abstraction');
 falsePositive.length === 0
   ? ok('Generic constraints do NOT trigger false positive')
-  : fail(`Generic constraints incorrectly flagged as over-abstraction (${falsePositive.length} false positives)`);
+  : fail(
+      `Generic constraints incorrectly flagged as over-abstraction (${falsePositive.length} false positives)`,
+    );
 
 // ─── 10. Token Pruner Focus Mode (new — Task 5) ───────────────────────────────
 
@@ -322,7 +375,12 @@ const tightBudget = 100;
 
 const defaultPruned = pruneToTokenBudget(graph, tightBudget, 'changed-files-first');
 const commitsFocusPruned = pruneToTokenBudget(graph, tightBudget, 'changed-files-first', 'commits');
-const apiSurfaceFocusPruned = pruneToTokenBudget(graph, tightBudget, 'changed-files-first', 'api-surface');
+const apiSurfaceFocusPruned = pruneToTokenBudget(
+  graph,
+  tightBudget,
+  'changed-files-first',
+  'api-surface',
+);
 
 typeof defaultPruned === 'object'
   ? ok('pruneToTokenBudget returns object for default focus')
@@ -352,11 +410,15 @@ export async function handleCreateUser(req, res) {
 const qcResult = qualityCheck(sampleCode, 'src/handlers/user.ts', config);
 
 typeof qcResult.references === 'object'
-  ? ok(`references check: valid=${qcResult.references.valid}, violations=${qcResult.references.violations.length}`)
+  ? ok(
+      `references check: valid=${qcResult.references.valid}, violations=${qcResult.references.violations.length}`,
+    )
   : fail('qualityCheck missing references result');
 
 typeof qcResult.conventions === 'object'
-  ? ok(`conventions check: valid=${qcResult.conventions.valid}, violations=${qcResult.conventions.violations.length}`)
+  ? ok(
+      `conventions check: valid=${qcResult.conventions.valid}, violations=${qcResult.conventions.violations.length}`,
+    )
   : fail('qualityCheck missing conventions result');
 
 typeof qcResult.slop === 'object'
@@ -380,17 +442,23 @@ Array.isArray(impactResult)
   : fail('impact() did not return an array');
 
 // Severity should be 'warning' for implementation-change (Task 1 fix)
-const breakingSeverities = impactResult.flatMap(p =>
-  p.affected.filter(a => a.severity === 'breaking' && p.trigger.change === 'implementation-change')
+const breakingSeverities = impactResult.flatMap((p) =>
+  p.affected.filter(
+    (a) => a.severity === 'breaking' && p.trigger.change === 'implementation-change',
+  ),
 );
 breakingSeverities.length === 0
   ? ok("No 'breaking' severity for 'implementation-change' (Task 1 fix confirmed)")
-  : fail(`${breakingSeverities.length} items incorrectly use 'breaking' for 'implementation-change'`);
+  : fail(
+      `${breakingSeverities.length} items incorrectly use 'breaking' for 'implementation-change'`,
+    );
 
 // ─── Final Summary ────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);
-console.log(`${BOLD}Results: ${GREEN}${passed} passed${RESET}${BOLD}, ${failed > 0 ? RED : GREEN}${failed} failed${RESET}`);
+console.log(
+  `${BOLD}Results: ${GREEN}${passed} passed${RESET}${BOLD}, ${failed > 0 ? RED : GREEN}${failed} failed${RESET}`,
+);
 if (failed > 0) {
   console.log(`${RED}Some checks failed. See details above.${RESET}`);
   process.exit(1);

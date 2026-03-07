@@ -12,7 +12,7 @@ export class SimulateOnlyError extends Error {
   constructor(operation: string) {
     super(
       `[simulate-only] The '${operation}' operation was blocked because simulateOnly is enabled. ` +
-      `Review the plan and run /apply to execute for real.`,
+        `Review the plan and run /apply to execute for real.`,
     );
     this.name = 'SimulateOnlyError';
     this.operation = operation;

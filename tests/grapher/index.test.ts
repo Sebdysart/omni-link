@@ -68,20 +68,39 @@ describe('buildEcosystemGraph', () => {
         ],
         procedures: [],
         exports: [
-          { name: 'getUsers', kind: 'function', signature: 'function getUsers(): UserList', file: 'src/routes/users.ts', line: 10 },
-          { name: 'UserList', kind: 'type', signature: 'type UserList', file: 'src/types/user.ts', line: 1 },
+          {
+            name: 'getUsers',
+            kind: 'function',
+            signature: 'function getUsers(): UserList',
+            file: 'src/routes/users.ts',
+            line: 10,
+          },
+          {
+            name: 'UserList',
+            kind: 'type',
+            signature: 'type UserList',
+            file: 'src/types/user.ts',
+            line: 1,
+          },
         ],
       },
       typeRegistry: {
         types: [
           {
             name: 'UserList',
-            fields: [{ name: 'users', type: 'User[]' }, { name: 'total', type: 'number' }],
+            fields: [
+              { name: 'users', type: 'User[]' },
+              { name: 'total', type: 'number' },
+            ],
             source: { repo: 'backend', file: 'src/types/user.ts', line: 1 },
           },
           {
             name: 'User',
-            fields: [{ name: 'id', type: 'string' }, { name: 'email', type: 'string' }, { name: 'name', type: 'string' }],
+            fields: [
+              { name: 'id', type: 'string' },
+              { name: 'email', type: 'string' },
+              { name: 'name', type: 'string' },
+            ],
             source: { repo: 'backend', file: 'src/types/user.ts', line: 10 },
           },
         ],
@@ -116,7 +135,10 @@ describe('buildEcosystemGraph', () => {
         types: [
           {
             name: 'User',
-            fields: [{ name: 'id', type: 'String' }, { name: 'email', type: 'String' }],
+            fields: [
+              { name: 'id', type: 'String' },
+              { name: 'email', type: 'String' },
+            ],
             source: { repo: 'ios-app', file: 'Models/User.swift', line: 1 },
           },
         ],
@@ -129,14 +151,14 @@ describe('buildEcosystemGraph', () => {
 
     // Basic structure validation
     expect(graph.repos).toHaveLength(2);
-    expect(graph.repos.map(r => r.repoId).sort()).toEqual(['backend', 'ios-app']);
+    expect(graph.repos.map((r) => r.repoId).sort()).toEqual(['backend', 'ios-app']);
 
     // Should have bridges (backend routes referenced by iOS)
     expect(graph.bridges.length).toBeGreaterThan(0);
 
     // Should have shared types (User exists in both repos)
     expect(graph.sharedTypes.length).toBeGreaterThan(0);
-    const userLineage = graph.sharedTypes.find(l => l.concept === 'User');
+    const userLineage = graph.sharedTypes.find((l) => l.concept === 'User');
     expect(userLineage).toBeDefined();
     expect(userLineage!.instances).toHaveLength(2);
 
@@ -164,7 +186,15 @@ describe('buildEcosystemGraph', () => {
     const single = makeManifest({
       repoId: 'solo',
       apiSurface: {
-        routes: [{ method: 'GET', path: '/api/health', handler: 'healthCheck', file: 'src/routes.ts', line: 1 }],
+        routes: [
+          {
+            method: 'GET',
+            path: '/api/health',
+            handler: 'healthCheck',
+            file: 'src/routes.ts',
+            line: 1,
+          },
+        ],
         procedures: [],
         exports: [],
       },
@@ -245,12 +275,12 @@ describe('buildEcosystemGraph', () => {
     const graph = buildEcosystemGraph([backend, consumer]);
 
     // Should have a bridge with mismatch status (consumer has extraField)
-    const mismatchBridge = graph.bridges.find(b => b.contract.matchStatus === 'mismatch');
+    const mismatchBridge = graph.bridges.find((b) => b.contract.matchStatus === 'mismatch');
     expect(mismatchBridge).toBeDefined();
 
     // Should populate contractMismatches
     expect(graph.contractMismatches.length).toBeGreaterThan(0);
-    const extraFieldMismatch = graph.contractMismatches.find(m => m.kind === 'extra-field');
+    const extraFieldMismatch = graph.contractMismatches.find((m) => m.kind === 'extra-field');
     expect(extraFieldMismatch).toBeDefined();
   });
 
@@ -320,7 +350,11 @@ describe('buildEcosystemGraph', () => {
 
     const graph = buildEcosystemGraph([backend, consumer]);
 
-    expect(graph.contractMismatches.some((m) => m.kind === 'type-mismatch' && m.provider.field === 'age')).toBe(true);
+    expect(
+      graph.contractMismatches.some(
+        (m) => m.kind === 'type-mismatch' && m.provider.field === 'age',
+      ),
+    ).toBe(true);
   });
 
   it('populates internal deps within each manifest', () => {
@@ -330,9 +364,27 @@ describe('buildEcosystemGraph', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'handleRequest', kind: 'function', signature: 'function handleRequest(input: RequestInput): Response', file: 'src/handler.ts', line: 1 },
-          { name: 'RequestInput', kind: 'type', signature: 'type RequestInput', file: 'src/types.ts', line: 1 },
-          { name: 'Response', kind: 'type', signature: 'type Response', file: 'src/types.ts', line: 10 },
+          {
+            name: 'handleRequest',
+            kind: 'function',
+            signature: 'function handleRequest(input: RequestInput): Response',
+            file: 'src/handler.ts',
+            line: 1,
+          },
+          {
+            name: 'RequestInput',
+            kind: 'type',
+            signature: 'type RequestInput',
+            file: 'src/types.ts',
+            line: 1,
+          },
+          {
+            name: 'Response',
+            kind: 'type',
+            signature: 'type Response',
+            file: 'src/types.ts',
+            line: 10,
+          },
         ],
       },
     });
@@ -340,7 +392,7 @@ describe('buildEcosystemGraph', () => {
     const graph = buildEcosystemGraph([backend]);
 
     // Internal deps should be populated on the manifest within the graph
-    const backendRepo = graph.repos.find(r => r.repoId === 'backend');
+    const backendRepo = graph.repos.find((r) => r.repoId === 'backend');
     expect(backendRepo).toBeDefined();
     expect(backendRepo!.dependencies.internal.length).toBeGreaterThan(0);
   });
@@ -355,9 +407,7 @@ describe('buildEcosystemGraph', () => {
         recentCommits: [],
       },
       dependencies: {
-        internal: [
-          { from: 'src/routes/users.ts', to: 'src/types/user.ts', imports: ['User'] },
-        ],
+        internal: [{ from: 'src/routes/users.ts', to: 'src/types/user.ts', imports: ['User'] }],
         external: [],
       },
     });
@@ -365,7 +415,7 @@ describe('buildEcosystemGraph', () => {
     const graph = buildEcosystemGraph([backend]);
 
     expect(graph.impactPaths.length).toBeGreaterThan(0);
-    const impact = graph.impactPaths.find(p => p.trigger.file === 'src/types/user.ts');
+    const impact = graph.impactPaths.find((p) => p.trigger.file === 'src/types/user.ts');
     expect(impact).toBeDefined();
     expect(impact!.affected.length).toBeGreaterThan(0);
   });

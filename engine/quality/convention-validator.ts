@@ -24,8 +24,8 @@ const KEBAB_CASE_RE = /^[a-z][a-z0-9-]*$/;
 
 // Common patterns in variable/function declarations
 const VARIABLE_DECLARATION_RE = /(?:const|let|var)\s+(\w+)\s*[=:]/g;
-const FUNCTION_DECLARATION_RE = /(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\()/g;
-const PARAM_RE = /(?:function\s+\w+|=>\s*)\s*\(([^)]*)\)/g;
+const FUNCTION_DECLARATION_RE =
+  /(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\()/g;
 
 // Patterns that indicate class/type/interface names (should be PascalCase)
 const CLASS_LIKE_RE = /(?:class|interface|type|enum)\s+(\w+)/g;
@@ -34,7 +34,9 @@ const CLASS_LIKE_RE = /(?:class|interface|type|enum)\s+(\w+)/g;
  * Extract variable and function names from source code.
  * Returns names that should follow the codebase naming convention.
  */
-function extractIdentifiers(code: string): Array<{ name: string; line: number; isClassLike: boolean }> {
+function extractIdentifiers(
+  code: string,
+): Array<{ name: string; line: number; isClassLike: boolean }> {
   const identifiers: Array<{ name: string; line: number; isClassLike: boolean }> = [];
   const lines = code.split('\n');
 
@@ -96,7 +98,26 @@ function extractIdentifiers(code: string): Array<{ name: string; line: number; i
         !classLikeNames.has(name) &&
         !name.startsWith('_') &&
         // Avoid matching keywords
-        !['if', 'else', 'for', 'while', 'return', 'import', 'from', 'class', 'def', 'const', 'let', 'var', 'export', 'default', 'this', 'self', 'true', 'false'].includes(name)
+        ![
+          'if',
+          'else',
+          'for',
+          'while',
+          'return',
+          'import',
+          'from',
+          'class',
+          'def',
+          'const',
+          'let',
+          'var',
+          'export',
+          'default',
+          'this',
+          'self',
+          'true',
+          'false',
+        ].includes(name)
       ) {
         identifiers.push({ name, line: lineNum, isClassLike: false });
       }
@@ -128,26 +149,31 @@ function suggestRename(name: string, convention: NamingConvention): string {
       return name.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
     case 'snake_case':
       // camelCase → snake_case
-      return name.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
-    case 'PascalCase':
+      return name
+        .replace(/([A-Z])/g, '_$1')
+        .toLowerCase()
+        .replace(/^_/, '');
+    case 'PascalCase': {
       // snake_case or camelCase → PascalCase
       const asSnake = name.replace(/([A-Z])/g, '_$1').toLowerCase();
       return asSnake
         .split('_')
         .filter(Boolean)
-        .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
         .join('');
+    }
     case 'kebab-case':
-      return name.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '').replace(/_/g, '-');
+      return name
+        .replace(/([A-Z])/g, '-$1')
+        .toLowerCase()
+        .replace(/^-/, '')
+        .replace(/_/g, '-');
     default:
       return name;
   }
 }
 
-function checkNamingConventions(
-  code: string,
-  convention: NamingConvention,
-): ConventionViolation[] {
+function checkNamingConventions(code: string, convention: NamingConvention): ConventionViolation[] {
   if (convention === 'mixed') return [];
 
   const violations: ConventionViolation[] = [];
@@ -206,10 +232,12 @@ function isTestFile(code: string, filePath: string): boolean {
 
 function isRouteHandler(code: string): boolean {
   // Check for common route handler patterns
-  return /\b(?:app|router)\s*\.\s*(?:get|post|put|patch|delete|use)\s*\(/.test(code)
-    || /\bnew\s+Hono\b/.test(code)
-    || /\bexpress\s*\(\)/.test(code)
-    || /\brouter\s*\.\s*(?:query|mutation|subscription)\b/.test(code);
+  return (
+    /\b(?:app|router)\s*\.\s*(?:get|post|put|patch|delete|use)\s*\(/.test(code) ||
+    /\bnew\s+Hono\b/.test(code) ||
+    /\bexpress\s*\(\)/.test(code) ||
+    /\brouter\s*\.\s*(?:query|mutation|subscription)\b/.test(code)
+  );
 }
 
 function checkFileLocation(
@@ -224,7 +252,11 @@ function checkFileLocation(
   if (isTestFile(code, filePath)) {
     if (testingPatterns === 'separate-directory') {
       // Test files should be in tests/ or __tests__/ directory
-      if (!filePath.startsWith('tests/') && !filePath.startsWith('test/') && !filePath.includes('__tests__/')) {
+      if (
+        !filePath.startsWith('tests/') &&
+        !filePath.startsWith('test/') &&
+        !filePath.includes('__tests__/')
+      ) {
         violations.push({
           kind: 'file-location',
           message: `Test file '${filePath}' should be in a separate test directory (e.g., tests/)`,
@@ -262,10 +294,7 @@ function checkFileLocation(
 /**
  * Detect async functions that lack error handling.
  */
-function checkErrorHandling(
-  code: string,
-  manifest: RepoManifest,
-): ConventionViolation[] {
+function checkErrorHandling(code: string, manifest: RepoManifest): ConventionViolation[] {
   if (!manifest.conventions.errorHandling) return [];
 
   const violations: ConventionViolation[] = [];

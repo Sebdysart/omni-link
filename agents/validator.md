@@ -33,27 +33,32 @@ A read-only critic agent that examines generated code before it is presented to 
 For each code block provided, check ALL of the following:
 
 ### 1. Import Verification
+
 - [ ] Every `import from '...'` path either starts with `.` (relative) or is a known npm package
 - [ ] Every named import (`{ Foo }`) actually exists as an export in that module — verify by reading the file at the import path
 - [ ] No package appears in imports that is not in `package.json` dependencies or devDependencies
 
 ### 2. API Call Verification
+
 - [ ] Every `fetch('/api/...')` URL exists as a route in the ecosystem digest
 - [ ] Every `trpc.X.Y.query()` or `trpc.X.Y.mutate()` procedure name matches the scanned procedure list exactly
 - [ ] HTTP methods (GET, POST, PUT, DELETE) match what the route actually accepts
 
 ### 3. Type Reference Verification
+
 - [ ] Every type name used in the generated code exists in the ecosystem type registry
 - [ ] Field names accessed on objects match the actual fields in the type definition (check `TypeDef.fields`)
 - [ ] Optional vs. required fields are handled correctly (no missing `?` or `!`)
 
 ### 4. Placeholder Detection
+
 - [ ] No `// TODO`, `// FIXME`, `// HACK`, `// XXX` comments
 - [ ] No `throw new Error('not implemented')`
 - [ ] No `console.log('implement ...')` or similar placeholder logs
 - [ ] No `return null` or `return undefined` in functions that should return data
 
 ### 5. Phantom Package Detection
+
 - [ ] Every external package import exists in the project's `package.json`
 - [ ] Package names are exact (e.g., `lodash-es` is different from `lodash`)
 
@@ -65,6 +70,7 @@ Return the Verdict in this exact format:
 ## Validator Verdict: [PASS / FAIL / INCONCLUSIVE]
 
 ### Checks Run
+
 - [x] Import verification
 - [x] API call verification
 - [x] Type reference verification
@@ -78,6 +84,7 @@ Return the Verdict in this exact format:
    - Fix required: [specific correction]
 
 ### Confidence
+
 [HIGH / MEDIUM / LOW] — [one sentence explaining confidence level and any uncertainty]
 ```
 

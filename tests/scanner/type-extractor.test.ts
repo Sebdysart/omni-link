@@ -138,7 +138,7 @@ public class User {
     it('captures single extends on interface', () => {
       const source = `interface Dog extends Animal { breed: string; }`;
       const types = extractTypes(source, 'types.ts', 'typescript', 'backend');
-      const dog = types.find(t => t.name === 'Dog');
+      const dog = types.find((t) => t.name === 'Dog');
       expect(dog).toBeDefined();
       expect(dog!.extends).toBeDefined();
       expect(dog!.extends).toContain('Animal');
@@ -147,7 +147,7 @@ public class User {
     it('captures multiple extends on interface', () => {
       const source = `interface C extends A, B { x: number; }`;
       const types = extractTypes(source, 'types.ts', 'typescript', 'backend');
-      const c = types.find(t => t.name === 'C');
+      const c = types.find((t) => t.name === 'C');
       expect(c).toBeDefined();
       expect(c!.extends).toBeDefined();
       expect(c!.extends).toContain('A');
@@ -157,7 +157,7 @@ public class User {
     it('captures intersection type parents', () => {
       const source = `type Combined = TypeA & TypeB;`;
       const types = extractTypes(source, 'types.ts', 'typescript', 'backend');
-      const combined = types.find(t => t.name === 'Combined');
+      const combined = types.find((t) => t.name === 'Combined');
       expect(combined).toBeDefined();
       expect(combined!.extends).toBeDefined();
       expect(combined!.extends).toContain('TypeA');
@@ -167,7 +167,7 @@ public class User {
     it('plain interface has no extends', () => {
       const source = `interface Simple { x: number; }`;
       const types = extractTypes(source, 'types.ts', 'typescript', 'backend');
-      const simple = types.find(t => t.name === 'Simple');
+      const simple = types.find((t) => t.name === 'Simple');
       expect(simple).toBeDefined();
       const extendsField = simple!.extends;
       expect(!extendsField || extendsField.length === 0).toBe(true);

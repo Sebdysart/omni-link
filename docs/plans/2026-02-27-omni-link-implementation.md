@@ -15,6 +15,7 @@
 ### Task 1: Project scaffold
 
 **Files:**
+
 - Create: `package.json`
 - Create: `tsconfig.json`
 - Create: `.gitignore`
@@ -130,6 +131,7 @@ git add -A && git commit -m "chore: scaffold project structure with TS, tree-sit
 ### Task 2: Plugin manifests
 
 **Files:**
+
 - Create: `.claude-plugin/plugin.json`
 - Create: `.claude-plugin/marketplace.json`
 
@@ -185,6 +187,7 @@ git add .claude-plugin/ && git commit -m "chore: add Claude Code plugin manifest
 ### Task 3: Core types
 
 **Files:**
+
 - Create: `engine/types.ts`
 - Create: `tests/types.test.ts`
 
@@ -306,8 +309,16 @@ describe('core types', () => {
       consumer: { repo: 'ios-app', file: 'Services/API.swift', line: 42 },
       provider: { repo: 'backend', route: 'POST /api/users', handler: 'createUser' },
       contract: {
-        inputType: { name: 'CreateUserInput', fields: [{ name: 'email', type: 'string' }], source: { repo: 'backend', file: 'types.ts', line: 10 } },
-        outputType: { name: 'User', fields: [{ name: 'id', type: 'string' }], source: { repo: 'backend', file: 'types.ts', line: 20 } },
+        inputType: {
+          name: 'CreateUserInput',
+          fields: [{ name: 'email', type: 'string' }],
+          source: { repo: 'backend', file: 'types.ts', line: 10 },
+        },
+        outputType: {
+          name: 'User',
+          fields: [{ name: 'id', type: 'string' }],
+          source: { repo: 'backend', file: 'types.ts', line: 20 },
+        },
         matchStatus: 'exact',
       },
     };
@@ -626,6 +637,7 @@ git add engine/types.ts tests/types.test.ts && git commit -m "feat: define core 
 ### Task 4: Config loader
 
 **Files:**
+
 - Create: `engine/config.ts`
 - Create: `tests/config.test.ts`
 - Create: `config/omni-link.example.json`
@@ -670,7 +682,10 @@ describe('config', () => {
 
   it('validateConfig rejects more than 4 repos', () => {
     const repos = Array.from({ length: 5 }, (_, i) => ({
-      name: `repo-${i}`, path: `/tmp/repo-${i}`, language: 'typescript', role: 'backend',
+      name: `repo-${i}`,
+      path: `/tmp/repo-${i}`,
+      language: 'typescript',
+      role: 'backend',
     }));
     const result = validateConfig({ repos });
     expect(result.valid).toBe(false);
@@ -687,9 +702,12 @@ describe('config', () => {
 
   it('loadConfig merges with defaults', () => {
     const configPath = path.join(tmpDir, '.omni-link.json');
-    fs.writeFileSync(configPath, JSON.stringify({
-      repos: [{ name: 'test', path: '/tmp/test', language: 'typescript', role: 'backend' }],
-    }));
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({
+        repos: [{ name: 'test', path: '/tmp/test', language: 'typescript', role: 'backend' }],
+      }),
+    );
     const config = loadConfig(configPath);
     expect(config.repos).toHaveLength(1);
     expect(config.evolution.aggressiveness).toBe(DEFAULT_CONFIG.evolution.aggressiveness);
@@ -845,6 +863,7 @@ git add engine/config.ts tests/config.test.ts config/omni-link.example.json && g
 ### Task 5: Tree-sitter parser factory
 
 **Files:**
+
 - Create: `engine/scanner/tree-sitter.ts`
 - Create: `tests/scanner/tree-sitter.test.ts`
 
@@ -852,7 +871,11 @@ git add engine/config.ts tests/config.test.ts config/omni-link.example.json && g
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { createParser, getSupportedLanguages, detectLanguage } from '../../engine/scanner/tree-sitter.js';
+import {
+  createParser,
+  getSupportedLanguages,
+  detectLanguage,
+} from '../../engine/scanner/tree-sitter.js';
 
 describe('tree-sitter parser factory', () => {
   it('creates a parser for typescript', () => {
@@ -974,6 +997,7 @@ git add engine/scanner/tree-sitter.ts tests/scanner/tree-sitter.test.ts && git c
 ### Task 6: API extractor
 
 **Files:**
+
 - Create: `engine/scanner/api-extractor.ts`
 - Create: `tests/scanner/api-extractor.test.ts`
 
@@ -981,7 +1005,11 @@ git add engine/scanner/tree-sitter.ts tests/scanner/tree-sitter.test.ts && git c
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { extractRoutes, extractExports, extractProcedures } from '../../engine/scanner/api-extractor.js';
+import {
+  extractRoutes,
+  extractExports,
+  extractProcedures,
+} from '../../engine/scanner/api-extractor.js';
 
 describe('api-extractor', () => {
   describe('extractExports (TypeScript)', () => {
@@ -1013,8 +1041,8 @@ export type UserId = string;
 `;
       const exports = extractExports(source, 'test.ts', 'typescript');
       expect(exports).toHaveLength(2);
-      expect(exports.find(e => e.name === 'User')?.kind).toBe('interface');
-      expect(exports.find(e => e.name === 'UserId')?.kind).toBe('type');
+      expect(exports.find((e) => e.name === 'User')?.kind).toBe('interface');
+      expect(exports.find((e) => e.name === 'UserId')?.kind).toBe('type');
     });
   });
 
@@ -1067,9 +1095,9 @@ class UserService {
 }
 `;
       const exports = extractExports(source, 'User.swift', 'swift');
-      expect(exports.find(e => e.name === 'fetchUser')).toBeDefined();
-      expect(exports.find(e => e.name === 'UserDTO')?.kind).toBe('class');
-      expect(exports.find(e => e.name === 'UserService')?.kind).toBe('class');
+      expect(exports.find((e) => e.name === 'fetchUser')).toBeDefined();
+      expect(exports.find((e) => e.name === 'UserDTO')?.kind).toBe('class');
+      expect(exports.find((e) => e.name === 'UserService')?.kind).toBe('class');
     });
   });
 });
@@ -1091,7 +1119,7 @@ This file uses tree-sitter to parse source and extract exports, routes, and tRPC
 
 The implementation should use `tree.rootNode.descendantsOfType()` for simple extractions and `Parser.Query` with S-expressions for complex patterns.
 
-*(Full implementation ~200 lines — the executing agent will write the complete code following these patterns)*
+_(Full implementation ~200 lines — the executing agent will write the complete code following these patterns)_
 
 **Step 4: Run tests**
 
@@ -1109,6 +1137,7 @@ git add engine/scanner/api-extractor.ts tests/scanner/api-extractor.test.ts && g
 ### Task 7: Type extractor
 
 **Files:**
+
 - Create: `engine/scanner/type-extractor.ts`
 - Create: `tests/scanner/type-extractor.test.ts`
 
@@ -1187,9 +1216,10 @@ Expected: FAIL
 **Step 3: Implement type-extractor.ts**
 
 Uses tree-sitter to parse:
+
 - **TS interfaces:** `interface_declaration` → iterate `property_signature` children for fields
 - **TS type aliases:** `type_alias_declaration` with object types
-- **Zod schemas:** `variable_declarator` where value is `z.object({...})` call — extract property names and z.* methods
+- **Zod schemas:** `variable_declarator` where value is `z.object({...})` call — extract property names and z.\* methods
 - **Swift structs:** `struct_declaration` with `Codable` conformance → property declarations
 - **Python classes:** `class_definition` inheriting from `BaseModel`/`dataclass` → typed assignments
 
@@ -1206,6 +1236,7 @@ git add engine/scanner/type-extractor.ts tests/scanner/type-extractor.test.ts &&
 ### Task 8: Convention detector
 
 **Files:**
+
 - Create: `engine/scanner/convention-detector.ts`
 - Create: `tests/scanner/convention-detector.test.ts`
 
@@ -1226,9 +1257,7 @@ describe('convention-detector', () => {
   });
 
   it('detects snake_case naming in Python', () => {
-    const files = [
-      { path: 'src/user_service.py', exports: ['create_user', 'delete_user'] },
-    ];
+    const files = [{ path: 'src/user_service.py', exports: ['create_user', 'delete_user'] }];
     const conventions = detectConventions(files, 'python');
     expect(conventions.naming).toBe('snake_case');
   });
@@ -1288,6 +1317,7 @@ git add engine/scanner/convention-detector.ts tests/scanner/convention-detector.
 ### Task 9: Full repo scanner orchestrator
 
 **Files:**
+
 - Create: `engine/scanner/index.ts`
 - Create: `tests/scanner/index.test.ts`
 
@@ -1306,6 +1336,7 @@ git commit -m "feat: repo scanner orchestrator — assembles RepoManifest from a
 ### Task 10: Dependency graph builder
 
 **Files:**
+
 - Create: `engine/grapher/dependency-graph.ts`
 - Create: `tests/grapher/dependency-graph.test.ts`
 
@@ -1320,12 +1351,14 @@ git commit -m "feat: dependency graph builder — internal and cross-repo dep ma
 ### Task 11: API contract mapper
 
 **Files:**
+
 - Create: `engine/grapher/api-contract-map.ts`
 - Create: `tests/grapher/api-contract-map.test.ts`
 
 Takes route definitions from provider repos and matches them against URL patterns/API client calls in consumer repos. Produces `ApiBridge[]`. Compares input/output types across the bridge and flags mismatches.
 
 **Key logic:**
+
 - Match `/api/users` in backend routes to string literals like `"/api/users"` or `"users"` in iOS TRPCClient calls
 - Compare TypeDef fields between provider output type and consumer input struct
 - Classify as `exact` (all fields match), `compatible` (consumer is subset), or `mismatch` (consumer expects field provider doesn't have)
@@ -1339,6 +1372,7 @@ git commit -m "feat: API contract mapper — bridge detection and type matching 
 ### Task 12: Impact analyzer
 
 **Files:**
+
 - Create: `engine/grapher/impact-analyzer.ts`
 - Create: `tests/grapher/impact-analyzer.test.ts`
 
@@ -1353,6 +1387,7 @@ git commit -m "feat: impact analyzer — trace change ripples across repos"
 ### Task 13: Type flow mapper
 
 **Files:**
+
 - Create: `engine/grapher/type-flow.ts`
 - Create: `tests/grapher/type-flow.test.ts`
 
@@ -1367,6 +1402,7 @@ git commit -m "feat: type flow mapper — cross-repo type lineage detection"
 ### Task 14: Grapher orchestrator
 
 **Files:**
+
 - Create: `engine/grapher/index.ts`
 - Create: `tests/grapher/index.test.ts`
 
@@ -1383,6 +1419,7 @@ git commit -m "feat: grapher orchestrator — assembles EcosystemGraph from all 
 ### Task 15: Cache manager
 
 **Files:**
+
 - Create: `engine/context/cache-manager.ts`
 - Create: `tests/context/cache-manager.test.ts`
 
@@ -1399,6 +1436,7 @@ git commit -m "feat: SHA-indexed cache manager — skip unchanged files on resca
 ### Task 16: Token pruner
 
 **Files:**
+
 - Create: `engine/context/token-pruner.ts`
 - Create: `tests/context/token-pruner.test.ts`
 
@@ -1413,6 +1451,7 @@ git commit -m "feat: token pruner — priority-ranked context trimming to token 
 ### Task 17: Digest formatter
 
 **Files:**
+
 - Create: `engine/context/digest-formatter.ts`
 - Create: `tests/context/digest-formatter.test.ts`
 
@@ -1427,6 +1466,7 @@ git commit -m "feat: digest formatter — human-readable ecosystem state for ses
 ### Task 18: Context builder orchestrator
 
 **Files:**
+
 - Create: `engine/context/index.ts`
 - Create: `tests/context/index.test.ts`
 
@@ -1443,6 +1483,7 @@ git commit -m "feat: context builder orchestrator — scan → prune → format 
 ### Task 19: Reference checker
 
 **Files:**
+
 - Create: `engine/quality/reference-checker.ts`
 - Create: `tests/quality/reference-checker.test.ts`
 
@@ -1459,6 +1500,7 @@ git commit -m "feat: reference checker — verify imports, calls, and types agai
 ### Task 20: Convention validator
 
 **Files:**
+
 - Create: `engine/quality/convention-validator.ts`
 - Create: `tests/quality/convention-validator.test.ts`
 
@@ -1473,10 +1515,12 @@ git commit -m "feat: convention validator — enforce detected codebase patterns
 ### Task 21: Slop detector
 
 **Files:**
+
 - Create: `engine/quality/slop-detector.ts`
 - Create: `tests/quality/slop-detector.test.ts`
 
 Pattern-matches for common AI code generation failures:
+
 - `// TODO` / `// FIXME` / `console.log("implement")` placeholders
 - Imports from packages not in package.json/Package.swift
 - Unnecessary wrapper functions, excessive abstraction
@@ -1492,6 +1536,7 @@ git commit -m "feat: slop detector — catch hallucinated packages, placeholders
 ### Task 22: Health scorer
 
 **Files:**
+
 - Create: `engine/quality/health-scorer.ts`
 - Create: `tests/quality/health-scorer.test.ts`
 
@@ -1508,6 +1553,7 @@ git commit -m "feat: health scorer — per-repo and ecosystem code health metric
 ### Task 23: Gap analyzer
 
 **Files:**
+
 - Create: `engine/evolution/gap-analyzer.ts`
 - Create: `tests/evolution/gap-analyzer.test.ts`
 
@@ -1522,6 +1568,7 @@ git commit -m "feat: gap analyzer — find incomplete features, dead routes, orp
 ### Task 24: Bottleneck finder
 
 **Files:**
+
 - Create: `engine/evolution/bottleneck-finder.ts`
 - Create: `tests/evolution/bottleneck-finder.test.ts`
 
@@ -1536,6 +1583,7 @@ git commit -m "feat: bottleneck finder — detect O(n^2), missing pagination, sy
 ### Task 25: Upgrade proposer
 
 **Files:**
+
 - Create: `engine/evolution/upgrade-proposer.ts`
 - Create: `tests/evolution/upgrade-proposer.test.ts`
 
@@ -1550,10 +1598,12 @@ git commit -m "feat: upgrade proposer — ranked suggestions with ROI and eviden
 ### Task 26: Competitive benchmarker
 
 **Files:**
+
 - Create: `engine/evolution/competitive-benchmarker.ts`
 - Create: `tests/evolution/competitive-benchmarker.test.ts`
 
 Checks against known best practices per stack:
+
 - Hono/Express: rate limiting middleware, CORS config, helmet
 - tRPC: error formatting, context auth
 - Swift/iOS: proper async/await, no force unwraps, accessibility
@@ -1568,6 +1618,7 @@ git commit -m "feat: competitive benchmarker — compare against stack best prac
 ### Task 27: Evolution orchestrator
 
 **Files:**
+
 - Create: `engine/evolution/index.ts`
 - Create: `tests/evolution/index.test.ts`
 
@@ -1584,6 +1635,7 @@ git commit -m "feat: evolution orchestrator — gap + bottleneck + benchmark →
 ### Task 28: Engine entry point
 
 **Files:**
+
 - Create: `engine/index.ts`
 - Create: `tests/index.test.ts`
 
@@ -1598,9 +1650,11 @@ git commit -m "feat: engine entry point — scan/impact/health/evolve orchestrat
 ### Task 29: CLI
 
 **Files:**
+
 - Create: `engine/cli.ts`
 
 Parses CLI args and calls engine methods. Commands:
+
 - `omni-link scan --config <path>` → full scan, outputs digest JSON to stdout
 - `omni-link impact --config <path>` → outputs impact report
 - `omni-link health --config <path>` → outputs health report
@@ -1629,11 +1683,13 @@ git commit -m "chore: verify build and full test suite"
 ### Task 31: Session-start hook
 
 **Files:**
+
 - Create: `hooks/hooks.json`
 - Create: `hooks/session-start`
 - Create: `hooks/run-hook.cmd`
 
 **hooks.json:**
+
 ```json
 {
   "hooks": {
@@ -1654,6 +1710,7 @@ git commit -m "chore: verify build and full test suite"
 ```
 
 **session-start** (bash script):
+
 1. Find config file (local `.omni-link.json` or global `~/.claude/omni-link.json`)
 2. Run `node "${PLUGIN_ROOT}/dist/cli.js" scan --config "$CONFIG_PATH"` → capture digest JSON
 3. Read `skills/using-omni-link/SKILL.md` content
@@ -1673,6 +1730,7 @@ git commit -m "feat: session-start hook — boots engine, injects ecosystem cont
 ### Task 32: using-omni-link skill
 
 **Files:**
+
 - Create: `skills/using-omni-link/SKILL.md`
 
 The meta skill loaded at session start. Sets iron laws, lists all skills and when to invoke them, establishes aggressive evolution posture.
@@ -1686,6 +1744,7 @@ git commit -m "feat: using-omni-link skill — meta skill with iron laws and ski
 ### Task 33: ecosystem-grounding skill
 
 **Files:**
+
 - Create: `skills/ecosystem-grounding/SKILL.md`
 
 Defines the grounding workflow: scan → briefing → contract mismatch acknowledgment gate.
@@ -1699,6 +1758,7 @@ git commit -m "feat: ecosystem-grounding skill — session-start grounding workf
 ### Task 34: cross-repo-impact skill
 
 **Files:**
+
 - Create: `skills/cross-repo-impact/SKILL.md`
 
 Defines when and how to run impact analysis. Includes ripple report format.
@@ -1712,6 +1772,7 @@ git commit -m "feat: cross-repo-impact skill — change ripple analysis workflow
 ### Task 35: anti-slop-gate skill
 
 **Files:**
+
 - Create: `skills/anti-slop-gate/SKILL.md`
 
 The iron law skill. Defines all quality checks, enforcement rules, and rejection behavior.
@@ -1725,6 +1786,7 @@ git commit -m "feat: anti-slop-gate skill — quality enforcement iron laws"
 ### Task 36: convention-enforcer skill
 
 **Files:**
+
 - Create: `skills/convention-enforcer/SKILL.md`
 
 Pattern matching skill. When to invoke, how it presents detected conventions.
@@ -1738,6 +1800,7 @@ git commit -m "feat: convention-enforcer skill — codebase pattern matching"
 ### Task 37: dependency-navigator skill
 
 **Files:**
+
 - Create: `skills/dependency-navigator/SKILL.md`
 
 Cross-repo exploration skill. "Where is X used?" workflows.
@@ -1751,6 +1814,7 @@ git commit -m "feat: dependency-navigator skill — cross-repo exploration"
 ### Task 38: health-audit skill
 
 **Files:**
+
 - Create: `skills/health-audit/SKILL.md`
 
 Health report skill. Report format, scoring criteria, trend comparison.
@@ -1764,6 +1828,7 @@ git commit -m "feat: health-audit skill — ecosystem health report workflow"
 ### Task 39: ecosystem-planner skill
 
 **Files:**
+
 - Create: `skills/ecosystem-planner/SKILL.md`
 
 Multi-repo planning skill. Cross-repo task ordering, coordination points.
@@ -1777,6 +1842,7 @@ git commit -m "feat: ecosystem-planner skill — multi-repo aware planning"
 ### Task 40: business-evolution skill
 
 **Files:**
+
 - Create: `skills/business-evolution/SKILL.md`
 
 Aggressive evolution skill. Session-start analysis, suggestion format, evidence requirements.
@@ -1790,6 +1856,7 @@ git commit -m "feat: business-evolution skill — proactive upgrade engine"
 ### Task 41: upgrade-executor skill
 
 **Files:**
+
 - Create: `skills/upgrade-executor/SKILL.md`
 
 Coordinated execution skill. Multi-repo change orchestration, contract validation at each step.
@@ -1805,6 +1872,7 @@ git commit -m "feat: upgrade-executor skill — coordinated cross-repo execution
 ### Task 42: Agents
 
 **Files:**
+
 - Create: `agents/repo-analyst.md`
 - Create: `agents/cross-repo-reviewer.md`
 - Create: `agents/evolution-strategist.md`
@@ -1820,6 +1888,7 @@ git commit -m "feat: add repo-analyst, cross-repo-reviewer, evolution-strategist
 ### Task 43: Commands
 
 **Files:**
+
 - Create: `commands/scan.md`
 - Create: `commands/impact.md`
 - Create: `commands/evolve.md`
@@ -1838,6 +1907,7 @@ git commit -m "feat: add /scan, /impact, /evolve, /health slash commands"
 ### Task 44: End-to-end integration test
 
 **Files:**
+
 - Create: `tests/integration/e2e.test.ts`
 
 Sets up 2 temp repos (one TS backend with routes, one Swift iOS with API client), configures omni-link, runs full scan → graph → context → evolution pipeline. Verifies: bridges detected, mismatches found, evolution suggestions generated, digest within token budget.
@@ -1851,6 +1921,7 @@ git commit -m "test: end-to-end integration test with 2-repo ecosystem"
 ### Task 45: README
 
 **Files:**
+
 - Create: `README.md`
 
 Installation (marketplace + manual), configuration guide, skill descriptions, command reference, compatibility with superpowers.

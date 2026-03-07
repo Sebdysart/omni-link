@@ -50,8 +50,20 @@ describe('buildInternalDeps', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'createUser', kind: 'function', signature: 'createUser(): void', file: 'src/routes/users.ts', line: 5 },
-          { name: 'UserSchema', kind: 'type', signature: 'type UserSchema', file: 'src/types/user.ts', line: 1 },
+          {
+            name: 'createUser',
+            kind: 'function',
+            signature: 'createUser(): void',
+            file: 'src/routes/users.ts',
+            line: 5,
+          },
+          {
+            name: 'UserSchema',
+            kind: 'type',
+            signature: 'type UserSchema',
+            file: 'src/types/user.ts',
+            line: 1,
+          },
           { name: 'db', kind: 'constant', signature: 'const db', file: 'src/db/index.ts', line: 1 },
         ],
       },
@@ -68,8 +80,16 @@ describe('buildInternalDeps', () => {
 
     // Should preserve existing internal deps
     expect(deps).toHaveLength(2);
-    expect(deps[0]).toEqual({ from: 'src/routes/users.ts', to: 'src/types/user.ts', imports: ['UserSchema'] });
-    expect(deps[1]).toEqual({ from: 'src/routes/users.ts', to: 'src/db/index.ts', imports: ['db'] });
+    expect(deps[0]).toEqual({
+      from: 'src/routes/users.ts',
+      to: 'src/types/user.ts',
+      imports: ['UserSchema'],
+    });
+    expect(deps[1]).toEqual({
+      from: 'src/routes/users.ts',
+      to: 'src/db/index.ts',
+      imports: ['db'],
+    });
   });
 
   it('infers dependencies from export/type cross-references within a repo', () => {
@@ -79,9 +99,27 @@ describe('buildInternalDeps', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'createUser', kind: 'function', signature: 'function createUser(input: UserInput): User', file: 'src/handlers/user.ts', line: 10 },
-          { name: 'UserInput', kind: 'type', signature: 'type UserInput', file: 'src/types/user.ts', line: 1 },
-          { name: 'User', kind: 'type', signature: 'type User', file: 'src/types/user.ts', line: 5 },
+          {
+            name: 'createUser',
+            kind: 'function',
+            signature: 'function createUser(input: UserInput): User',
+            file: 'src/handlers/user.ts',
+            line: 10,
+          },
+          {
+            name: 'UserInput',
+            kind: 'type',
+            signature: 'type UserInput',
+            file: 'src/types/user.ts',
+            line: 1,
+          },
+          {
+            name: 'User',
+            kind: 'type',
+            signature: 'type User',
+            file: 'src/types/user.ts',
+            line: 5,
+          },
         ],
       },
     });
@@ -89,7 +127,9 @@ describe('buildInternalDeps', () => {
     const deps = buildInternalDeps(manifest);
 
     // Should infer that user.ts handler references types from types/user.ts
-    const handlerDep = deps.find(d => d.from === 'src/handlers/user.ts' && d.to === 'src/types/user.ts');
+    const handlerDep = deps.find(
+      (d) => d.from === 'src/handlers/user.ts' && d.to === 'src/types/user.ts',
+    );
     expect(handlerDep).toBeDefined();
     expect(handlerDep!.imports).toContain('UserInput');
     expect(handlerDep!.imports).toContain('User');
@@ -102,14 +142,20 @@ describe('buildInternalDeps', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'createUser', kind: 'function', signature: 'function createUser(): User', file: 'src/user.ts', line: 1 },
+          {
+            name: 'createUser',
+            kind: 'function',
+            signature: 'function createUser(): User',
+            file: 'src/user.ts',
+            line: 1,
+          },
           { name: 'User', kind: 'type', signature: 'type User', file: 'src/user.ts', line: 5 },
         ],
       },
     });
 
     const deps = buildInternalDeps(manifest);
-    const selfRef = deps.find(d => d.from === d.to);
+    const selfRef = deps.find((d) => d.from === d.to);
     expect(selfRef).toBeUndefined();
   });
 
@@ -120,7 +166,13 @@ describe('buildInternalDeps', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'hello', kind: 'function', signature: 'function hello(): void', file: 'src/hello.ts', line: 1 },
+          {
+            name: 'hello',
+            kind: 'function',
+            signature: 'function hello(): void',
+            file: 'src/hello.ts',
+            line: 1,
+          },
         ],
       },
     });
@@ -138,16 +190,32 @@ describe('detectCrossRepoDeps', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 5 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes.ts',
+            line: 5,
+          },
         ],
         procedures: [],
         exports: [
-          { name: 'UserResponse', kind: 'type', signature: 'type UserResponse', file: 'src/types.ts', line: 1 },
+          {
+            name: 'UserResponse',
+            kind: 'type',
+            signature: 'type UserResponse',
+            file: 'src/types.ts',
+            line: 1,
+          },
         ],
       },
       typeRegistry: {
         types: [
-          { name: 'UserResponse', fields: [{ name: 'id', type: 'string' }], source: { repo: 'backend', file: 'src/types.ts', line: 1 } },
+          {
+            name: 'UserResponse',
+            fields: [{ name: 'id', type: 'string' }],
+            source: { repo: 'backend', file: 'src/types.ts', line: 1 },
+          },
         ],
         schemas: [],
         models: [],
@@ -161,13 +229,29 @@ describe('detectCrossRepoDeps', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'UserResponse', kind: 'type', signature: 'struct UserResponse', file: 'Models/UserResponse.swift', line: 1 },
-          { name: 'fetchUsers', kind: 'function', signature: 'func fetchUsers() -> [UserResponse]', file: 'Services/API.swift', line: 10 },
+          {
+            name: 'UserResponse',
+            kind: 'type',
+            signature: 'struct UserResponse',
+            file: 'Models/UserResponse.swift',
+            line: 1,
+          },
+          {
+            name: 'fetchUsers',
+            kind: 'function',
+            signature: 'func fetchUsers() -> [UserResponse]',
+            file: 'Services/API.swift',
+            line: 10,
+          },
         ],
       },
       typeRegistry: {
         types: [
-          { name: 'UserResponse', fields: [{ name: 'id', type: 'String' }], source: { repo: 'ios-app', file: 'Models/UserResponse.swift', line: 1 } },
+          {
+            name: 'UserResponse',
+            fields: [{ name: 'id', type: 'String' }],
+            source: { repo: 'ios-app', file: 'Models/UserResponse.swift', line: 1 },
+          },
         ],
         schemas: [],
         models: [],
@@ -181,7 +265,9 @@ describe('detectCrossRepoDeps', () => {
 
     // Check that there's a dep linking the two repos
     const link = crossDeps.find(
-      d => (d.from === 'backend' && d.to === 'ios-app') || (d.from === 'ios-app' && d.to === 'backend')
+      (d) =>
+        (d.from === 'backend' && d.to === 'ios-app') ||
+        (d.from === 'ios-app' && d.to === 'backend'),
     );
     expect(link).toBeDefined();
     expect(link!.references.length).toBeGreaterThan(0);
@@ -192,7 +278,13 @@ describe('detectCrossRepoDeps', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'POST', path: '/api/tasks', handler: 'createTask', file: 'src/routes.ts', line: 10 },
+          {
+            method: 'POST',
+            path: '/api/tasks',
+            handler: 'createTask',
+            file: 'src/routes.ts',
+            line: 10,
+          },
         ],
         procedures: [],
         exports: [],
@@ -205,13 +297,19 @@ describe('detectCrossRepoDeps', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'API_TASKS_URL', kind: 'constant', signature: 'const API_TASKS_URL = "/api/tasks"', file: 'src/api.ts', line: 3 },
+          {
+            name: 'API_TASKS_URL',
+            kind: 'constant',
+            signature: 'const API_TASKS_URL = "/api/tasks"',
+            file: 'src/api.ts',
+            line: 3,
+          },
         ],
       },
     });
 
     const crossDeps = detectCrossRepoDeps([backend, frontend]);
-    const link = crossDeps.find(d => d.from === 'frontend' && d.to === 'backend');
+    const link = crossDeps.find((d) => d.from === 'frontend' && d.to === 'backend');
     expect(link).toBeDefined();
     expect(link!.references).toContain('/api/tasks');
   });

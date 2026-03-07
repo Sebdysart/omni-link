@@ -6,7 +6,11 @@ function makeConfig(overrides: Partial<OmniLinkConfig> = {}): OmniLinkConfig {
   return {
     repos: [],
     evolution: { aggressiveness: 'moderate', maxSuggestionsPerSession: 5, categories: [] },
-    quality: { blockOnFailure: false, requireTestsForNewCode: false, conventionStrictness: 'moderate' },
+    quality: {
+      blockOnFailure: false,
+      requireTestsForNewCode: false,
+      conventionStrictness: 'moderate',
+    },
     context: { tokenBudget: 4000, prioritize: 'changed-files-first', includeRecentCommits: 5 },
     cache: { directory: '.cache', maxAgeDays: 1 },
     ...overrides,

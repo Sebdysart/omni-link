@@ -70,6 +70,7 @@ Return reviews in this structure:
 ## Cross-Repo Review: [change description]
 
 ### Changes Reviewed
+
 - [repo]/[file] — [what changed]
 
 ### Contract Impact
@@ -78,19 +79,20 @@ Return reviews in this structure:
 
 **Provider:** `[repo]/[file]:[line]`
 **Consumers:**
+
 - `[repo]/[file]:[line]` — Status: [SAFE / NEEDS-UPDATE / BREAKING]
 
-| Field | Provider | Consumer | Status |
-|-------|----------|----------|--------|
-| id | string | String | SAFE |
-| email | string | String | SAFE |
+| Field | Provider      | Consumer    | Status       |
+| ----- | ------------- | ----------- | ------------ |
+| id    | string        | String      | SAFE         |
+| email | string        | String      | SAFE         |
 | phone | string? (NEW) | — (missing) | NEEDS-UPDATE |
 
 ### Type Lineage
 
-| Concept | Repos | Alignment |
-|---------|-------|-----------|
-| User | backend, ios-app | [aligned / diverged] |
+| Concept | Repos            | Alignment            |
+| ------- | ---------------- | -------------------- |
+| User    | backend, ios-app | [aligned / diverged] |
 
 ### Verdict
 
@@ -99,6 +101,7 @@ Return reviews in this structure:
 [Explanation]
 
 ### Required Actions (if NEEDS-UPDATE or BREAKING)
+
 1. [ ] [repo] — [specific change needed]
 2. [ ] [repo] — [specific change needed]
 ```

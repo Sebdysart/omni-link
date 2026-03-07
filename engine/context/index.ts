@@ -1,10 +1,6 @@
 // engine/context/index.ts — Context builder orchestrator: scan -> prune -> format pipeline
 
-import type {
-  EcosystemGraph,
-  EcosystemDigest,
-  OmniLinkConfig,
-} from '../types.js';
+import type { EcosystemGraph, EcosystemDigest, OmniLinkConfig } from '../types.js';
 
 import { pruneToTokenBudget } from './token-pruner.js';
 import { formatDigest } from './digest-formatter.js';
@@ -14,6 +10,8 @@ export { CacheManager } from './cache-manager.js';
 export { pruneToTokenBudget, estimateTokens } from './token-pruner.js';
 export type { PrunedContext } from './token-pruner.js';
 export { formatDigest } from './digest-formatter.js';
+export { countTokens } from './token-counter.js';
+export { generateArchitectureDiagram } from './diagram-generator.js';
 
 /**
  * Build the final context for session injection.
@@ -39,11 +37,7 @@ export function buildContext(
   const originalRepos = graph.repos;
 
   // Step 3: Prune graph to fit within the configured token budget
-  const pruned = pruneToTokenBudget(
-    graph,
-    config.context.tokenBudget,
-    config.context.prioritize,
-  );
+  const pruned = pruneToTokenBudget(graph, config.context.tokenBudget, config.context.prioritize);
 
   // Step 4: Format the pruned graph into a digest + markdown, passing
   // the pre-computed evolution opportunities and the original repo list

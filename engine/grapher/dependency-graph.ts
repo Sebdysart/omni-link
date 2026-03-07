@@ -23,7 +23,7 @@ export function buildInternalDeps(manifest: RepoManifest): InternalDep[] {
 
   // Merge inferred deps with explicit deps (avoid duplicates)
   for (const inf of inferred) {
-    const existing = deps.find(d => d.from === inf.from && d.to === inf.to);
+    const existing = deps.find((d) => d.from === inf.from && d.to === inf.to);
     if (existing) {
       // Add any new imports that weren't already listed
       for (const imp of inf.imports) {
@@ -105,14 +105,14 @@ function inferDepsFromSignatures(exports: ExportDef[]): InternalDep[] {
  *    match handler names in a provider repo
  */
 export function detectCrossRepoDeps(
-  manifests: RepoManifest[]
+  manifests: RepoManifest[],
 ): Array<{ from: string; to: string; references: string[] }> {
   if (manifests.length < 2) return [];
 
   // Accumulate cross-repo references: key = "from:to", value = set of reference strings
   const crossRefMap = new Map<string, Set<string>>();
 
-  const addRef = (from: string, to: string, ref: string) => {
+  const addRef = (from: string, to: string, ref: string): void => {
     if (from === to) return;
     const key = `${from}:${to}`;
     const refs = crossRefMap.get(key) ?? new Set<string>();
@@ -144,7 +144,7 @@ export function detectCrossRepoDeps(
  */
 function detectSharedTypeNames(
   manifests: RepoManifest[],
-  addRef: (from: string, to: string, ref: string) => void
+  addRef: (from: string, to: string, ref: string) => void,
 ): void {
   // Collect all type names per repo
   const typeNamesByRepo = new Map<string, Set<string>>();
@@ -187,12 +187,12 @@ function detectSharedTypeNames(
  */
 function detectUrlPatternRefs(
   manifests: RepoManifest[],
-  addRef: (from: string, to: string, ref: string) => void
+  addRef: (from: string, to: string, ref: string) => void,
 ): void {
   // Collect routes from all repos
   const routesByRepo = new Map<string, string[]>();
   for (const manifest of manifests) {
-    const paths = manifest.apiSurface.routes.map(r => r.path);
+    const paths = manifest.apiSurface.routes.map((r) => r.path);
     if (paths.length > 0) {
       routesByRepo.set(manifest.repoId, paths);
     }
@@ -220,7 +220,7 @@ function detectUrlPatternRefs(
  */
 function detectHandlerNameRefs(
   manifests: RepoManifest[],
-  addRef: (from: string, to: string, ref: string) => void
+  addRef: (from: string, to: string, ref: string) => void,
 ): void {
   // Collect handler names from routes
   const handlersByRepo = new Map<string, Set<string>>();

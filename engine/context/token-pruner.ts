@@ -19,25 +19,6 @@ export interface PrunedContext {
 
 // ─── Priority Sections ───────────────────────────────────────────────────────
 
-/**
- * Each section of the context has a priority weight.
- * Higher weight = kept longer during pruning.
- *
- * Priority order (highest to lowest):
- * 1. Contract mismatches (100) — always include
- * 2. Changed files + impact paths (80)
- * 3. API surface / bridges (60)
- * 4. Type registry / shared types (40)
- * 5. Conventions summary (20)
- * 6. Recent commits (10) — trim first
- */
-interface Section {
-  name: string;
-  priority: number;
-  tokens: number;
-  serialize: () => string;
-}
-
 // ─── Token Estimation ────────────────────────────────────────────────────────
 
 /**
@@ -70,7 +51,7 @@ export function pruneToTokenBudget(
 
   // Deep clone the graph so we can mutate freely
   const pruned: EcosystemGraph = {
-    repos: graph.repos.map(r => deepCloneManifest(r)),
+    repos: graph.repos.map((r) => deepCloneManifest(r)),
     bridges: [...graph.bridges],
     sharedTypes: [...graph.sharedTypes],
     contractMismatches: [...graph.contractMismatches],
@@ -227,7 +208,13 @@ export function pruneToTokenBudget(
 
 // ─── Serialization Helpers ───────────────────────────────────────────────────
 
-function serializeCommit(commit: { sha: string; message: string; author: string; date: string; filesChanged: string[] }): string {
+function serializeCommit(commit: {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+  filesChanged: string[];
+}): string {
   return `${commit.sha} ${commit.message} ${commit.author} ${commit.date} ${commit.filesChanged.join(',')}`;
 }
 
@@ -236,11 +223,14 @@ function serializeConventions(repo: RepoManifest): string {
 }
 
 function serializeTypeLineage(lineage: TypeLineage): string {
-  return `${lineage.concept} ${lineage.alignment} ${lineage.instances.map(i => `${i.repo}:${i.type.name}:${i.type.fields.length}fields`).join(' ')}`;
+  return `${lineage.concept} ${lineage.alignment} ${lineage.instances.map((i) => `${i.repo}:${i.type.name}:${i.type.fields.length}fields`).join(' ')}`;
 }
 
-function serializeTypeDef(type: { name: string; fields: Array<{ name: string; type: string }> }): string {
-  return `${type.name} ${type.fields.map(f => `${f.name}:${f.type}`).join(' ')}`;
+function serializeTypeDef(type: {
+  name: string;
+  fields: Array<{ name: string; type: string }>;
+}): string {
+  return `${type.name} ${type.fields.map((f) => `${f.name}:${f.type}`).join(' ')}`;
 }
 
 function serializeBridge(bridge: ApiBridge): string {
@@ -248,7 +238,7 @@ function serializeBridge(bridge: ApiBridge): string {
 }
 
 function serializeImpactPath(impact: ImpactPath): string {
-  return `${impact.trigger.repo}:${impact.trigger.file}:${impact.trigger.change} -> ${impact.affected.map(a => `${a.repo}:${a.file}:${a.reason}`).join(', ')}`;
+  return `${impact.trigger.repo}:${impact.trigger.file}:${impact.trigger.change} -> ${impact.affected.map((a) => `${a.repo}:${a.file}:${a.reason}`).join(', ')}`;
 }
 
 function serializeMismatch(mismatch: Mismatch): string {

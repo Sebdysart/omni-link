@@ -1,11 +1,6 @@
 // engine/grapher/impact-analyzer.ts — Trace change ripples across repos
 
-import type {
-  EcosystemGraph,
-  ImpactPath,
-  ApiBridge,
-  InternalDep,
-} from '../types.js';
+import type { EcosystemGraph, ImpactPath, ApiBridge } from '../types.js';
 
 /**
  * Analyze the impact of a set of changed files across the ecosystem.
@@ -18,7 +13,7 @@ import type {
  */
 export function analyzeImpact(
   graph: EcosystemGraph,
-  changedFiles: Array<{ repo: string; file: string; change: string }>
+  changedFiles: Array<{ repo: string; file: string; change: string }>,
 ): ImpactPath[] {
   if (changedFiles.length === 0) return [];
 
@@ -79,9 +74,9 @@ interface InternalDependent {
 function findInternalDependents(
   graph: EcosystemGraph,
   repoId: string,
-  changedFile: string
+  changedFile: string,
 ): InternalDependent[] {
-  const repo = graph.repos.find(r => r.repoId === repoId);
+  const repo = graph.repos.find((r) => r.repoId === repoId);
   if (!repo) return [];
 
   const internalDeps = repo.dependencies.internal;
@@ -135,7 +130,7 @@ function findInternalDependents(
 function findCrossRepoBridgeConsumers(
   graph: EcosystemGraph,
   repoId: string,
-  changedFile: string
+  changedFile: string,
 ): ApiBridge[] {
   const matches: ApiBridge[] = [];
 
@@ -145,17 +140,17 @@ function findCrossRepoBridgeConsumers(
     // Check if the changed file is referenced by this bridge's provider route
     // The route string format is "METHOD /path", and we check if the changed file
     // is the source file for that route
-    const providerRepo = graph.repos.find(r => r.repoId === repoId);
+    const providerRepo = graph.repos.find((r) => r.repoId === repoId);
     if (!providerRepo) continue;
 
     // Find the route definition in the provider repo
-    const routeMatch = providerRepo.apiSurface.routes.find(r => {
+    const routeMatch = providerRepo.apiSurface.routes.find((r) => {
       const routeLabel = `${r.method} ${r.path}`;
       return routeLabel === bridge.provider.route && r.file === changedFile;
     });
 
     // Also match procedure-based bridges
-    const procMatch = providerRepo.apiSurface.procedures.find(p => {
+    const procMatch = providerRepo.apiSurface.procedures.find((p) => {
       const procLabel = `${p.kind} ${p.name}`;
       return procLabel === bridge.provider.route && p.file === changedFile;
     });
@@ -176,7 +171,8 @@ function findCrossRepoBridgeConsumers(
 function assessSeverity(change: string): 'breaking' | 'warning' | 'info' {
   if (change.includes('type-change') || change.includes('type change')) return 'breaking';
   if (change.includes('route-change') || change.includes('route change')) return 'breaking';
-  if (change.includes('implementation-change') || change.includes('implementation change')) return 'warning';
+  if (change.includes('implementation-change') || change.includes('implementation change'))
+    return 'warning';
   if (change.includes('rename')) return 'breaking';
   if (change.includes('delete') || change.includes('remove')) return 'breaking';
   return 'info';
@@ -189,7 +185,8 @@ function assessSeverity(change: string): 'breaking' | 'warning' | 'info' {
 function assessCrossRepoSeverity(change: string): 'breaking' | 'warning' | 'info' {
   if (change.includes('type-change') || change.includes('type change')) return 'breaking';
   if (change.includes('route-change') || change.includes('route change')) return 'breaking';
-  if (change.includes('implementation-change') || change.includes('implementation change')) return 'warning';
+  if (change.includes('implementation-change') || change.includes('implementation change'))
+    return 'warning';
   if (change.includes('rename')) return 'breaking';
   if (change.includes('delete') || change.includes('remove')) return 'breaking';
   return 'warning';

@@ -18,7 +18,7 @@ import type {
  */
 export function compareTypes(
   providerType: TypeDef,
-  consumerType: TypeDef
+  consumerType: TypeDef,
 ): 'exact' | 'compatible' | 'mismatch' {
   const providerFields = new Map(providerType.fields.map((field) => [field.name, field]));
   let isExact = true;
@@ -187,18 +187,17 @@ export function mapApiContracts(manifests: RepoManifest[]): ApiBridge[] {
 
       const matches = findConsumerReferences(consumerManifest, provider);
       for (const match of matches) {
-        const routeLabel = provider.kind === 'route'
-          ? `${provider.route!.method} ${provider.route!.path}`
-          : `${provider.procedure!.kind} ${provider.procedure!.name}`;
+        const routeLabel =
+          provider.kind === 'route'
+            ? `${provider.route!.method} ${provider.route!.path}`
+            : `${provider.procedure!.kind} ${provider.procedure!.name}`;
 
-        const handlerName = provider.kind === 'route'
-          ? provider.route!.handler
-          : provider.procedure!.name;
+        const handlerName =
+          provider.kind === 'route' ? provider.route!.handler : provider.procedure!.name;
 
         // Resolve output type for this endpoint
-        const outputTypeName = provider.kind === 'route'
-          ? provider.route!.outputType
-          : provider.procedure!.outputType;
+        const outputTypeName =
+          provider.kind === 'route' ? provider.route!.outputType : provider.procedure!.outputType;
 
         const providerOutputType = outputTypeName
           ? findType(provider.manifest, outputTypeName)
@@ -209,9 +208,10 @@ export function mapApiContracts(manifests: RepoManifest[]): ApiBridge[] {
           ? findType(consumerManifest, outputTypeName)
           : undefined;
 
-        const matchStatus = (providerOutputType && consumerOutputType)
-          ? compareTypes(providerOutputType, consumerOutputType)
-          : 'compatible'; // If types can't be resolved, assume compatible
+        const matchStatus =
+          providerOutputType && consumerOutputType
+            ? compareTypes(providerOutputType, consumerOutputType)
+            : 'compatible'; // If types can't be resolved, assume compatible
 
         const bridge: ApiBridge = {
           consumer: {
@@ -226,7 +226,8 @@ export function mapApiContracts(manifests: RepoManifest[]): ApiBridge[] {
           },
           contract: {
             inputType: resolveInputType(provider),
-            outputType: providerOutputType ?? makeEmptyType(outputTypeName ?? 'unknown', provider.repoId),
+            outputType:
+              providerOutputType ?? makeEmptyType(outputTypeName ?? 'unknown', provider.repoId),
             matchStatus,
           },
         };
@@ -266,7 +267,7 @@ interface ConsumerMatch {
  */
 function findConsumerReferences(
   consumer: RepoManifest,
-  provider: ProviderEndpoint
+  provider: ProviderEndpoint,
 ): ConsumerMatch[] {
   const matches: ConsumerMatch[] = [];
 
@@ -291,10 +292,7 @@ function findConsumerReferences(
     const procName = proc.name;
 
     for (const exp of consumer.apiSurface.exports) {
-      if (
-        exp.signature.includes(procName) ||
-        exp.name.includes(procName)
-      ) {
+      if (exp.signature.includes(procName) || exp.name.includes(procName)) {
         matches.push({ file: exp.file, line: exp.line });
       }
     }
@@ -310,11 +308,11 @@ function findConsumerReferences(
  */
 function findType(manifest: RepoManifest, typeName: string): TypeDef | undefined {
   // Search types
-  const found = manifest.typeRegistry.types.find(t => t.name === typeName);
+  const found = manifest.typeRegistry.types.find((t) => t.name === typeName);
   if (found) return found;
 
   // Search schemas (convert to TypeDef)
-  const schema = manifest.typeRegistry.schemas.find(s => s.name === typeName);
+  const schema = manifest.typeRegistry.schemas.find((s) => s.name === typeName);
   if (schema) {
     return {
       name: schema.name,
@@ -330,9 +328,8 @@ function findType(manifest: RepoManifest, typeName: string): TypeDef | undefined
  * Resolve the input type for a provider endpoint.
  */
 function resolveInputType(provider: ProviderEndpoint): TypeDef {
-  const inputTypeName = provider.kind === 'route'
-    ? provider.route!.inputType
-    : provider.procedure!.inputType;
+  const inputTypeName =
+    provider.kind === 'route' ? provider.route!.inputType : provider.procedure!.inputType;
 
   if (inputTypeName) {
     const found = findType(provider.manifest, inputTypeName);

@@ -164,12 +164,13 @@ interface ApiBridge {
   contract: {
     inputType: TypeDef;
     outputType: TypeDef;
-    matchStatus: "exact" | "compatible" | "mismatch";
+    matchStatus: 'exact' | 'compatible' | 'mismatch';
   };
 }
 ```
 
 Bridge detection matches:
+
 - URL patterns / route names
 - Type shapes across languages (TS interface <-> Swift Codable struct)
 - API client method names to server route names
@@ -177,6 +178,7 @@ Bridge detection matches:
 ### Context Builder
 
 Token-budgeted session context (default 8K tokens):
+
 1. Priority ranking — changed files first, then dependents, then API surfaces
 2. Semantic compression — summarize type mismatches rather than dump raw types
 3. Staleness markers — every fact includes its git SHA for verification
@@ -214,35 +216,35 @@ Invalidation: compare current file SHA to cached SHA. Only rescan changed files.
 
 ## Skills (10 Total)
 
-| Skill | Trigger | Purpose |
-|-------|---------|---------|
-| `using-omni-link` | Session start (injected) | Meta skill — ground rules, digest injection, evolution posture |
-| `ecosystem-grounding` | Session start, context switch | Full scan → graph → digest, state briefing, contract mismatch alerts |
-| `cross-repo-impact` | Before API/schema/type changes | Ripple analysis — exact file:line impacts across all repos |
-| `anti-slop-gate` | Before any code generation | Block hallucinated refs, convention violations, boilerplate, over-engineering |
-| `convention-enforcer` | During code generation | Enforce detected naming, file placement, error handling, architecture patterns |
-| `dependency-navigator` | Exploration queries | Cross-repo "where is X used?", dependency chains, type tracing |
-| `health-audit` | `/health` command | Per-repo scores, cross-repo health, risk zones, debt inventory, trends |
-| `ecosystem-planner` | Multi-repo planning | Cross-repo task ordering, coordination points, parallel subagent opportunities |
-| `business-evolution` | Every session + `/evolve` | Aggressive upgrade surfacing: missing features, scale blockers, monetization gaps |
-| `upgrade-executor` | Implementing approved upgrades | Coordinated cross-repo execution with contract validation at each step |
+| Skill                  | Trigger                        | Purpose                                                                           |
+| ---------------------- | ------------------------------ | --------------------------------------------------------------------------------- |
+| `using-omni-link`      | Session start (injected)       | Meta skill — ground rules, digest injection, evolution posture                    |
+| `ecosystem-grounding`  | Session start, context switch  | Full scan → graph → digest, state briefing, contract mismatch alerts              |
+| `cross-repo-impact`    | Before API/schema/type changes | Ripple analysis — exact file:line impacts across all repos                        |
+| `anti-slop-gate`       | Before any code generation     | Block hallucinated refs, convention violations, boilerplate, over-engineering     |
+| `convention-enforcer`  | During code generation         | Enforce detected naming, file placement, error handling, architecture patterns    |
+| `dependency-navigator` | Exploration queries            | Cross-repo "where is X used?", dependency chains, type tracing                    |
+| `health-audit`         | `/health` command              | Per-repo scores, cross-repo health, risk zones, debt inventory, trends            |
+| `ecosystem-planner`    | Multi-repo planning            | Cross-repo task ordering, coordination points, parallel subagent opportunities    |
+| `business-evolution`   | Every session + `/evolve`      | Aggressive upgrade surfacing: missing features, scale blockers, monetization gaps |
+| `upgrade-executor`     | Implementing approved upgrades | Coordinated cross-repo execution with contract validation at each step            |
 
 ## Agents (3)
 
-| Agent | Dispatched By | Purpose |
-|-------|--------------|---------|
-| `repo-analyst` | health-audit, ecosystem-grounding | Deep-dive single repo analysis |
-| `cross-repo-reviewer` | cross-repo-impact, upgrade-executor | Review changes for cross-repo safety |
-| `evolution-strategist` | business-evolution | Business intelligence — CTO/product strategist perspective |
+| Agent                  | Dispatched By                       | Purpose                                                    |
+| ---------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| `repo-analyst`         | health-audit, ecosystem-grounding   | Deep-dive single repo analysis                             |
+| `cross-repo-reviewer`  | cross-repo-impact, upgrade-executor | Review changes for cross-repo safety                       |
+| `evolution-strategist` | business-evolution                  | Business intelligence — CTO/product strategist perspective |
 
 ## Commands (4)
 
-| Command | Purpose |
-|---------|---------|
-| `/scan` | Force full ecosystem rescan |
+| Command   | Purpose                                                |
+| --------- | ------------------------------------------------------ |
+| `/scan`   | Force full ecosystem rescan                            |
 | `/impact` | Analyze impact of uncommitted changes across all repos |
-| `/evolve` | Run business evolution analysis |
-| `/health` | Full ecosystem health audit |
+| `/evolve` | Run business evolution analysis                        |
+| `/health` | Full ecosystem health audit                            |
 
 ## Configuration
 

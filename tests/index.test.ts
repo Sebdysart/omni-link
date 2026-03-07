@@ -39,7 +39,15 @@ vi.mock('../engine/quality/health-scorer.js', () => ({
   scoreEcosystemHealth: vi.fn(),
 }));
 
-import { scan, impact, impactFromUncommitted, health, evolve, qualityCheck, SimulateOnlyError } from '../engine/index.js';
+import {
+  scan,
+  impact,
+  impactFromUncommitted,
+  health,
+  evolve,
+  qualityCheck,
+  SimulateOnlyError,
+} from '../engine/index.js';
 import { scanRepo } from '../engine/scanner/index.js';
 import { buildEcosystemGraph } from '../engine/grapher/index.js';
 import { buildContext } from '../engine/context/index.js';
@@ -134,7 +142,7 @@ describe('engine/index — scan()', () => {
     vi.clearAllMocks();
   });
 
-  it('scans each repo, builds graph, and builds context', () => {
+  it('scans each repo, builds graph, and builds context', async () => {
     const config = makeConfig(2);
     const m0 = makeManifest('repo-0');
     const m1 = makeManifest('repo-1');
@@ -151,13 +159,11 @@ describe('engine/index — scan()', () => {
       tokenCount: 0,
     };
 
-    vi.mocked(scanRepo)
-      .mockReturnValueOnce(m0)
-      .mockReturnValueOnce(m1);
+    vi.mocked(scanRepo).mockResolvedValueOnce(m0).mockResolvedValueOnce(m1);
     vi.mocked(buildEcosystemGraph).mockReturnValue(graph);
     vi.mocked(buildContext).mockReturnValue({ digest, markdown: '# Digest' });
 
-    const result = scan(config);
+    const result = await scan(config);
 
     // Scanner called once per repo, with the shared fileCache Map and optional manifestCache
     expect(scanRepo).toHaveBeenCalledTimes(2);
@@ -183,7 +189,7 @@ describe('engine/index — impact()', () => {
     vi.clearAllMocks();
   });
 
-  it('scans repos, builds graph, then runs impact analysis on changed files', () => {
+  it('scans repos, builds graph, then runs impact analysis on changed files', async () => {
     const config = makeConfig(1);
     const m0 = makeManifest('repo-0');
     const graph = makeGraph([m0]);
@@ -191,15 +197,23 @@ describe('engine/index — impact()', () => {
     const impactPaths = [
       {
         trigger: changedFiles[0],
-        affected: [{ repo: 'repo-0', file: 'src/other.ts', line: 10, reason: 'imports', severity: 'breaking' as const }],
+        affected: [
+          {
+            repo: 'repo-0',
+            file: 'src/other.ts',
+            line: 10,
+            reason: 'imports',
+            severity: 'breaking' as const,
+          },
+        ],
       },
     ];
 
-    vi.mocked(scanRepo).mockReturnValue(m0);
+    vi.mocked(scanRepo).mockResolvedValue(m0);
     vi.mocked(buildEcosystemGraph).mockReturnValue(graph);
     vi.mocked(analyzeImpact).mockReturnValue(impactPaths);
 
-    const result = impact(config, changedFiles);
+    const result = await impact(config, changedFiles);
 
     expect(scanRepo).toHaveBeenCalledTimes(1);
     expect(buildEcosystemGraph).toHaveBeenCalledWith([m0]);
@@ -213,20 +227,28 @@ describe('engine/index — health()', () => {
     vi.clearAllMocks();
   });
 
-  it('scans repos, builds graph, then scores ecosystem health', () => {
+  it('scans repos, builds graph, then scores ecosystem health', async () => {
     const config = makeConfig(1);
     const m0 = makeManifest('repo-0');
     const graph = makeGraph([m0]);
     const healthResult = {
-      perRepo: { 'repo-0': { todoScore: 100, deadCodeScore: 100, testScore: 40, qualityScore: 100, overall: 82 } },
+      perRepo: {
+        'repo-0': {
+          todoScore: 100,
+          deadCodeScore: 100,
+          testScore: 40,
+          qualityScore: 100,
+          overall: 82,
+        },
+      },
       overall: 82,
     };
 
-    vi.mocked(scanRepo).mockReturnValue(m0);
+    vi.mocked(scanRepo).mockResolvedValue(m0);
     vi.mocked(buildEcosystemGraph).mockReturnValue(graph);
     vi.mocked(scoreEcosystemHealth).mockReturnValue(healthResult);
 
-    const result = health(config);
+    const result = await health(config);
 
     expect(scanRepo).toHaveBeenCalledTimes(1);
     expect(buildEcosystemGraph).toHaveBeenCalledWith([m0]);
@@ -240,7 +262,7 @@ describe('engine/index — evolve()', () => {
     vi.clearAllMocks();
   });
 
-  it('scans repos, builds graph, then runs evolution analysis', () => {
+  it('scans repos, builds graph, then runs evolution analysis', async () => {
     const config = makeConfig(1);
     const m0 = makeManifest('repo-0');
     const graph = makeGraph([m0]);
@@ -257,11 +279,11 @@ describe('engine/index — evolve()', () => {
       },
     ];
 
-    vi.mocked(scanRepo).mockReturnValue(m0);
+    vi.mocked(scanRepo).mockResolvedValue(m0);
     vi.mocked(buildEcosystemGraph).mockReturnValue(graph);
     vi.mocked(analyzeEvolution).mockReturnValue(suggestions);
 
-    const result = evolve(config);
+    const result = await evolve(config);
 
     expect(scanRepo).toHaveBeenCalledTimes(1);
     expect(buildEcosystemGraph).toHaveBeenCalledWith([m0]);
@@ -275,7 +297,7 @@ describe('engine/index — impactFromUncommitted()', () => {
     vi.clearAllMocks();
   });
 
-  it('auto-detects uncommitted changes from manifest git state and runs impact analysis', () => {
+  it('auto-detects uncommitted changes from manifest git state and runs impact analysis', async () => {
     const config = makeConfig(1);
     const m0 = makeManifest('repo-0');
     // Simulate repo-0 having two uncommitted files
@@ -285,15 +307,23 @@ describe('engine/index — impactFromUncommitted()', () => {
     const impactPaths = [
       {
         trigger: { repo: 'repo-0', file: 'src/api.ts', change: 'uncommitted' },
-        affected: [{ repo: 'repo-0', file: 'src/consumer.ts', line: 5, reason: 'imports', severity: 'warning' as const }],
+        affected: [
+          {
+            repo: 'repo-0',
+            file: 'src/consumer.ts',
+            line: 5,
+            reason: 'imports',
+            severity: 'warning' as const,
+          },
+        ],
       },
     ];
 
-    vi.mocked(scanRepo).mockReturnValue(m0);
+    vi.mocked(scanRepo).mockResolvedValue(m0);
     vi.mocked(buildEcosystemGraph).mockReturnValue(graph);
     vi.mocked(analyzeImpact).mockReturnValue(impactPaths);
 
-    const result = impactFromUncommitted(config);
+    const result = await impactFromUncommitted(config);
 
     expect(scanRepo).toHaveBeenCalledTimes(1);
     expect(buildEcosystemGraph).toHaveBeenCalledWith([m0]);
@@ -308,7 +338,7 @@ describe('engine/index — impactFromUncommitted()', () => {
     expect(result).toBe(impactPaths);
   });
 
-  it('returns empty array when no uncommitted changes exist', () => {
+  it('returns empty array when no uncommitted changes exist', async () => {
     const config = makeConfig(1);
     const m0 = makeManifest('repo-0');
     // No uncommitted changes
@@ -316,11 +346,11 @@ describe('engine/index — impactFromUncommitted()', () => {
 
     const graph = makeGraph([m0]);
 
-    vi.mocked(scanRepo).mockReturnValue(m0);
+    vi.mocked(scanRepo).mockResolvedValue(m0);
     vi.mocked(buildEcosystemGraph).mockReturnValue(graph);
     vi.mocked(analyzeImpact).mockReturnValue([]);
 
-    const result = impactFromUncommitted(config);
+    const result = await impactFromUncommitted(config);
 
     expect(analyzeImpact).toHaveBeenCalledWith(graph, []);
     expect(result).toEqual([]);
@@ -332,7 +362,7 @@ describe('engine/index — qualityCheck()', () => {
     vi.clearAllMocks();
   });
 
-  it('scans repos and runs all three quality checks against the first matching manifest', () => {
+  it('scans repos and runs all three quality checks against the first matching manifest', async () => {
     const config = makeConfig(1);
     const m0 = makeManifest('repo-0');
 
@@ -340,14 +370,14 @@ describe('engine/index — qualityCheck()', () => {
     const convResult = { valid: true, violations: [] };
     const slopResult = { clean: true, issues: [] };
 
-    vi.mocked(scanRepo).mockReturnValue(m0);
+    vi.mocked(scanRepo).mockResolvedValue(m0);
     vi.mocked(checkReferences).mockReturnValue(refResult);
     vi.mocked(validateConventions).mockReturnValue(convResult);
     vi.mocked(detectSlop).mockReturnValue(slopResult);
 
     const code = 'const x = 1;';
     const file = 'src/index.ts';
-    const result = qualityCheck(code, file, config);
+    const result = await qualityCheck(code, file, config);
 
     expect(scanRepo).toHaveBeenCalledTimes(1);
     expect(checkReferences).toHaveBeenCalledWith(code, file, m0, [m0]);
@@ -363,11 +393,11 @@ describe('engine/index — qualityCheck()', () => {
     expect(Array.isArray(result.rules.violations)).toBe(true);
   });
 
-  it('returns clean results when no repos configured', () => {
+  it('returns clean results when no repos configured', async () => {
     const config = makeConfig(0);
     // scanRepo won't be called for 0 repos
 
-    const result = qualityCheck('const x = 1;', 'test.ts', config);
+    const result = await qualityCheck('const x = 1;', 'test.ts', config);
 
     expect(result.references.valid).toBe(true);
     expect(result.conventions.valid).toBe(true);
@@ -382,27 +412,29 @@ describe('engine/index — simulateOnly guard', () => {
 
   const simulateConfig = (): OmniLinkConfig => ({ ...makeConfig(1), simulateOnly: true });
 
-  it('scan() throws SimulateOnlyError when simulateOnly is true', () => {
-    expect(() => scan(simulateConfig())).toThrow(SimulateOnlyError);
+  it('scan() throws SimulateOnlyError when simulateOnly is true', async () => {
+    await expect(scan(simulateConfig())).rejects.toThrow(SimulateOnlyError);
   });
 
-  it('impact() throws SimulateOnlyError when simulateOnly is true', () => {
-    expect(() => impact(simulateConfig(), [])).toThrow(SimulateOnlyError);
+  it('impact() throws SimulateOnlyError when simulateOnly is true', async () => {
+    await expect(impact(simulateConfig(), [])).rejects.toThrow(SimulateOnlyError);
   });
 
-  it('impactFromUncommitted() throws SimulateOnlyError when simulateOnly is true', () => {
-    expect(() => impactFromUncommitted(simulateConfig())).toThrow(SimulateOnlyError);
+  it('impactFromUncommitted() throws SimulateOnlyError when simulateOnly is true', async () => {
+    await expect(impactFromUncommitted(simulateConfig())).rejects.toThrow(SimulateOnlyError);
   });
 
-  it('health() throws SimulateOnlyError when simulateOnly is true', () => {
-    expect(() => health(simulateConfig())).toThrow(SimulateOnlyError);
+  it('health() throws SimulateOnlyError when simulateOnly is true', async () => {
+    await expect(health(simulateConfig())).rejects.toThrow(SimulateOnlyError);
   });
 
-  it('evolve() throws SimulateOnlyError when simulateOnly is true', () => {
-    expect(() => evolve(simulateConfig())).toThrow(SimulateOnlyError);
+  it('evolve() throws SimulateOnlyError when simulateOnly is true', async () => {
+    await expect(evolve(simulateConfig())).rejects.toThrow(SimulateOnlyError);
   });
 
-  it('qualityCheck() throws SimulateOnlyError when simulateOnly is true', () => {
-    expect(() => qualityCheck('const x = 1;', 'src/index.ts', simulateConfig())).toThrow(SimulateOnlyError);
+  it('qualityCheck() throws SimulateOnlyError when simulateOnly is true', async () => {
+    await expect(qualityCheck('const x = 1;', 'src/index.ts', simulateConfig())).rejects.toThrow(
+      SimulateOnlyError,
+    );
   });
 });

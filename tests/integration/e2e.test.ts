@@ -288,13 +288,13 @@ function makeE2EConfig(backendPath: string, iosPath: string): OmniLinkConfig {
 // ─── Test Suite ─────────────────────────────────────────────────────────────
 
 describe('end-to-end integration: 2-repo ecosystem', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     backendDir = createBackendRepo();
     iosDir = createiOSRepo();
     config = makeE2EConfig(backendDir, iosDir);
 
     // Run the full pipeline once; individual tests verify the output
-    scanResult = scan(config);
+    scanResult = await scan(config);
   });
 
   afterAll(() => {
@@ -440,9 +440,7 @@ describe('end-to-end integration: 2-repo ecosystem', () => {
 
       // The type-flow mapper should detect User/UserDTO as a shared concept
       const concepts = scanResult.graph.sharedTypes.map((t) => t.concept.toLowerCase());
-      const hasUserConcept = concepts.some(
-        (c) => c.includes('user') || c.includes('createuser'),
-      );
+      const hasUserConcept = concepts.some((c) => c.includes('user') || c.includes('createuser'));
       expect(hasUserConcept).toBe(true);
     });
 
@@ -523,9 +521,7 @@ describe('end-to-end integration: 2-repo ecosystem', () => {
     });
 
     it('digest token count is within budget', () => {
-      expect(scanResult.context.digest.tokenCount).toBeLessThanOrEqual(
-        config.context.tokenBudget,
-      );
+      expect(scanResult.context.digest.tokenCount).toBeLessThanOrEqual(config.context.tokenBudget);
     });
 
     it('digest token count is positive', () => {
@@ -571,10 +567,10 @@ describe('end-to-end integration: 2-repo ecosystem', () => {
   // ─── Evolution Suggestions Verification ──────────────────────────────────
 
   describe('evolution analysis', () => {
-    let suggestions: ReturnType<typeof evolve>;
+    let suggestions: Awaited<ReturnType<typeof evolve>>;
 
-    beforeAll(() => {
-      suggestions = evolve(config);
+    beforeAll(async () => {
+      suggestions = await evolve(config);
     });
 
     it('returns an array of suggestions', () => {
@@ -607,23 +603,21 @@ describe('end-to-end integration: 2-repo ecosystem', () => {
     });
 
     it('respects maxSuggestionsPerSession limit', () => {
-      expect(suggestions.length).toBeLessThanOrEqual(
-        config.evolution.maxSuggestionsPerSession,
-      );
+      expect(suggestions.length).toBeLessThanOrEqual(config.evolution.maxSuggestionsPerSession);
     });
   });
 
   // ─── Cross-Cutting Concerns ──────────────────────────────────────────────
 
   describe('cross-cutting', () => {
-    it('pipeline is deterministic (same input produces same manifest count)', () => {
-      const result2 = scan(config);
+    it('pipeline is deterministic (same input produces same manifest count)', async () => {
+      const result2 = await scan(config);
       expect(result2.manifests).toHaveLength(scanResult.manifests.length);
       expect(result2.graph.repos).toHaveLength(scanResult.graph.repos.length);
       expect(result2.graph.sharedTypes.length).toBe(scanResult.graph.sharedTypes.length);
     });
 
-    it('uncommitted changes are detected when present', () => {
+    it('uncommitted changes are detected when present', async () => {
       // Add an uncommitted file to backend
       fs.writeFileSync(
         path.join(backendDir, 'src', 'routes', 'new-route.ts'),
@@ -634,7 +628,7 @@ export default app;
 `,
       );
 
-      const result = scan(config);
+      const result = await scan(config);
       const backend = result.manifests.find((m) => m.repoId === 'e2e-backend')!;
 
       // The new file is untracked, so it shows up in the scan but

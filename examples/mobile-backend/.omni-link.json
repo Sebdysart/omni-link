@@ -1,0 +1,16 @@
+{
+  "repos": [
+    {
+      "name": "backend",
+      "path": "/absolute/path/to/backend",
+      "language": "typescript",
+      "role": "backend"
+    },
+    {
+      "name": "ios-app",
+      "path": "/absolute/path/to/ios-app",
+      "language": "swift",
+      "role": "ios"
+    }
+  ]
+}

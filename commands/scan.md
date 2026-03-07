@@ -17,10 +17,12 @@ omni-link scan --config <auto-detect>
 ```
 
 Config auto-detection order:
+
 1. `.omni-link.json` in the current working directory
 2. `~/.claude/omni-link.json` as global fallback
 
 If no config is found, display:
+
 ```
 omni-link: No config found. Create .omni-link.json in your project root or ~/.claude/omni-link.json to enable ecosystem scanning.
 ```

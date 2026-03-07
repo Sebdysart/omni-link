@@ -76,11 +76,13 @@ After ALL changes are applied:
 Every execution must have a rollback plan. If something fails mid-execution:
 
 ### Automatic Rollback Triggers
+
 - A contract mismatch with severity `breaking` is introduced and was not in the plan
 - Tests fail in a repo that was just modified
 - Health score drops by more than 10 points
 
 ### Rollback Steps
+
 1. Identify which repos have been modified
 2. For each modified repo (in reverse order of application):
    - Revert uncommitted changes: `git checkout -- .`
@@ -89,7 +91,9 @@ Every execution must have a rollback plan. If something fails mid-execution:
 4. Report what happened and why rollback was needed
 
 ### Partial Rollback
+
 If changes to repos A and B succeeded but repo C failed:
+
 - Assess if A and B changes are independently valid
 - If yes: keep A and B, rollback C, report partial success
 - If no: rollback all three
@@ -117,6 +121,7 @@ After completion, present:
 ## Interaction with Cross-Repo Reviewer
 
 For each change step, the `cross-repo-reviewer` agent can be dispatched to:
+
 - Verify the change does not introduce cross-repo safety issues
 - Check that API contracts remain compatible
 - Validate that type lineage is preserved

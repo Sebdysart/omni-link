@@ -21,6 +21,7 @@ This skill ensures all generated code matches the detected conventions of the ta
 Each repo has a detected naming convention: `camelCase`, `snake_case`, `PascalCase`, `kebab-case`, or `mixed`.
 
 **Rules:**
+
 - Variables and functions: Follow the repo's detected convention
 - Classes, interfaces, types, enums: Always PascalCase regardless of repo convention
 - Constants (UPPER_SNAKE_CASE): Allowed in any convention
@@ -28,6 +29,7 @@ Each repo has a detected naming convention: `camelCase`, `snake_case`, `PascalCa
 - Private/internal names (prefixed with `_`): Exempt from convention checks
 
 **Auto-correction suggestions:**
+
 - `fetch_user_data` in a camelCase repo -> suggest `fetchUserData`
 - `getUserData` in a snake_case repo -> suggest `get_user_data`
 - `userservice` for a class -> suggest `UserService`
@@ -42,6 +44,7 @@ The scanner detects where different types of files belong:
 - Tests: Co-located vs. separate directory
 
 **Rules:**
+
 - New route handlers go in the detected routes directory
 - New types go in the detected types directory
 - Test files follow the detected testing pattern (co-located or separate)
@@ -55,6 +58,7 @@ The scanner detects the repo's error handling pattern:
 - Other patterns as detected
 
 **Rules:**
+
 - If the convention is `try-catch`, every async function with `await` must have a try-catch block
 - Generate error handling that matches the existing pattern
 
@@ -66,12 +70,14 @@ Detected patterns for test organization:
 - `separate-directory`: Test files live in `tests/` or `__tests__/` directory
 
 **Rules:**
+
 - New test files must follow the detected placement pattern
 - Test file naming should match existing conventions (`.test.ts` vs `.spec.ts`)
 
 ## How to Use During Code Generation
 
 1. **Check the digest** for the target repo's conventions:
+
    ```
    conventionSummary: {
      "backend": "camelCase, routes-in-src/routes/, try-catch, separate-directory tests",

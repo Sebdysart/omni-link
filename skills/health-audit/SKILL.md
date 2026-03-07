@@ -53,22 +53,22 @@ Present the health report in this format:
 
 Health scores are computed from four dimensions, weighted as follows:
 
-| Dimension | Weight | What It Measures |
-|-----------|--------|------------------|
-| Test Coverage | 30% | Percentage of code covered by tests. Unknown coverage scores 40. |
-| Code Quality | 25% | Lint errors (-2 pts each) and type errors (-4 pts each) |
-| Dead Code | 25% | Ratio of unused exports to total exports |
-| TODO Burden | 20% | Count of TODO/FIXME/HACK comments. Logarithmic decay. |
+| Dimension     | Weight | What It Measures                                                 |
+| ------------- | ------ | ---------------------------------------------------------------- |
+| Test Coverage | 30%    | Percentage of code covered by tests. Unknown coverage scores 40. |
+| Code Quality  | 25%    | Lint errors (-2 pts each) and type errors (-4 pts each)          |
+| Dead Code     | 25%    | Ratio of unused exports to total exports                         |
+| TODO Burden   | 20%    | Count of TODO/FIXME/HACK comments. Logarithmic decay.            |
 
 ### Score Interpretation
 
-| Range | Meaning |
-|-------|---------|
-| 90-100 | Excellent — minimal tech debt, well-tested |
-| 75-89 | Good — healthy with some improvement opportunities |
-| 60-74 | Fair — noticeable tech debt, action recommended |
-| 40-59 | Poor — significant issues, prioritize remediation |
-| 0-39 | Critical — major risk, immediate attention needed |
+| Range  | Meaning                                            |
+| ------ | -------------------------------------------------- |
+| 90-100 | Excellent — minimal tech debt, well-tested         |
+| 75-89  | Good — healthy with some improvement opportunities |
+| 60-74  | Fair — noticeable tech debt, action recommended    |
+| 40-59  | Poor — significant issues, prioritize remediation  |
+| 0-39   | Critical — major risk, immediate attention needed  |
 
 ## Risk Zone Identification
 
@@ -86,18 +86,22 @@ Flag as a risk zone when:
 For each risk zone, provide specific recommendations:
 
 **Low test score (<60):**
+
 - Identify the most critical untested paths (API routes, data mutations)
 - Suggest specific test files to create
 
 **Low quality score (<70):**
+
 - If lint errors: identify the most common lint rule violations
 - If type errors: these are compilation failures — must fix first
 
 **High dead code (>30%):**
+
 - List the unused exports
 - Recommend removal or verify if they are used dynamically
 
 **High TODO burden (>15 items):**
+
 - Categorize TODOs by urgency
 - Identify which are stale vs. actively needed
 

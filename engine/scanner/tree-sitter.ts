@@ -1,10 +1,11 @@
 // engine/scanner/tree-sitter.ts — Tree-sitter parser factory with multi-language support
 import { createRequire } from 'node:module';
+import type Parser from 'tree-sitter';
 
 const require = createRequire(import.meta.url);
-const Parser = require('tree-sitter');
+const TreeSitterParser = require('tree-sitter') as typeof import('tree-sitter');
 
-const LANGUAGE_MAP: Record<string, () => any> = {
+const LANGUAGE_MAP: Record<string, () => Parser.Language> = {
   typescript: () => require('tree-sitter-typescript').typescript,
   tsx: () => require('tree-sitter-typescript').tsx,
   javascript: () => require('tree-sitter-javascript'),
@@ -37,7 +38,7 @@ const EXTENSION_MAP: Record<string, string> = {
  * Creates a tree-sitter parser configured for the given language.
  * Throws if the language is not supported.
  */
-export function createParser(language: string): any {
+export function createParser(language: string): Parser {
   const loader = LANGUAGE_MAP[language];
   if (!loader) {
     if (MANUAL_LANGUAGE_SUPPORT.includes(language)) {
@@ -45,7 +46,7 @@ export function createParser(language: string): any {
     }
     throw new Error(`Unsupported language: ${language}`);
   }
-  const parser = new Parser();
+  const parser = new TreeSitterParser();
   parser.setLanguage(loader());
   return parser;
 }

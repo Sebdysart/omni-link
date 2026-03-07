@@ -85,10 +85,10 @@ describe('mapTypeFlows', () => {
 
     const lineages = mapTypeFlows([backend, ios]);
 
-    const userLineage = lineages.find(l => l.concept === 'User');
+    const userLineage = lineages.find((l) => l.concept === 'User');
     expect(userLineage).toBeDefined();
     expect(userLineage!.instances).toHaveLength(2);
-    expect(userLineage!.instances.map(i => i.repo).sort()).toEqual(['backend', 'ios-app']);
+    expect(userLineage!.instances.map((i) => i.repo).sort()).toEqual(['backend', 'ios-app']);
     expect(userLineage!.alignment).toBe('aligned');
   });
 
@@ -132,7 +132,7 @@ describe('mapTypeFlows', () => {
 
     const lineages = mapTypeFlows([backend, ios]);
 
-    const userLineage = lineages.find(l => l.concept === 'User');
+    const userLineage = lineages.find((l) => l.concept === 'User');
     expect(userLineage).toBeDefined();
     expect(userLineage!.instances).toHaveLength(2);
     expect(userLineage!.alignment).toBe('aligned');
@@ -181,9 +181,10 @@ describe('mapTypeFlows', () => {
     const lineages = mapTypeFlows([backend, frontend]);
 
     // Should match despite different names due to high field overlap
-    const taskLineage = lineages.find(l =>
-      l.instances.some(i => i.type.name === 'TaskPayload') &&
-      l.instances.some(i => i.type.name === 'TaskFormData')
+    const taskLineage = lineages.find(
+      (l) =>
+        l.instances.some((i) => i.type.name === 'TaskPayload') &&
+        l.instances.some((i) => i.type.name === 'TaskFormData'),
     );
     expect(taskLineage).toBeDefined();
   });
@@ -231,7 +232,7 @@ describe('mapTypeFlows', () => {
     });
 
     const lineages = mapTypeFlows([backend, ios]);
-    const userLineage = lineages.find(l => l.concept === 'User');
+    const userLineage = lineages.find((l) => l.concept === 'User');
     expect(userLineage).toBeDefined();
     expect(userLineage!.alignment).toBe('diverged');
   });
@@ -277,7 +278,7 @@ describe('mapTypeFlows', () => {
     });
 
     const lineages = mapTypeFlows([backend, ios]);
-    const userLineage = lineages.find(l => l.concept === 'User');
+    const userLineage = lineages.find((l) => l.concept === 'User');
     expect(userLineage).toBeDefined();
     expect(userLineage!.alignment).toBe('subset');
   });
@@ -287,7 +288,11 @@ describe('mapTypeFlows', () => {
       repoId: 'backend',
       typeRegistry: {
         types: [
-          { name: 'User', fields: [{ name: 'id', type: 'string' }], source: { repo: 'backend', file: 'types.ts', line: 1 } },
+          {
+            name: 'User',
+            fields: [{ name: 'id', type: 'string' }],
+            source: { repo: 'backend', file: 'types.ts', line: 1 },
+          },
         ],
         schemas: [],
         models: [],
@@ -380,7 +385,7 @@ describe('mapTypeFlows', () => {
 
     const lineages = mapTypeFlows([backend, frontend]);
     // "TaskSchema" with suffix stripped -> "Task" matches frontend "Task"
-    const taskLineage = lineages.find(l => l.concept === 'Task');
+    const taskLineage = lineages.find((l) => l.concept === 'Task');
     expect(taskLineage).toBeDefined();
     expect(taskLineage!.instances).toHaveLength(2);
   });

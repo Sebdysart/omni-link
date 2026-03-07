@@ -25,7 +25,9 @@ export interface RuleCheckResult {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isTestFile(file: string): boolean {
-  return /\.(test|spec)\.[tj]s$/.test(file) || file.includes('/tests/') || file.includes('/__tests__/');
+  return (
+    /\.(test|spec)\.[tj]s$/.test(file) || file.includes('/tests/') || file.includes('/__tests__/')
+  );
 }
 
 // ─── Built-in Rules ──────────────────────────────────────────────────────────
@@ -48,7 +50,8 @@ const noFetchWithoutCatch: HardRule = {
 
       // Check if this line or surrounding 5 lines contain .catch( or are inside try {
       const window = lines.slice(Math.max(0, i - 3), i + 6).join('\n');
-      const hasCatch = window.includes('.catch(') || window.includes('try {') || window.includes('try{');
+      const hasCatch =
+        window.includes('.catch(') || window.includes('try {') || window.includes('try{');
       if (!hasCatch) {
         violations.push({
           ruleId: 'no-fetch-without-catch',
@@ -77,7 +80,7 @@ const noRawEnvAccess: HardRule = {
       // Match process.env.SOMETHING without ?? or || on the same line
       if (
         /process\.env\.\w+/.test(line) &&
-        !/process\.env\.\w+\s*[\?\|]{1,2}/.test(line) &&
+        !/process\.env\.\w+\s*[?|]{1,2}/.test(line) &&
         !/process\.env\.\w+\s*[!=]{2,3}/.test(line) &&
         !/typeof\s+process\.env/.test(line)
       ) {
@@ -134,7 +137,7 @@ const noHardcodedSecret: HardRule = {
     // Patterns: variable assignments with long string values that look like secrets
     const SECRET_PATTERNS = [
       // Long alphanumeric strings assigned to key/secret/token/password variables
-      /(?:api[_-]?key|secret|token|password|auth[_-]?key)\s*[=:]\s*['"][a-zA-Z0-9+/=_\-]{20,}['"]/i,
+      /(?:api[_-]?key|secret|token|password|auth[_-]?key)\s*[=:]\s*['"][a-zA-Z0-9+/=._-]{20,}['"]/i,
       // Common secret prefixes (OpenAI sk-, Stripe sk_live_/sk_test_/pk_, AWS, GitHub, GitLab, etc.)
       /['"](?:sk[-_]|pk_|rk_|AKIA|ghp_|gho_|ghu_|ghs_|glpat-)[a-zA-Z0-9_]{10,}['"]/,
     ];
@@ -188,7 +191,7 @@ export function checkRules(
     violations.push(...rule.check(code, file));
   }
 
-  const hasError = violations.some(v => v.severity === 'error');
+  const hasError = violations.some((v) => v.severity === 'error');
 
   return {
     passed: !hasError,

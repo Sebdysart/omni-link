@@ -21,11 +21,13 @@ export interface GapFinding {
  * `/api/posts/{postId}/comments` → `/api/posts/comments`
  */
 function normalizeResourcePath(path: string): string {
-  return path
-    .split('/')
-    .filter(seg => !seg.startsWith(':') && !seg.startsWith('{'))
-    .join('/')
-    .replace(/\/+$/, '') || '/';
+  return (
+    path
+      .split('/')
+      .filter((seg) => !seg.startsWith(':') && !seg.startsWith('{'))
+      .join('/')
+      .replace(/\/+$/, '') || '/'
+  );
 }
 
 // ─── CRUD Detection ─────────────────────────────────────────────────────────
@@ -50,7 +52,7 @@ function detectIncompleteCrud(manifest: RepoManifest): GapFinding[] {
   }
 
   for (const [resource, routeGroup] of resourceMap) {
-    const methods = new Set(routeGroup.map(r => r.method.toUpperCase()));
+    const methods = new Set(routeGroup.map((r) => r.method.toUpperCase()));
 
     // Only check resources that have at least 2 CRUD methods (indicates intentional CRUD resource)
     if (methods.size < 2) continue;

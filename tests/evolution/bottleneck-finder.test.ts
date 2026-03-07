@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { findBottlenecks } from '../../engine/evolution/bottleneck-finder.js';
-import type { BottleneckFinding } from '../../engine/evolution/bottleneck-finder.js';
 import type { RepoManifest } from '../../engine/types.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -51,8 +50,22 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes/users.ts', line: 10, outputType: 'UserList' },
-            { method: 'GET', path: '/api/posts', handler: 'getPosts', file: 'src/routes/posts.ts', line: 5, outputType: 'PostList' },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes/users.ts',
+              line: 10,
+              outputType: 'UserList',
+            },
+            {
+              method: 'GET',
+              path: '/api/posts',
+              handler: 'getPosts',
+              file: 'src/routes/posts.ts',
+              line: 5,
+              outputType: 'PostList',
+            },
           ],
           procedures: [],
           exports: [],
@@ -60,7 +73,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      const paginationFindings = findings.filter(f => f.kind === 'missing-pagination');
+      const paginationFindings = findings.filter((f) => f.kind === 'missing-pagination');
 
       expect(paginationFindings.length).toBeGreaterThan(0);
       expect(paginationFindings[0].repo).toBe('backend');
@@ -72,7 +85,14 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsersPaginated', file: 'src/routes/users.ts', line: 10, outputType: 'PaginatedUserList' },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsersPaginated',
+              file: 'src/routes/users.ts',
+              line: 10,
+              outputType: 'PaginatedUserList',
+            },
           ],
           procedures: [],
           exports: [],
@@ -80,7 +100,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      const paginationFindings = findings.filter(f => f.kind === 'missing-pagination');
+      const paginationFindings = findings.filter((f) => f.kind === 'missing-pagination');
       expect(paginationFindings).toHaveLength(0);
     });
 
@@ -89,7 +109,13 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users/:id', handler: 'getUser', file: 'src/routes/users.ts', line: 10 },
+            {
+              method: 'GET',
+              path: '/api/users/:id',
+              handler: 'getUser',
+              file: 'src/routes/users.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],
@@ -97,7 +123,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      const paginationFindings = findings.filter(f => f.kind === 'missing-pagination');
+      const paginationFindings = findings.filter((f) => f.kind === 'missing-pagination');
       expect(paginationFindings).toHaveLength(0);
     });
 
@@ -107,14 +133,20 @@ describe('findBottlenecks', () => {
         apiSurface: {
           routes: [],
           procedures: [
-            { name: 'listUsers', kind: 'query', file: 'src/routers/user.ts', line: 10, outputType: 'UserArray' },
+            {
+              name: 'listUsers',
+              kind: 'query',
+              file: 'src/routers/user.ts',
+              line: 10,
+              outputType: 'UserArray',
+            },
           ],
           exports: [],
         },
       });
 
       const findings = findBottlenecks([manifest]);
-      const paginationFindings = findings.filter(f => f.kind === 'missing-pagination');
+      const paginationFindings = findings.filter((f) => f.kind === 'missing-pagination');
       expect(paginationFindings.length).toBeGreaterThan(0);
     });
   });
@@ -125,9 +157,27 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/products', handler: 'getProducts', file: 'src/routes/products.ts', line: 5 },
-            { method: 'GET', path: '/api/products/:id', handler: 'getProduct', file: 'src/routes/products.ts', line: 15 },
-            { method: 'GET', path: '/api/products/:id/reviews', handler: 'getProductReviews', file: 'src/routes/products.ts', line: 25 },
+            {
+              method: 'GET',
+              path: '/api/products',
+              handler: 'getProducts',
+              file: 'src/routes/products.ts',
+              line: 5,
+            },
+            {
+              method: 'GET',
+              path: '/api/products/:id',
+              handler: 'getProduct',
+              file: 'src/routes/products.ts',
+              line: 15,
+            },
+            {
+              method: 'GET',
+              path: '/api/products/:id/reviews',
+              handler: 'getProductReviews',
+              file: 'src/routes/products.ts',
+              line: 25,
+            },
           ],
           procedures: [],
           exports: [],
@@ -142,7 +192,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      const cachingFindings = findings.filter(f => f.kind === 'no-caching');
+      const cachingFindings = findings.filter((f) => f.kind === 'no-caching');
 
       expect(cachingFindings.length).toBeGreaterThan(0);
       expect(cachingFindings[0].severity).toBe('medium');
@@ -153,8 +203,20 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/products', handler: 'getProducts', file: 'src/routes/products.ts', line: 5 },
-            { method: 'GET', path: '/api/products/:id', handler: 'getProduct', file: 'src/routes/products.ts', line: 15 },
+            {
+              method: 'GET',
+              path: '/api/products',
+              handler: 'getProducts',
+              file: 'src/routes/products.ts',
+              line: 5,
+            },
+            {
+              method: 'GET',
+              path: '/api/products/:id',
+              handler: 'getProduct',
+              file: 'src/routes/products.ts',
+              line: 15,
+            },
           ],
           procedures: [],
           exports: [],
@@ -169,7 +231,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      const cachingFindings = findings.filter(f => f.kind === 'no-caching');
+      const cachingFindings = findings.filter((f) => f.kind === 'no-caching');
       expect(cachingFindings).toHaveLength(0);
     });
   });
@@ -180,8 +242,20 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes/users.ts', line: 10 },
-            { method: 'DELETE', path: '/api/users/:id', handler: 'deleteUser', file: 'src/routes/users.ts', line: 20 },
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes/users.ts',
+              line: 10,
+            },
+            {
+              method: 'DELETE',
+              path: '/api/users/:id',
+              handler: 'deleteUser',
+              file: 'src/routes/users.ts',
+              line: 20,
+            },
           ],
           procedures: [],
           exports: [],
@@ -200,7 +274,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      expect(findings.some(f => f.kind === 'no-rate-limiting')).toBe(true);
+      expect(findings.some((f) => f.kind === 'no-rate-limiting')).toBe(true);
     });
 
     it('does not flag when rate-limit dependency is present', () => {
@@ -208,7 +282,13 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes/users.ts', line: 10 },
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes/users.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],
@@ -222,14 +302,12 @@ describe('findBottlenecks', () => {
         },
         dependencies: {
           internal: [],
-          external: [
-            { name: 'express-rate-limit', version: '^7.0.0', dev: false },
-          ],
+          external: [{ name: 'express-rate-limit', version: '^7.0.0', dev: false }],
         },
       });
 
       const findings = findBottlenecks([manifest]);
-      const rateLimitFindings = findings.filter(f => f.kind === 'no-rate-limiting');
+      const rateLimitFindings = findings.filter((f) => f.kind === 'no-rate-limiting');
       expect(rateLimitFindings).toHaveLength(0);
     });
   });
@@ -240,17 +318,29 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 10 },
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],
         },
-        conventions: { naming: 'camelCase', fileOrganization: 'feature-based', errorHandling: 'try-catch', patterns: [], testingPatterns: 'co-located' },
+        conventions: {
+          naming: 'camelCase',
+          fileOrganization: 'feature-based',
+          errorHandling: 'try-catch',
+          patterns: [],
+          testingPatterns: 'co-located',
+        },
         dependencies: { internal: [], external: [] },
       });
 
       const findings = findBottlenecks([manifest]);
-      const rateLimitFinding = findings.find(f => f.description.toLowerCase().includes('rate'));
+      const rateLimitFinding = findings.find((f) => f.description.toLowerCase().includes('rate'));
       expect(rateLimitFinding).toBeDefined();
       expect(rateLimitFinding!.kind).toBe('no-rate-limiting');
     });
@@ -266,12 +356,18 @@ describe('findBottlenecks', () => {
           ],
           exports: [],
         },
-        conventions: { naming: 'camelCase', fileOrganization: 'feature-based', errorHandling: 'try-catch', patterns: [], testingPatterns: 'co-located' },
+        conventions: {
+          naming: 'camelCase',
+          fileOrganization: 'feature-based',
+          errorHandling: 'try-catch',
+          patterns: [],
+          testingPatterns: 'co-located',
+        },
         dependencies: { internal: [], external: [] },
       });
 
       const findings = findBottlenecks([manifest]);
-      expect(findings.some(f => f.kind === 'no-rate-limiting')).toBe(true);
+      expect(findings.some((f) => f.kind === 'no-rate-limiting')).toBe(true);
     });
   });
 
@@ -291,7 +387,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      expect(findings.some(f => f.kind === 'no-queue')).toBe(true);
+      expect(findings.some((f) => f.kind === 'no-queue')).toBe(true);
     });
 
     it('does not flag no-queue when queue package is present', () => {
@@ -305,11 +401,14 @@ describe('findBottlenecks', () => {
       const manifest = makeManifest({
         repoId: 'backend',
         apiSurface: { routes: [], procedures, exports: [] },
-        dependencies: { internal: [], external: [{ name: 'bullmq', version: '^5.0.0', dev: false }] },
+        dependencies: {
+          internal: [],
+          external: [{ name: 'bullmq', version: '^5.0.0', dev: false }],
+        },
       });
 
       const findings = findBottlenecks([manifest]);
-      expect(findings.some(f => f.kind === 'no-queue')).toBe(false);
+      expect(findings.some((f) => f.kind === 'no-queue')).toBe(false);
     });
 
     it('does not flag no-queue for fewer than 20 mutation procedures', () => {
@@ -327,7 +426,7 @@ describe('findBottlenecks', () => {
       });
 
       const findings = findBottlenecks([manifest]);
-      expect(findings.some(f => f.kind === 'no-queue')).toBe(false);
+      expect(findings.some((f) => f.kind === 'no-queue')).toBe(false);
     });
   });
 
@@ -350,8 +449,20 @@ describe('findBottlenecks', () => {
         apiSurface: {
           // Spurious routes from window.get() in JS documentation files
           routes: [
-            { method: 'GET', path: 'window', handler: '', file: 'HUSTLEXP-DOCS/reference/components/BottomSheet.js', line: 44 },
-            { method: 'GET', path: 'window', handler: '', file: 'HUSTLEXP-DOCS/reference/components/Modal.js', line: 12 },
+            {
+              method: 'GET',
+              path: 'window',
+              handler: '',
+              file: 'HUSTLEXP-DOCS/reference/components/BottomSheet.js',
+              line: 44,
+            },
+            {
+              method: 'GET',
+              path: 'window',
+              handler: '',
+              file: 'HUSTLEXP-DOCS/reference/components/Modal.js',
+              line: 12,
+            },
           ],
           procedures: [],
           exports: [],
@@ -368,7 +479,13 @@ describe('findBottlenecks', () => {
         language: 'markdown',
         apiSurface: {
           routes: [
-            { method: 'GET', path: 'window', handler: '', file: 'reference/components/EntryScreen.js', line: 8 },
+            {
+              method: 'GET',
+              path: 'window',
+              handler: '',
+              file: 'reference/components/EntryScreen.js',
+              line: 8,
+            },
           ],
           procedures: [],
           exports: [],
@@ -384,7 +501,13 @@ describe('findBottlenecks', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users/:id', handler: 'getUser', file: 'src/routes/users.ts', line: 10 },
+            {
+              method: 'GET',
+              path: '/api/users/:id',
+              handler: 'getUser',
+              file: 'src/routes/users.ts',
+              line: 10,
+            },
           ],
           procedures: [],
           exports: [],

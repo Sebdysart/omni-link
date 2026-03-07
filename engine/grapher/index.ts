@@ -1,12 +1,6 @@
 // engine/grapher/index.ts — Grapher orchestrator: assembles EcosystemGraph from all repo manifests
 
-import type {
-  RepoManifest,
-  EcosystemGraph,
-  Mismatch,
-  ApiBridge,
-  TypeDef,
-} from '../types.js';
+import type { RepoManifest, EcosystemGraph, Mismatch, ApiBridge, TypeDef } from '../types.js';
 
 import { buildInternalDeps, detectCrossRepoDeps } from './dependency-graph.js';
 import { mapApiContracts, compareFieldDefinitions } from './api-contract-map.js';
@@ -27,7 +21,7 @@ import { mapTypeFlows } from './type-flow.js';
  */
 export function buildEcosystemGraph(manifests: RepoManifest[]): EcosystemGraph {
   // 1. Build internal deps for each manifest and enrich manifests in-place
-  const enrichedManifests = manifests.map(manifest => {
+  const enrichedManifests = manifests.map((manifest) => {
     const internalDeps = buildInternalDeps(manifest);
     return {
       ...manifest,
@@ -40,7 +34,7 @@ export function buildEcosystemGraph(manifests: RepoManifest[]): EcosystemGraph {
 
   // 2. Detect cross-repo deps (informational — stored in bridges and sharedTypes)
   // We don't store crossRepoDeps directly in the graph, but they inform our analysis
-  const _crossRepoDeps = detectCrossRepoDeps(enrichedManifests);
+  detectCrossRepoDeps(enrichedManifests);
 
   // 3. Map API contracts -> bridges
   const bridges = mapApiContracts(enrichedManifests);
@@ -92,14 +86,14 @@ function findContractMismatches(bridges: ApiBridge[], manifests: RepoManifest[])
     const providerType = bridge.contract.outputType;
 
     // Find consumer output type (look in the consumer's type registry)
-    const consumerManifest = manifests.find(m => m.repoId === bridge.consumer.repo);
+    const consumerManifest = manifests.find((m) => m.repoId === bridge.consumer.repo);
     if (!consumerManifest) continue;
 
     const consumerType = findConsumerType(consumerManifest, providerType.name);
     if (!consumerType) continue;
 
-    const providerFieldNames = new Set(providerType.fields.map(f => f.name));
-    const consumerFieldNames = new Set(consumerType.fields.map(f => f.name));
+    const providerFieldNames = new Set(providerType.fields.map((f) => f.name));
+    const consumerFieldNames = new Set(consumerType.fields.map((f) => f.name));
 
     for (const providerField of providerType.fields) {
       const consumerField = consumerType.fields.find((field) => field.name === providerField.name);
@@ -182,11 +176,11 @@ function findContractMismatches(bridges: ApiBridge[], manifests: RepoManifest[])
  * Find a consumer type by name in a manifest's type registry.
  */
 function findConsumerType(manifest: RepoManifest, typeName: string): TypeDef | undefined {
-  const found = manifest.typeRegistry.types.find(t => t.name === typeName);
+  const found = manifest.typeRegistry.types.find((t) => t.name === typeName);
   if (found) return found;
 
   // Check schemas
-  const schema = manifest.typeRegistry.schemas.find(s => s.name === typeName);
+  const schema = manifest.typeRegistry.schemas.find((s) => s.name === typeName);
   if (schema) {
     return {
       name: schema.name,
@@ -205,7 +199,7 @@ function findConsumerType(manifest: RepoManifest, typeName: string): TypeDef | u
  * These become the input for impact analysis.
  */
 function collectUncommittedChanges(
-  manifests: RepoManifest[]
+  manifests: RepoManifest[],
 ): Array<{ repo: string; file: string; change: string }> {
   const changes: Array<{ repo: string; file: string; change: string }> = [];
 
@@ -230,7 +224,12 @@ function collectUncommittedChanges(
 function inferChangeType(file: string): string {
   const lower = file.toLowerCase();
 
-  if (lower.includes('type') || lower.includes('model') || lower.includes('schema') || lower.includes('interface')) {
+  if (
+    lower.includes('type') ||
+    lower.includes('model') ||
+    lower.includes('schema') ||
+    lower.includes('interface')
+  ) {
     return 'type-change';
   }
   if (lower.includes('route') || lower.includes('api') || lower.includes('endpoint')) {

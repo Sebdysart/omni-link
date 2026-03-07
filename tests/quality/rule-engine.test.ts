@@ -15,7 +15,7 @@ describe('checkRules', () => {
   it('flags fetch() without error handling', () => {
     const code = `const data = await fetch('/api/users');\nconsole.log(data);`;
     const result = checkRules(code, 'src/app.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-fetch-without-catch');
+    const violation = result.violations.find((v) => v.ruleId === 'no-fetch-without-catch');
     expect(violation).toBeDefined();
     expect(violation!.severity).toBe('error');
   });
@@ -23,14 +23,14 @@ describe('checkRules', () => {
   it('flags process.env access without fallback', () => {
     const code = `const key = process.env.SECRET_KEY;\nconsole.log(key);`;
     const result = checkRules(code, 'src/config.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-raw-env-access');
+    const violation = result.violations.find((v) => v.ruleId === 'no-raw-env-access');
     expect(violation).toBeDefined();
   });
 
   it('flags TypeScript as any cast in non-test files', () => {
     const code = `const x = response as any;\nx.doSomething();`;
     const result = checkRules(code, 'src/service.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-any-cast');
+    const violation = result.violations.find((v) => v.ruleId === 'no-any-cast');
     expect(violation).toBeDefined();
     expect(violation!.severity).toBe('warning');
   });
@@ -38,14 +38,14 @@ describe('checkRules', () => {
   it('does NOT flag as any in test files', () => {
     const code = `const x = response as any;\nx.doSomething();`;
     const result = checkRules(code, 'tests/service.test.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-any-cast');
+    const violation = result.violations.find((v) => v.ruleId === 'no-any-cast');
     expect(violation).toBeUndefined();
   });
 
   it('flags hardcoded secret patterns', () => {
     const code = `const apiKey = 'sk-1234567890abcdef1234567890abcdef';`;
     const result = checkRules(code, 'src/config.ts');
-    const violation = result.violations.find(v => v.ruleId === 'no-hardcoded-secret');
+    const violation = result.violations.find((v) => v.ruleId === 'no-hardcoded-secret');
     expect(violation).toBeDefined();
     expect(violation!.severity).toBe('error');
   });

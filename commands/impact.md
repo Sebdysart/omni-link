@@ -52,6 +52,7 @@ No cross-repo impact detected. All uncommitted changes are contained within thei
 ## Recommended Follow-Up
 
 If BREAKING items are found, recommend:
+
 1. Review each breaking change
 2. Plan updates using the `ecosystem-planner` skill
 3. Execute using the `upgrade-executor` skill

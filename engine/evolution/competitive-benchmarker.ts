@@ -20,7 +20,7 @@ export interface BenchmarkResult {
  * as first-party middleware — they don't require separate package installs.
  */
 function isHonoProject(manifest: RepoManifest): boolean {
-  return manifest.dependencies.external.some(d => d.name.toLowerCase() === 'hono');
+  return manifest.dependencies.external.some((d) => d.name.toLowerCase() === 'hono');
 }
 
 /**
@@ -29,13 +29,7 @@ function isHonoProject(manifest: RepoManifest): boolean {
  * of any route/procedure counts — which may be spurious (e.g. JS documentation
  * files inside an iOS repo picked up by the route extractor).
  */
-const CLIENT_LANGUAGES = new Set([
-  'swift',
-  'kotlin',
-  'dart',
-  'objective-c',
-  'markdown',
-]);
+const CLIENT_LANGUAGES = new Set(['swift', 'kotlin', 'dart', 'objective-c', 'markdown']);
 
 /**
  * Returns true if this repo is a pure consumer with no server surface.
@@ -52,8 +46,7 @@ const CLIENT_LANGUAGES = new Set([
  */
 function isNonServerRepo(manifest: RepoManifest): boolean {
   if (CLIENT_LANGUAGES.has(manifest.language.toLowerCase())) return true;
-  return manifest.apiSurface.routes.length === 0 &&
-    manifest.apiSurface.procedures.length === 0;
+  return manifest.apiSurface.routes.length === 0 && manifest.apiSurface.procedures.length === 0;
 }
 
 // ─── Practice Checkers ──────────────────────────────────────────────────────
@@ -64,19 +57,28 @@ type PracticeChecker = (manifest: RepoManifest) => BenchmarkResult | null;
 
 // Keyword-based substring matching covers all frameworks:
 // express-rate-limit, rate-limiter-flexible, @hono/rate-limiter, hono-rate-limiter, bottleneck, p-throttle
-const RATE_LIMIT_KEYWORDS = ['rate-limit', 'ratelimit', 'rate_limit', 'throttle', 'limiter', 'bottleneck', '@hono/rate-limiter', 'hono-rate-limiter'];
+const RATE_LIMIT_KEYWORDS = [
+  'rate-limit',
+  'ratelimit',
+  'rate_limit',
+  'throttle',
+  'limiter',
+  'bottleneck',
+  '@hono/rate-limiter',
+  'hono-rate-limiter',
+];
 const RATE_LIMIT_PATTERNS = ['rate-limit', 'rate_limit', 'ratelimit', 'throttle'];
 
 function checkRateLimiting(manifest: RepoManifest): BenchmarkResult | null {
   if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
-  const hasPkg = manifest.dependencies.external.some(d => {
+  const hasPkg = manifest.dependencies.external.some((d) => {
     const name = d.name.toLowerCase();
-    return RATE_LIMIT_KEYWORDS.some(kw => name.includes(kw));
+    return RATE_LIMIT_KEYWORDS.some((kw) => name.includes(kw));
   });
-  const hasPattern = manifest.conventions.patterns.some(p =>
-    RATE_LIMIT_PATTERNS.some(rl => p.toLowerCase().includes(rl))
+  const hasPattern = manifest.conventions.patterns.some((p) =>
+    RATE_LIMIT_PATTERNS.some((rl) => p.toLowerCase().includes(rl)),
   );
 
   return {
@@ -84,7 +86,8 @@ function checkRateLimiting(manifest: RepoManifest): BenchmarkResult | null {
     status: hasPkg || hasPattern ? 'present' : 'missing',
     repo: manifest.repoId,
     category: 'security',
-    suggestion: 'Add rate limiting middleware (e.g., express-rate-limit, @hono/rate-limiter) to protect mutation endpoints from abuse.',
+    suggestion:
+      'Add rate limiting middleware (e.g., express-rate-limit, @hono/rate-limiter) to protect mutation endpoints from abuse.',
   };
 }
 
@@ -104,12 +107,10 @@ function checkCors(manifest: RepoManifest): BenchmarkResult | null {
     };
   }
 
-  const hasPkg = manifest.dependencies.external.some(d =>
-    d.name.toLowerCase() === 'cors' || d.name.toLowerCase().includes('cors')
+  const hasPkg = manifest.dependencies.external.some(
+    (d) => d.name.toLowerCase() === 'cors' || d.name.toLowerCase().includes('cors'),
   );
-  const hasPattern = manifest.conventions.patterns.some(p =>
-    p.toLowerCase().includes('cors')
-  );
+  const hasPattern = manifest.conventions.patterns.some((p) => p.toLowerCase().includes('cors'));
 
   return {
     practice: 'CORS configuration',
@@ -138,12 +139,12 @@ function checkSecurityHeaders(manifest: RepoManifest): BenchmarkResult | null {
     };
   }
 
-  const hasPkg = manifest.dependencies.external.some(d => {
+  const hasPkg = manifest.dependencies.external.some((d) => {
     const name = d.name.toLowerCase();
-    return SECURITY_HEADER_KEYWORDS.some(kw => name.includes(kw));
+    return SECURITY_HEADER_KEYWORDS.some((kw) => name.includes(kw));
   });
-  const hasPattern = manifest.conventions.patterns.some(p =>
-    p.toLowerCase().includes('helmet') || p.toLowerCase().includes('security-header')
+  const hasPattern = manifest.conventions.patterns.some(
+    (p) => p.toLowerCase().includes('helmet') || p.toLowerCase().includes('security-header'),
   );
 
   return {
@@ -151,7 +152,8 @@ function checkSecurityHeaders(manifest: RepoManifest): BenchmarkResult | null {
     status: hasPkg || hasPattern ? 'present' : 'missing',
     repo: manifest.repoId,
     category: 'security',
-    suggestion: 'Add security headers middleware (e.g., helmet, @fastify/helmet, or Hono secureHeaders()) to protect against common attacks.',
+    suggestion:
+      'Add security headers middleware (e.g., helmet, @fastify/helmet, or Hono secureHeaders()) to protect against common attacks.',
   };
 }
 
@@ -160,9 +162,12 @@ function checkErrorHandlingMiddleware(manifest: RepoManifest): BenchmarkResult |
   if (manifest.apiSurface.routes.length === 0) return null;
 
   const errorHandling = manifest.conventions.errorHandling.toLowerCase();
-  const hasMiddleware = errorHandling.includes('middleware') || errorHandling.includes('error-boundary');
-  const hasExport = manifest.apiSurface.exports.some(e =>
-    e.name.toLowerCase().includes('error') && (e.name.toLowerCase().includes('handler') || e.name.toLowerCase().includes('middleware'))
+  const hasMiddleware =
+    errorHandling.includes('middleware') || errorHandling.includes('error-boundary');
+  const hasExport = manifest.apiSurface.exports.some(
+    (e) =>
+      e.name.toLowerCase().includes('error') &&
+      (e.name.toLowerCase().includes('handler') || e.name.toLowerCase().includes('middleware')),
   );
 
   return {
@@ -170,7 +175,8 @@ function checkErrorHandlingMiddleware(manifest: RepoManifest): BenchmarkResult |
     status: hasMiddleware || hasExport ? 'present' : 'missing',
     repo: manifest.repoId,
     category: 'reliability',
-    suggestion: 'Add centralized error handling middleware to catch and format errors consistently.',
+    suggestion:
+      'Add centralized error handling middleware to catch and format errors consistently.',
   };
 }
 
@@ -180,16 +186,16 @@ function checkRequestValidation(manifest: RepoManifest): BenchmarkResult | null 
   if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
-  const hasValidationPkg = manifest.dependencies.external.some(d =>
-    VALIDATION_PACKAGES.some(pkg => d.name.toLowerCase() === pkg)
+  const hasValidationPkg = manifest.dependencies.external.some((d) =>
+    VALIDATION_PACKAGES.some((pkg) => d.name.toLowerCase() === pkg),
   );
   const hasSchemas = manifest.typeRegistry.schemas.length > 0;
 
   // Check if routes have input types
-  const routesWithInput = manifest.apiSurface.routes.filter(r =>
-    r.method.toUpperCase() !== 'GET' && r.method.toUpperCase() !== 'DELETE'
+  const routesWithInput = manifest.apiSurface.routes.filter(
+    (r) => r.method.toUpperCase() !== 'GET' && r.method.toUpperCase() !== 'DELETE',
   );
-  const routesWithValidation = routesWithInput.filter(r => r.inputType);
+  const routesWithValidation = routesWithInput.filter((r) => r.inputType);
 
   if (hasValidationPkg || hasSchemas) {
     if (routesWithInput.length > 0 && routesWithValidation.length < routesWithInput.length) {
@@ -198,7 +204,8 @@ function checkRequestValidation(manifest: RepoManifest): BenchmarkResult | null 
         status: 'partial',
         repo: manifest.repoId,
         category: 'security',
-        suggestion: 'Some mutation routes lack input type validation. Add schema validation to all input-accepting endpoints.',
+        suggestion:
+          'Some mutation routes lack input type validation. Add schema validation to all input-accepting endpoints.',
       };
     }
     return {
@@ -215,22 +222,34 @@ function checkRequestValidation(manifest: RepoManifest): BenchmarkResult | null 
     status: 'missing',
     repo: manifest.repoId,
     category: 'security',
-    suggestion: 'Add schema validation (e.g., Zod, Joi) to validate request payloads before processing.',
+    suggestion:
+      'Add schema validation (e.g., Zod, Joi) to validate request payloads before processing.',
   };
 }
 
 // Covers modern logging libs across frameworks including Hono (consola, tslog, roarr)
-const LOGGING_PACKAGES = ['winston', 'pino', 'bunyan', 'morgan', 'log4js', 'signale', 'consola', 'tslog', 'roarr', 'loglevel'];
+const LOGGING_PACKAGES = [
+  'winston',
+  'pino',
+  'bunyan',
+  'morgan',
+  'log4js',
+  'signale',
+  'consola',
+  'tslog',
+  'roarr',
+  'loglevel',
+];
 
 function checkLogging(manifest: RepoManifest): BenchmarkResult | null {
   if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
-  const hasPkg = manifest.dependencies.external.some(d =>
-    LOGGING_PACKAGES.some(pkg => d.name.toLowerCase() === pkg)
+  const hasPkg = manifest.dependencies.external.some((d) =>
+    LOGGING_PACKAGES.some((pkg) => d.name.toLowerCase() === pkg),
   );
-  const hasPattern = manifest.conventions.patterns.some(p =>
-    p.toLowerCase().includes('logging') || p.toLowerCase().includes('logger')
+  const hasPattern = manifest.conventions.patterns.some(
+    (p) => p.toLowerCase().includes('logging') || p.toLowerCase().includes('logger'),
   );
 
   return {
@@ -238,7 +257,8 @@ function checkLogging(manifest: RepoManifest): BenchmarkResult | null {
     status: hasPkg || hasPattern ? 'present' : 'missing',
     repo: manifest.repoId,
     category: 'observability',
-    suggestion: 'Add structured logging (e.g., Winston, Pino) for production debugging and monitoring.',
+    suggestion:
+      'Add structured logging (e.g., Winston, Pino) for production debugging and monitoring.',
   };
 }
 
@@ -248,9 +268,14 @@ function checkHealthEndpoint(manifest: RepoManifest): BenchmarkResult | null {
   if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
-  const hasHealth = manifest.apiSurface.routes.some(r => {
+  const hasHealth = manifest.apiSurface.routes.some((r) => {
     const path = r.path.toLowerCase();
-    return path.includes('/health') || path.includes('/healthz') || path.includes('/ready') || path.includes('/status');
+    return (
+      path.includes('/health') ||
+      path.includes('/healthz') ||
+      path.includes('/ready') ||
+      path.includes('/status')
+    );
   });
 
   return {
@@ -258,16 +283,26 @@ function checkHealthEndpoint(manifest: RepoManifest): BenchmarkResult | null {
     status: hasHealth ? 'present' : 'missing',
     repo: manifest.repoId,
     category: 'reliability',
-    suggestion: 'Add a /health endpoint for load balancers and orchestrators to check service availability.',
+    suggestion:
+      'Add a /health endpoint for load balancers and orchestrators to check service availability.',
   };
 }
 
-const PAGINATION_INDICATORS = ['paginate', 'paginated', 'pagination', 'page', 'paged', 'cursor', 'offset', 'limit'];
+const PAGINATION_INDICATORS = [
+  'paginate',
+  'paginated',
+  'pagination',
+  'page',
+  'paged',
+  'cursor',
+  'offset',
+  'limit',
+];
 
 function checkPagination(manifest: RepoManifest): BenchmarkResult | null {
   if (isNonServerRepo(manifest)) return null;
   // Find list routes (GET without path params at end)
-  const listRoutes = manifest.apiSurface.routes.filter(r => {
+  const listRoutes = manifest.apiSurface.routes.filter((r) => {
     if (r.method.toUpperCase() !== 'GET') return false;
     const segments = r.path.split('/').filter(Boolean);
     if (segments.length === 0) return false;
@@ -277,12 +312,12 @@ function checkPagination(manifest: RepoManifest): BenchmarkResult | null {
 
   if (listRoutes.length === 0) return null;
 
-  const paginatedRoutes = listRoutes.filter(r => {
+  const paginatedRoutes = listRoutes.filter((r) => {
     const handler = r.handler.toLowerCase();
     const output = (r.outputType ?? '').toLowerCase();
     const input = (r.inputType ?? '').toLowerCase();
-    return PAGINATION_INDICATORS.some(kw =>
-      handler.includes(kw) || output.includes(kw) || input.includes(kw)
+    return PAGINATION_INDICATORS.some(
+      (kw) => handler.includes(kw) || output.includes(kw) || input.includes(kw),
     );
   });
 
@@ -319,9 +354,7 @@ function checkApiVersioning(manifest: RepoManifest): BenchmarkResult | null {
   if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.routes.length === 0) return null;
 
-  const versionedRoutes = manifest.apiSurface.routes.filter(r =>
-    /\/v\d+\//.test(r.path)
-  );
+  const versionedRoutes = manifest.apiSurface.routes.filter((r) => /\/v\d+\//.test(r.path));
 
   if (versionedRoutes.length === manifest.apiSurface.routes.length) {
     return {
@@ -339,7 +372,8 @@ function checkApiVersioning(manifest: RepoManifest): BenchmarkResult | null {
       status: 'partial',
       repo: manifest.repoId,
       category: 'maintainability',
-      suggestion: 'Some routes include version prefixes but not all. Consider consistent API versioning (e.g., /v1/).',
+      suggestion:
+        'Some routes include version prefixes but not all. Consider consistent API versioning (e.g., /v1/).',
     };
   }
 
@@ -348,7 +382,8 @@ function checkApiVersioning(manifest: RepoManifest): BenchmarkResult | null {
     status: 'missing',
     repo: manifest.repoId,
     category: 'maintainability',
-    suggestion: 'Add API versioning (e.g., /v1/users) to allow breaking changes without disrupting consumers.',
+    suggestion:
+      'Add API versioning (e.g., /v1/users) to allow breaking changes without disrupting consumers.',
   };
 }
 
@@ -358,8 +393,8 @@ function checkTrpcValidation(manifest: RepoManifest): BenchmarkResult | null {
   if (isNonServerRepo(manifest)) return null;
   if (manifest.apiSurface.procedures.length === 0) return null;
 
-  const mutationProcs = manifest.apiSurface.procedures.filter(p => p.kind === 'mutation');
-  const withInput = mutationProcs.filter(p => p.inputType);
+  const mutationProcs = manifest.apiSurface.procedures.filter((p) => p.kind === 'mutation');
+  const withInput = mutationProcs.filter((p) => p.inputType);
 
   if (mutationProcs.length === 0) return null;
 

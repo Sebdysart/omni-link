@@ -86,8 +86,20 @@ describe('scoreHealth', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'helper', kind: 'function', signature: 'function helper()', file: 'src/utils.ts', line: 1 },
-          { name: 'main', kind: 'function', signature: 'function main()', file: 'src/index.ts', line: 1 },
+          {
+            name: 'helper',
+            kind: 'function',
+            signature: 'function helper()',
+            file: 'src/utils.ts',
+            line: 1,
+          },
+          {
+            name: 'main',
+            kind: 'function',
+            signature: 'function main()',
+            file: 'src/index.ts',
+            line: 1,
+          },
         ],
       },
     });
@@ -126,10 +138,34 @@ describe('scoreHealth', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'unusedHelper', kind: 'function', signature: 'function unusedHelper()', file: 'src/old.ts', line: 1 },
-          { name: 'deprecatedFunction', kind: 'function', signature: 'function deprecatedFunction()', file: 'src/old.ts', line: 10 },
-          { name: 'oldParser', kind: 'function', signature: 'function oldParser()', file: 'src/old.ts', line: 20 },
-          { name: 'usedHelper', kind: 'function', signature: 'function usedHelper()', file: 'src/utils.ts', line: 1 },
+          {
+            name: 'unusedHelper',
+            kind: 'function',
+            signature: 'function unusedHelper()',
+            file: 'src/old.ts',
+            line: 1,
+          },
+          {
+            name: 'deprecatedFunction',
+            kind: 'function',
+            signature: 'function deprecatedFunction()',
+            file: 'src/old.ts',
+            line: 10,
+          },
+          {
+            name: 'oldParser',
+            kind: 'function',
+            signature: 'function oldParser()',
+            file: 'src/old.ts',
+            line: 20,
+          },
+          {
+            name: 'usedHelper',
+            kind: 'function',
+            signature: 'function usedHelper()',
+            file: 'src/utils.ts',
+            line: 1,
+          },
         ],
       },
     });

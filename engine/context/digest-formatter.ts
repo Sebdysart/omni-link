@@ -7,10 +7,10 @@ import type {
   OmniLinkConfig,
   RepoManifest,
   Mismatch,
-  TypeLineage,
   EvolutionSuggestion,
 } from '../types.js';
-import { estimateTokens } from './token-pruner.js';
+import { countTokens } from './token-counter.js';
+import { generateArchitectureDiagram } from './diagram-generator.js';
 
 /**
  * Format an EcosystemGraph (typically already pruned) into a human-readable
@@ -39,7 +39,7 @@ export function formatDigest(
 
   // ─── Build digest data ─────────────────────────────────────────────────
 
-  const repos = graph.repos.map(repo => ({
+  const repos = graph.repos.map((repo) => ({
     name: repo.repoId,
     language: repo.language,
     branch: repo.gitState.branch,
@@ -50,12 +50,13 @@ export function formatDigest(
   const contractStatus = buildContractStatus(graph);
   const conventionSummary = buildConventionSummary(graph.repos);
   const apiSurfaceSummary = buildApiSurfaceSummary(graph);
+  const architectureDiagram = generateArchitectureDiagram(graph);
   // Use originalRepos (pre-pruning) for commit history so the token pruner
   // stripping commits from the graph doesn't produce a "0 recent commits" summary.
   const recentChangesSummary = buildRecentChangesSummary(originalRepos ?? graph.repos);
   const allCommits = (originalRepos ?? graph.repos)
-    .flatMap(repo =>
-      repo.gitState.recentCommits.map(c => ({
+    .flatMap((repo) =>
+      repo.gitState.recentCommits.map((c) => ({
         repo: repo.repoId,
         sha: c.sha.slice(0, 7),
         message: c.message,
@@ -70,6 +71,7 @@ export function formatDigest(
   let includeSharedTypeDetails = true;
   let includeTypeSignatures = true;
   let includeRouteSignatures = true;
+  let includeArchitectureDiagram = architectureDiagram.length > 0;
   let compactMode = false;
   let minimalMode = false;
 
@@ -81,9 +83,7 @@ export function formatDigest(
     sections.push('');
 
     if (minimalMode) {
-      sections.push(
-        `${graph.repos.length} repos | ${apiSurfaceSummary} | ${recentChangesSummary}`,
-      );
+      sections.push(`${graph.repos.length} repos | ${apiSurfaceSummary} | ${recentChangesSummary}`);
       if (contractStatus.mismatches.length > 0) {
         sections.push(`Top mismatch: ${contractStatus.mismatches[0].description.slice(0, 80)}`);
       }
@@ -118,10 +118,18 @@ export function formatDigest(
       for (const repo of graph.repos) {
         const changes = repo.gitState.uncommittedChanges.length;
         const changeStr = changes === 1 ? '1 uncommitted change' : `${changes} uncommitted changes`;
-        sections.push(`- **${repo.repoId}** (${repo.language}) on \`${repo.gitState.branch}\` — ${changeStr}`);
+        sections.push(
+          `- **${repo.repoId}** (${repo.language}) on \`${repo.gitState.branch}\` — ${changeStr}`,
+        );
       }
     }
     sections.push('');
+
+    if (includeArchitectureDiagram) {
+      sections.push('## Architecture');
+      sections.push(architectureDiagram);
+      sections.push('');
+    }
 
     sections.push('## API Contracts');
     sections.push(
@@ -147,7 +155,7 @@ export function formatDigest(
       sections.push('No shared types detected.');
     } else {
       for (const lineage of graph.sharedTypes) {
-        const repoList = lineage.instances.map(i => i.repo).join(', ');
+        const repoList = lineage.instances.map((i) => i.repo).join(', ');
         sections.push(`- **${lineage.concept}** (${lineage.alignment}) — present in: ${repoList}`);
         if (includeSharedTypeDetails) {
           for (const inst of lineage.instances) {
@@ -161,7 +169,11 @@ export function formatDigest(
 
     sections.push('## Recent Changes');
     if (displayedCommits.length === 0) {
-      sections.push(allCommits.length === 0 ? 'No recent commits.' : 'Commit history omitted to fit token budget.');
+      sections.push(
+        allCommits.length === 0
+          ? 'No recent commits.'
+          : 'Commit history omitted to fit token budget.',
+      );
     } else {
       for (const commit of displayedCommits) {
         sections.push(`- \`${commit.sha}\` [${commit.repo}] ${commit.message} (${commit.author})`);
@@ -178,7 +190,9 @@ export function formatDigest(
       );
     } else {
       for (const suggestion of displayedEvolution) {
-        sections.push(`- **${suggestion.title}** [${suggestion.category}] — ${suggestion.description}`);
+        sections.push(
+          `- **${suggestion.title}** [${suggestion.category}] — ${suggestion.description}`,
+        );
       }
     }
     sections.push('');
@@ -190,7 +204,9 @@ export function formatDigest(
       for (const repo of graph.repos) {
         const conv = repo.conventions;
         const patterns = conv.patterns.length > 0 ? conv.patterns.join(', ') : 'none detected';
-        sections.push(`- **${repo.repoId}**: naming=${conv.naming}, org=${conv.fileOrganization}, errors=${conv.errorHandling}, patterns=[${patterns}]`);
+        sections.push(
+          `- **${repo.repoId}**: naming=${conv.naming}, org=${conv.fileOrganization}, errors=${conv.errorHandling}, patterns=[${patterns}]`,
+        );
       }
     }
 
@@ -214,13 +230,15 @@ export function formatDigest(
   };
 
   let markdown = renderMarkdown();
-  let tokenCount = estimateTokens(markdown);
+  let tokenCount = countTokens(markdown);
 
   while (tokenCount > config.context.tokenBudget) {
     if (displayedCommits.length > 0) {
       displayedCommits = displayedCommits.slice(0, -1);
     } else if (displayedEvolution.length > 0) {
       displayedEvolution = displayedEvolution.slice(0, -1);
+    } else if (includeArchitectureDiagram) {
+      includeArchitectureDiagram = false;
     } else if (includeTypeSignatures) {
       includeTypeSignatures = false;
     } else if (includeRouteSignatures) {
@@ -236,13 +254,13 @@ export function formatDigest(
     }
 
     markdown = renderMarkdown();
-    tokenCount = estimateTokens(markdown);
+    tokenCount = countTokens(markdown);
   }
 
   if (tokenCount > config.context.tokenBudget) {
     const hardLimit = Math.max(16, config.context.tokenBudget * 4);
     markdown = `${markdown.slice(0, Math.max(0, hardLimit - 3))}...`;
-    tokenCount = estimateTokens(markdown);
+    tokenCount = countTokens(markdown);
   }
 
   const digest: EcosystemDigest = {
@@ -254,6 +272,7 @@ export function formatDigest(
     conventionSummary,
     apiSurfaceSummary,
     recentChangesSummary,
+    architectureDiagram: includeArchitectureDiagram ? architectureDiagram : undefined,
     tokenCount,
   };
 
@@ -291,8 +310,8 @@ function buildKeyTypeSignatures(graph: EcosystemGraph): string {
 }
 
 function buildApiRouteSignatures(graph: EcosystemGraph): string {
-  const allRoutes = graph.repos.flatMap(r =>
-    r.apiSurface.routes.map(route => ({ repoId: r.repoId, route })),
+  const allRoutes = graph.repos.flatMap((r) =>
+    r.apiSurface.routes.map((route) => ({ repoId: r.repoId, route })),
   );
   if (allRoutes.length === 0) return '';
 
@@ -354,7 +373,8 @@ function buildConventionSummary(repos: RepoManifest[]): Record<string, string> {
   const summary: Record<string, string> = {};
   for (const repo of repos) {
     const c = repo.conventions;
-    summary[repo.repoId] = `naming=${c.naming}, org=${c.fileOrganization}, errors=${c.errorHandling}`;
+    summary[repo.repoId] =
+      `naming=${c.naming}, org=${c.fileOrganization}, errors=${c.errorHandling}`;
   }
   return summary;
 }

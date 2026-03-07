@@ -66,7 +66,7 @@ describe('detectSlop', () => {
       const result = detectSlop(code, manifest);
       expect(result.clean).toBe(false);
 
-      const placeholders = result.issues.filter(i => i.kind === 'placeholder');
+      const placeholders = result.issues.filter((i) => i.kind === 'placeholder');
       expect(placeholders.length).toBeGreaterThan(0);
       expect(placeholders[0].line).toBe(2);
       expect(placeholders[0].severity).toBe('error');
@@ -82,7 +82,7 @@ describe('detectSlop', () => {
       const result = detectSlop(code, manifest);
       expect(result.clean).toBe(false);
 
-      const placeholders = result.issues.filter(i => i.kind === 'placeholder');
+      const placeholders = result.issues.filter((i) => i.kind === 'placeholder');
       expect(placeholders.length).toBeGreaterThan(0);
     });
 
@@ -95,7 +95,7 @@ describe('detectSlop', () => {
       const result = detectSlop(code, manifest);
       expect(result.clean).toBe(false);
 
-      const placeholders = result.issues.filter(i => i.kind === 'placeholder');
+      const placeholders = result.issues.filter((i) => i.kind === 'placeholder');
       expect(placeholders.length).toBeGreaterThan(0);
     });
 
@@ -109,7 +109,7 @@ describe('detectSlop', () => {
       const result = detectSlop(code, manifest);
       expect(result.clean).toBe(false);
 
-      const placeholders = result.issues.filter(i => i.kind === 'placeholder');
+      const placeholders = result.issues.filter((i) => i.kind === 'placeholder');
       expect(placeholders.length).toBeGreaterThan(0);
     });
   });
@@ -125,16 +125,14 @@ export function run() {
       const manifest = makeManifest({
         dependencies: {
           internal: [],
-          external: [
-            { name: 'express', version: '^4.18.0', dev: false },
-          ],
+          external: [{ name: 'express', version: '^4.18.0', dev: false }],
         },
       });
 
       const result = detectSlop(code, manifest);
       expect(result.clean).toBe(false);
 
-      const phantoms = result.issues.filter(i => i.kind === 'phantom-import');
+      const phantoms = result.issues.filter((i) => i.kind === 'phantom-import');
       expect(phantoms.length).toBeGreaterThan(0);
       expect(phantoms[0].message).toContain('phantom-package');
       expect(phantoms[0].severity).toBe('error');
@@ -157,7 +155,7 @@ const app = express();`;
       });
 
       const result = detectSlop(code, manifest);
-      const phantoms = result.issues.filter(i => i.kind === 'phantom-import');
+      const phantoms = result.issues.filter((i) => i.kind === 'phantom-import');
       expect(phantoms).toHaveLength(0);
     });
 
@@ -168,7 +166,7 @@ import { createHash } from 'node:crypto';`;
 
       const manifest = makeManifest();
       const result = detectSlop(code, manifest);
-      const phantoms = result.issues.filter(i => i.kind === 'phantom-import');
+      const phantoms = result.issues.filter((i) => i.kind === 'phantom-import');
       expect(phantoms).toHaveLength(0);
     });
 
@@ -178,7 +176,7 @@ import { config } from '../config.js';`;
 
       const manifest = makeManifest();
       const result = detectSlop(code, manifest);
-      const phantoms = result.issues.filter(i => i.kind === 'phantom-import');
+      const phantoms = result.issues.filter((i) => i.kind === 'phantom-import');
       expect(phantoms).toHaveLength(0);
     });
 
@@ -195,8 +193,14 @@ import TotallyFakeKit`;
       });
 
       const result = detectSlop(code, manifest);
-      expect(result.issues.some(i => i.kind === 'phantom-import' && i.message.includes('TotallyFakeKit'))).toBe(true);
-      expect(result.issues.some(i => i.kind === 'phantom-import' && i.message.includes('Foundation'))).toBe(false);
+      expect(
+        result.issues.some(
+          (i) => i.kind === 'phantom-import' && i.message.includes('TotallyFakeKit'),
+        ),
+      ).toBe(true);
+      expect(
+        result.issues.some((i) => i.kind === 'phantom-import' && i.message.includes('Foundation')),
+      ).toBe(false);
     });
   });
 
@@ -217,7 +221,7 @@ export function processB() {
       const manifest = makeManifest();
       const result = detectSlop(code, manifest);
 
-      const duplicates = result.issues.filter(i => i.kind === 'duplicate-block');
+      const duplicates = result.issues.filter((i) => i.kind === 'duplicate-block');
       expect(duplicates.length).toBeGreaterThan(0);
       expect(duplicates[0].severity).toBe('warning');
     });
@@ -238,7 +242,7 @@ export function multiply(a: number, b: number) {
       const manifest = makeManifest();
       const result = detectSlop(code, manifest);
 
-      const duplicates = result.issues.filter(i => i.kind === 'duplicate-block');
+      const duplicates = result.issues.filter((i) => i.kind === 'duplicate-block');
       expect(duplicates).toHaveLength(0);
     });
   });
@@ -259,7 +263,7 @@ export function add(a: number, b: number) {
       const manifest = makeManifest();
       const result = detectSlop(code, manifest);
 
-      const overCommented = result.issues.filter(i => i.kind === 'over-commenting');
+      const overCommented = result.issues.filter((i) => i.kind === 'over-commenting');
       expect(overCommented.length).toBeGreaterThan(0);
       expect(overCommented[0].severity).toBe('warning');
     });
@@ -285,7 +289,7 @@ export class UserService {
       const manifest = makeManifest();
       const result = detectSlop(code, manifest);
 
-      const overCommented = result.issues.filter(i => i.kind === 'over-commenting');
+      const overCommented = result.issues.filter((i) => i.kind === 'over-commenting');
       expect(overCommented).toHaveLength(0);
     });
   });
@@ -328,7 +332,7 @@ export class UserController {
         class E extends F {}
       `;
       const result = detectSlop(code, mockManifest);
-      expect(result.issues.some(i => i.kind === 'over-abstraction')).toBe(true);
+      expect(result.issues.some((i) => i.kind === 'over-abstraction')).toBe(true);
     });
 
     it('flags when abstract/interface count >= 2x concrete class count', () => {
@@ -340,7 +344,7 @@ export class UserController {
         class ConcreteImpl {}
       `;
       const result = detectSlop(code, mockManifest);
-      expect(result.issues.some(i => i.kind === 'over-abstraction')).toBe(true);
+      expect(result.issues.some((i) => i.kind === 'over-abstraction')).toBe(true);
     });
 
     it('flags 3+ single-delegation wrapper functions', () => {
@@ -350,7 +354,7 @@ export class UserController {
         export function doC(x: string) { return service.doC(x); }
       `;
       const result = detectSlop(code, mockManifest);
-      expect(result.issues.some(i => i.kind === 'over-abstraction')).toBe(true);
+      expect(result.issues.some((i) => i.kind === 'over-abstraction')).toBe(true);
     });
 
     it('does not flag multi-line non-wrapper export functions', () => {
@@ -372,7 +376,7 @@ export class UserController {
         }
       `;
       const result = detectSlop(code, mockManifest);
-      expect(result.issues.filter(i => i.kind === 'over-abstraction')).toHaveLength(0);
+      expect(result.issues.filter((i) => i.kind === 'over-abstraction')).toHaveLength(0);
     });
 
     it('does not flag normal code with few extends', () => {
@@ -382,7 +386,7 @@ export class UserController {
         function greet(name: string) { return \`Hello \${name}\`; }
       `;
       const result = detectSlop(code, mockManifest);
-      expect(result.issues.filter(i => i.kind === 'over-abstraction')).toHaveLength(0);
+      expect(result.issues.filter((i) => i.kind === 'over-abstraction')).toHaveLength(0);
     });
 
     it('does not flag files with generic constraints as over-abstracted', () => {
@@ -392,7 +396,7 @@ export class UserController {
         type IsString<T> = T extends string ? true : false;
       `;
       const result = detectSlop(code, mockManifest);
-      expect(result.issues.filter(i => i.kind === 'over-abstraction')).toHaveLength(0);
+      expect(result.issues.filter((i) => i.kind === 'over-abstraction')).toHaveLength(0);
     });
 
     it('over-abstraction issue has kind, message, and severity', () => {
@@ -402,7 +406,7 @@ export class UserController {
         class E extends F {}
       `;
       const result = detectSlop(code, mockManifest);
-      const issue = result.issues.find(i => i.kind === 'over-abstraction');
+      const issue = result.issues.find((i) => i.kind === 'over-abstraction');
       expect(issue).toBeDefined();
       expect(issue!.message.length).toBeGreaterThan(0);
       expect(issue!.severity).toBe('warning');
@@ -424,7 +428,7 @@ export class UserController {
       const manifest = makeManifest();
       const result = detectSlop(code, manifest);
       // Over-commenting should be detected (all lines are comments)
-      const overCommented = result.issues.filter(i => i.kind === 'over-commenting');
+      const overCommented = result.issues.filter((i) => i.kind === 'over-commenting');
       expect(overCommented.length).toBeGreaterThan(0);
     });
   });

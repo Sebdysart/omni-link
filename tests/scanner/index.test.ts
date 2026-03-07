@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { scanRepo } from '../../engine/scanner/index.js';
-import type { RepoConfig, RepoManifest, FileScanResult } from '../../engine/types.js';
+import type { RepoConfig } from '../../engine/types.js';
 import type { FileCache } from '../../engine/scanner/index.js';
 import { CacheManager } from '../../engine/context/cache-manager.js';
 import * as fs from 'node:fs';
@@ -99,8 +99,8 @@ export type User = z.infer<typeof userSchema>;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('returns a complete RepoManifest with correct structure', () => {
-    const manifest = scanRepo(config);
+  it('returns a complete RepoManifest with correct structure', async () => {
+    const manifest = await scanRepo(config);
 
     // Basic identity
     expect(manifest.repoId).toBe('test-repo');
@@ -108,8 +108,8 @@ export type User = z.infer<typeof userSchema>;
     expect(manifest.language).toBe('typescript');
   });
 
-  it('extracts git state correctly', () => {
-    const manifest = scanRepo(config);
+  it('extracts git state correctly', async () => {
+    const manifest = await scanRepo(config);
 
     expect(manifest.gitState.branch).toBeTruthy();
     expect(manifest.gitState.headSha).toMatch(/^[a-f0-9]{40}$/);
@@ -118,23 +118,23 @@ export type User = z.infer<typeof userSchema>;
     expect(manifest.gitState.recentCommits[0].message).toBe('initial commit');
   });
 
-  it('detects uncommitted changes', () => {
+  it('detects uncommitted changes', async () => {
     // Modify a file without committing
     fs.writeFileSync(path.join(tmpDir, 'src', 'schemas.ts'), '// modified\n');
 
-    const manifest = scanRepo(config);
+    const manifest = await scanRepo(config);
     expect(manifest.gitState.uncommittedChanges.length).toBeGreaterThan(0);
   });
 
-  it('detects untracked files as uncommitted changes', () => {
+  it('detects untracked files as uncommitted changes', async () => {
     fs.writeFileSync(path.join(tmpDir, 'src', 'new-file.ts'), 'export const value = 1;\n');
 
-    const manifest = scanRepo(config);
+    const manifest = await scanRepo(config);
     expect(manifest.gitState.uncommittedChanges).toContain('src/new-file.ts');
   });
 
-  it('extracts exports from all files', () => {
-    const manifest = scanRepo(config);
+  it('extracts exports from all files', async () => {
+    const manifest = await scanRepo(config);
     const exportNames = manifest.apiSurface.exports.map((e) => e.name);
 
     // From user-service.ts
@@ -147,16 +147,16 @@ export type User = z.infer<typeof userSchema>;
     expect(exportNames).not.toContain('/api/users');
   });
 
-  it('extracts routes', () => {
-    const manifest = scanRepo(config);
+  it('extracts routes', async () => {
+    const manifest = await scanRepo(config);
 
     expect(manifest.apiSurface.routes.length).toBeGreaterThanOrEqual(2);
     const paths = manifest.apiSurface.routes.map((r) => r.path);
     expect(paths).toContain('/api/users');
   });
 
-  it('extracts types and schemas', () => {
-    const manifest = scanRepo(config);
+  it('extracts types and schemas', async () => {
+    const manifest = await scanRepo(config);
 
     // Types (interfaces + type aliases)
     const typeNames = manifest.typeRegistry.types.map((t) => t.name);
@@ -168,8 +168,8 @@ export type User = z.infer<typeof userSchema>;
     expect(schemaNames).toContain('userSchema');
   });
 
-  it('extracts external dependencies from package.json', () => {
-    const manifest = scanRepo(config);
+  it('extracts external dependencies from package.json', async () => {
+    const manifest = await scanRepo(config);
 
     const depNames = manifest.dependencies.external.map((d) => d.name);
     expect(depNames).toContain('hono');
@@ -183,8 +183,8 @@ export type User = z.infer<typeof userSchema>;
     expect(hono?.dev).toBe(false);
   });
 
-  it('detects conventions', () => {
-    const manifest = scanRepo(config);
+  it('detects conventions', async () => {
+    const manifest = await scanRepo(config);
 
     expect(manifest.conventions.naming).toBeTruthy();
     expect(manifest.conventions.fileOrganization).toBeTruthy();
@@ -192,8 +192,8 @@ export type User = z.infer<typeof userSchema>;
     expect(typeof manifest.conventions.testingPatterns).toBe('string');
   });
 
-  it('initializes health with defaults', () => {
-    const manifest = scanRepo(config);
+  it('initializes health with defaults', async () => {
+    const manifest = await scanRepo(config);
 
     expect(manifest.health).toBeDefined();
     expect(manifest.health.testCoverage).toBeNull();
@@ -201,7 +201,7 @@ export type User = z.infer<typeof userSchema>;
     expect(manifest.health.typeErrors).toBe(0);
   });
 
-  it('skips node_modules and .git directories', () => {
+  it('skips node_modules and .git directories', async () => {
     // Create a file inside node_modules that would be picked up otherwise
     fs.mkdirSync(path.join(tmpDir, 'node_modules', 'some-pkg'), { recursive: true });
     fs.writeFileSync(
@@ -209,13 +209,13 @@ export type User = z.infer<typeof userSchema>;
       'export const shouldNotAppear = true;',
     );
 
-    const manifest = scanRepo(config);
+    const manifest = await scanRepo(config);
     const allFiles = manifest.apiSurface.exports.map((e) => e.file);
     const hasNodeModules = allFiles.some((f) => f.includes('node_modules'));
     expect(hasNodeModules).toBe(false);
   });
 
-  it('skips test and example files when scanning API surface', () => {
+  it('skips test and example files when scanning API surface', async () => {
     fs.mkdirSync(path.join(tmpDir, 'tests'), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, 'examples'), { recursive: true });
     fs.writeFileSync(
@@ -227,7 +227,7 @@ export type User = z.infer<typeof userSchema>;
       `export const exampleOnly = true;\nconst app = { get: (..._args: unknown[]) => undefined };\napp.get('/api/example-only', () => null);\n`,
     );
 
-    const manifest = scanRepo(config);
+    const manifest = await scanRepo(config);
     const exportNames = manifest.apiSurface.exports.map((entry) => entry.name);
     const routePaths = manifest.apiSurface.routes.map((entry) => entry.path);
 
@@ -235,6 +235,34 @@ export type User = z.infer<typeof userSchema>;
     expect(exportNames).not.toContain('exampleOnly');
     expect(routePaths).not.toContain('/api/test-only');
     expect(routePaths).not.toContain('/api/example-only');
+  });
+
+  it('respects .gitignore entries when scanning source files', async () => {
+    fs.writeFileSync(path.join(tmpDir, '.gitignore'), 'generated/\n');
+    fs.mkdirSync(path.join(tmpDir, 'generated'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'generated', 'ignored.ts'),
+      'export const ignoredByGitignore = true;\n',
+    );
+
+    const manifest = await scanRepo(config);
+    const exportNames = manifest.apiSurface.exports.map((entry) => entry.name);
+
+    expect(exportNames).not.toContain('ignoredByGitignore');
+  });
+
+  it('respects .claudeignore entries when scanning source files', async () => {
+    fs.writeFileSync(path.join(tmpDir, '.claudeignore'), 'private/\n');
+    fs.mkdirSync(path.join(tmpDir, 'private'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'private', 'secret.ts'),
+      'export const ignoredByClaudeignore = true;\n',
+    );
+
+    const manifest = await scanRepo(config);
+    const exportNames = manifest.apiSurface.exports.map((entry) => entry.name);
+
+    expect(exportNames).not.toContain('ignoredByClaudeignore');
   });
 });
 
@@ -267,24 +295,24 @@ describe('scanRepo incremental caching', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('scanRepo works without a cache parameter (no regression)', () => {
+  it('scanRepo works without a cache parameter (no regression)', async () => {
     // Passing no cache should work identically to before
-    const manifest = scanRepo(config);
+    const manifest = await scanRepo(config);
     expect(manifest.repoId).toBe('cache-test-repo');
     expect(manifest.apiSurface.exports.length).toBeGreaterThan(0);
   });
 
-  it('scanRepo works with an empty cache (cold miss path)', () => {
+  it('scanRepo works with an empty cache (cold miss path)', async () => {
     const cache: FileCache = new Map();
-    const manifest = scanRepo(config, cache);
+    const manifest = await scanRepo(config, cache);
     expect(manifest.repoId).toBe('cache-test-repo');
     // After scan the cache should be populated with at least one entry
     expect(cache.size).toBeGreaterThan(0);
   });
 
-  it('cache entries are keyed by absolute file path and contain sha1 + result', () => {
+  it('cache entries are keyed by absolute file path and contain sha1 + result', async () => {
     const cache: FileCache = new Map();
-    scanRepo(config, cache);
+    await scanRepo(config, cache);
 
     const serviceFile = path.join(tmpDir, 'src', 'service.ts');
     expect(cache.has(serviceFile)).toBe(true);
@@ -296,10 +324,10 @@ describe('scanRepo incremental caching', () => {
     expect(Array.isArray(entry.result.exports)).toBe(true);
   });
 
-  it('uses cached result when SHA1 matches (hit: cached exports survive a content-identical re-scan)', () => {
+  it('uses cached result when SHA1 matches (hit: cached exports survive a content-identical re-scan)', async () => {
     // First scan populates cache
     const cache: FileCache = new Map();
-    scanRepo(config, cache);
+    await scanRepo(config, cache);
 
     const serviceFile = path.join(tmpDir, 'src', 'service.ts');
     const cachedEntry = cache.get(serviceFile)!;
@@ -310,14 +338,14 @@ describe('scanRepo incremental caching', () => {
     cache.set(serviceFile, cachedEntry);
 
     // Second scan: file on disk is unchanged — SHA1 matches — cached result should be used
-    const manifest2 = scanRepo(config, cache);
+    const manifest2 = await scanRepo(config, cache);
     const exportNames = manifest2.apiSurface.exports.map((e) => e.name);
     expect(exportNames).toContain('__CACHED__');
   });
 
-  it('re-parses when file content changes (SHA1 mismatch)', () => {
+  it('re-parses when file content changes (SHA1 mismatch)', async () => {
     const cache: FileCache = new Map();
-    scanRepo(config, cache);
+    await scanRepo(config, cache);
 
     const serviceFile = path.join(tmpDir, 'src', 'service.ts');
     const originalSha1 = cache.get(serviceFile)!.sha1;
@@ -328,13 +356,13 @@ describe('scanRepo incremental caching', () => {
       `export function hello(): string { return 'world'; }\nexport function goodbye(): void {}\n`,
     );
 
-    scanRepo(config, cache);
+    await scanRepo(config, cache);
 
     const newSha1 = cache.get(serviceFile)!.sha1;
     expect(newSha1).not.toBe(originalSha1);
   });
 
-  it('stale cache entry with old SHA1 is replaced after re-parse', () => {
+  it('stale cache entry with old SHA1 is replaced after re-parse', async () => {
     const cache: FileCache = new Map();
     const serviceFile = path.join(tmpDir, 'src', 'service.ts');
     const content = fs.readFileSync(serviceFile, 'utf-8');
@@ -348,7 +376,7 @@ describe('scanRepo incremental caching', () => {
         filePath: serviceFile,
         sha: staleSha1,
         scannedAt: new Date().toISOString(),
-        exports: [],   // empty — intentionally wrong cached result
+        exports: [], // empty — intentionally wrong cached result
         imports: [],
         types: [],
         schemas: [],
@@ -358,7 +386,7 @@ describe('scanRepo incremental caching', () => {
     });
 
     // scanRepo should detect sha1 mismatch, re-parse, and update the cache
-    const manifest = scanRepo(config, cache);
+    const manifest = await scanRepo(config, cache);
 
     // After scan: cache should be updated with the real sha1
     expect(cache.get(serviceFile)!.sha1).toBe(realSha1);
@@ -367,15 +395,15 @@ describe('scanRepo incremental caching', () => {
     expect(manifest.apiSurface.exports.length).toBeGreaterThan(0);
   });
 
-  it('cache is shared across multiple scanRepo calls for the same files', () => {
+  it('cache is shared across multiple scanRepo calls for the same files', async () => {
     const cache: FileCache = new Map();
 
     // First call populates cache
-    scanRepo(config, cache);
+    await scanRepo(config, cache);
     const sizeAfterFirst = cache.size;
 
     // Second call: no new files, same SHA1s — cache size stays the same
-    scanRepo(config, cache);
+    await scanRepo(config, cache);
     expect(cache.size).toBe(sizeAfterFirst);
   });
 });
@@ -399,15 +427,15 @@ describe('scanRepo — manifest cache', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('stores manifest in cache on first scan and retrieves it on second scan', () => {
+  it('stores manifest in cache on first scan and retrieves it on second scan', async () => {
     const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omni-link-mfcache-'));
     try {
       const cache = new CacheManager(cacheDir);
 
-      const manifest1 = scanRepo(config, new Map(), cache);
+      const manifest1 = await scanRepo(config, new Map(), cache);
       expect(manifest1.repoId).toBe('cache-repo');
 
-      const manifest2 = scanRepo(config, new Map(), cache);
+      const manifest2 = await scanRepo(config, new Map(), cache);
       expect(manifest2.repoId).toBe(manifest1.repoId);
       expect(manifest2.gitState.headSha).toBe(manifest1.gitState.headSha);
 
@@ -419,13 +447,13 @@ describe('scanRepo — manifest cache', () => {
     }
   });
 
-  it('skips cache gracefully when no CacheManager provided (backward compat)', () => {
-    const manifest = scanRepo(config, new Map());
+  it('skips cache gracefully when no CacheManager provided (backward compat)', async () => {
+    const manifest = await scanRepo(config, new Map());
     expect(manifest.repoId).toBe('cache-repo');
   });
 
-  it('skips cache gracefully when CacheManager is undefined', () => {
-    const manifest = scanRepo(config, new Map(), undefined);
+  it('skips cache gracefully when CacheManager is undefined', async () => {
+    const manifest = await scanRepo(config, new Map(), undefined);
     expect(manifest.repoId).toBe('cache-repo');
   });
 });

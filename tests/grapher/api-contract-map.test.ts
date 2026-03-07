@@ -135,16 +135,12 @@ describe('compareTypes', () => {
   it('treats looser consumer optionality as compatible', () => {
     const provider: TypeDef = {
       name: 'User',
-      fields: [
-        { name: 'id', type: 'string', optional: false },
-      ],
+      fields: [{ name: 'id', type: 'string', optional: false }],
       source: { repo: 'backend', file: 'types.ts', line: 1 },
     };
     const consumer: TypeDef = {
       name: 'User',
-      fields: [
-        { name: 'id', type: 'String?', optional: true },
-      ],
+      fields: [{ name: 'id', type: 'String?', optional: true }],
       source: { repo: 'ios-app', file: 'User.swift', line: 1 },
     };
 
@@ -201,12 +197,18 @@ describe('mapApiContracts', () => {
         types: [
           {
             name: 'UserListResponse',
-            fields: [{ name: 'users', type: 'User[]' }, { name: 'total', type: 'number' }],
+            fields: [
+              { name: 'users', type: 'User[]' },
+              { name: 'total', type: 'number' },
+            ],
             source: { repo: 'backend', file: 'src/types.ts', line: 5 },
           },
           {
             name: 'User',
-            fields: [{ name: 'id', type: 'string' }, { name: 'email', type: 'string' }],
+            fields: [
+              { name: 'id', type: 'string' },
+              { name: 'email', type: 'string' },
+            ],
             source: { repo: 'backend', file: 'src/types.ts', line: 15 },
           },
         ],
@@ -235,7 +237,10 @@ describe('mapApiContracts', () => {
         types: [
           {
             name: 'UserListResponse',
-            fields: [{ name: 'users', type: '[User]' }, { name: 'total', type: 'Int' }],
+            fields: [
+              { name: 'users', type: '[User]' },
+              { name: 'total', type: 'Int' },
+            ],
             source: { repo: 'ios-app', file: 'Models/UserListResponse.swift', line: 1 },
           },
         ],
@@ -249,7 +254,7 @@ describe('mapApiContracts', () => {
     expect(bridges.length).toBeGreaterThan(0);
 
     const usersBridge = bridges.find(
-      b => b.provider.route === 'GET /api/users' && b.consumer.repo === 'ios-app'
+      (b) => b.provider.route === 'GET /api/users' && b.consumer.repo === 'ios-app',
     );
     expect(usersBridge).toBeDefined();
     expect(usersBridge!.provider.repo).toBe('backend');
@@ -278,7 +283,10 @@ describe('mapApiContracts', () => {
         types: [
           {
             name: 'UserProfile',
-            fields: [{ name: 'id', type: 'string' }, { name: 'bio', type: 'string' }],
+            fields: [
+              { name: 'id', type: 'string' },
+              { name: 'bio', type: 'string' },
+            ],
             source: { repo: 'backend', file: 'src/types.ts', line: 30 },
           },
         ],
@@ -306,7 +314,10 @@ describe('mapApiContracts', () => {
         types: [
           {
             name: 'UserProfile',
-            fields: [{ name: 'id', type: 'string' }, { name: 'bio', type: 'string' }],
+            fields: [
+              { name: 'id', type: 'string' },
+              { name: 'bio', type: 'string' },
+            ],
             source: { repo: 'frontend', file: 'src/types.ts', line: 10 },
           },
         ],
@@ -317,7 +328,7 @@ describe('mapApiContracts', () => {
 
     const bridges = mapApiContracts([backend, frontend]);
     const profileBridge = bridges.find(
-      b => b.provider.route.includes('user.getProfile') && b.consumer.repo === 'frontend'
+      (b) => b.provider.route.includes('user.getProfile') && b.consumer.repo === 'frontend',
     );
     expect(profileBridge).toBeDefined();
   });
@@ -361,7 +372,7 @@ describe('mapApiContracts', () => {
 
     const bridges = mapApiContracts([backend, ios]);
     expect(bridges.length).toBeGreaterThan(0);
-    const bridge = bridges.find(b => b.provider.route === 'GET /api/posts');
+    const bridge = bridges.find((b) => b.provider.route === 'GET /api/posts');
     expect(bridge).toBeDefined();
     expect(bridge!.consumer.repo).toBe('ios-app');
     expect(bridge!.consumer.file).toBe('Services/PostService.swift');
@@ -440,7 +451,7 @@ describe('mapApiContracts', () => {
     });
 
     const bridges = mapApiContracts([backend, consumer]);
-    const bridge = bridges.find(b => b.provider.route === 'GET /api/items');
+    const bridge = bridges.find((b) => b.provider.route === 'GET /api/items');
     expect(bridge).toBeDefined();
     // Consumer has subset of provider fields => compatible
     expect(bridge!.contract.matchStatus).toBe('compatible');

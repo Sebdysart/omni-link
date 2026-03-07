@@ -8,6 +8,7 @@ import type {
   ImpactPath,
   EvolutionSuggestion,
 } from './types.js';
+import pLimit from 'p-limit';
 
 import { scanRepo } from './scanner/index.js';
 import type { FileCache } from './scanner/index.js';
@@ -52,23 +53,30 @@ export interface ScanResult {
   context: { digest: EcosystemDigest; markdown: string };
 }
 
-/**
- * Full pipeline: scan all repos -> build graph -> build context digest.
- */
-export function scan(config: OmniLinkConfig): ScanResult {
-  assertNotSimulateOnly(config, 'scan');
-  // Shared incremental cache for this pipeline run: unchanged files are
-  // parsed only once even if referenced by multiple repos.
+const DEFAULT_SCAN_CONCURRENCY = 4;
+
+async function scanConfiguredRepos(config: OmniLinkConfig): Promise<RepoManifest[]> {
   const fileCache: FileCache = new Map();
   const manifestCache: CacheManager | undefined = config.cache?.directory
     ? new CacheManager(config.cache.directory)
     : undefined;
+
   if (manifestCache && config.cache.maxAgeDays) {
     manifestCache.pruneOld(config.cache.maxAgeDays);
   }
 
-  // 1. Scan each repo to produce a manifest
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
+  const limit = pLimit(DEFAULT_SCAN_CONCURRENCY);
+  return Promise.all(
+    config.repos.map((repo) => limit(() => scanRepo(repo, fileCache, manifestCache))),
+  );
+}
+
+/**
+ * Full pipeline: scan all repos -> build graph -> build context digest.
+ */
+export async function scan(config: OmniLinkConfig): Promise<ScanResult> {
+  assertNotSimulateOnly(config, 'scan');
+  const manifests = await scanConfiguredRepos(config);
 
   // 2. Build the ecosystem graph from all manifests
   const graph = buildEcosystemGraph(manifests);
@@ -85,16 +93,12 @@ export function scan(config: OmniLinkConfig): ScanResult {
  * Analyze the impact of changed files across the ecosystem.
  * Scans repos, builds graph, then runs impact analysis on the provided changes.
  */
-export function impact(
+export async function impact(
   config: OmniLinkConfig,
   changedFiles: Array<{ repo: string; file: string; change: string }>,
-): ImpactPath[] {
+): Promise<ImpactPath[]> {
   assertNotSimulateOnly(config, 'impact');
-  const fileCache: FileCache = new Map();
-  const manifestCache: CacheManager | undefined = config.cache?.directory
-    ? new CacheManager(config.cache.directory)
-    : undefined;
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
+  const manifests = await scanConfiguredRepos(config);
   const graph = buildEcosystemGraph(manifests);
   return analyzeImpact(graph, changedFiles);
 }
@@ -107,13 +111,9 @@ export function impact(
  * Intended for CLI use where the user wants to know "what does my current
  * working-tree change break across the ecosystem?"
  */
-export function impactFromUncommitted(config: OmniLinkConfig): ImpactPath[] {
+export async function impactFromUncommitted(config: OmniLinkConfig): Promise<ImpactPath[]> {
   assertNotSimulateOnly(config, 'impact');
-  const fileCache: FileCache = new Map();
-  const manifestCache: CacheManager | undefined = config.cache?.directory
-    ? new CacheManager(config.cache.directory)
-    : undefined;
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
+  const manifests = await scanConfiguredRepos(config);
   const graph = buildEcosystemGraph(manifests);
   // Collect every uncommitted file from every repo's git state
   const changedFiles = manifests.flatMap((m) =>
@@ -136,13 +136,9 @@ export interface HealthResult {
 /**
  * Compute per-repo and ecosystem-wide health scores.
  */
-export function health(config: OmniLinkConfig): HealthResult {
+export async function health(config: OmniLinkConfig): Promise<HealthResult> {
   assertNotSimulateOnly(config, 'health');
-  const fileCache: FileCache = new Map();
-  const manifestCache: CacheManager | undefined = config.cache?.directory
-    ? new CacheManager(config.cache.directory)
-    : undefined;
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
+  const manifests = await scanConfiguredRepos(config);
   const graph = buildEcosystemGraph(manifests);
   return scoreEcosystemHealth(graph);
 }
@@ -152,13 +148,9 @@ export function health(config: OmniLinkConfig): HealthResult {
 /**
  * Run the evolution analysis pipeline: gaps, bottlenecks, benchmarks -> ranked suggestions.
  */
-export function evolve(config: OmniLinkConfig): EvolutionSuggestion[] {
+export async function evolve(config: OmniLinkConfig): Promise<EvolutionSuggestion[]> {
   assertNotSimulateOnly(config, 'evolve');
-  const fileCache: FileCache = new Map();
-  const manifestCache: CacheManager | undefined = config.cache?.directory
-    ? new CacheManager(config.cache.directory)
-    : undefined;
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
+  const manifests = await scanConfiguredRepos(config);
   const graph = buildEcosystemGraph(manifests);
   return analyzeEvolution(graph, config);
 }
@@ -178,18 +170,14 @@ export interface QualityCheckResult {
  *
  * If no matching repo manifest is found, returns clean results for all checks.
  */
-export function qualityCheck(
+export async function qualityCheck(
   code: string,
   file: string,
   config: OmniLinkConfig,
-): QualityCheckResult {
+): Promise<QualityCheckResult> {
   assertNotSimulateOnly(config, 'qualityCheck');
   // Find the repo this file belongs to (match by path prefix or repo name)
-  const fileCache: FileCache = new Map();
-  const manifestCache: CacheManager | undefined = config.cache?.directory
-    ? new CacheManager(config.cache.directory)
-    : undefined;
-  const manifests = config.repos.map((repo) => scanRepo(repo, fileCache, manifestCache));
+  const manifests = await scanConfiguredRepos(config);
 
   // Use the first manifest by default, or find by repo path in filename
   const manifest = manifests.find((m) => file.startsWith(m.path)) ?? manifests[0];

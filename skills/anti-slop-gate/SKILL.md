@@ -21,6 +21,7 @@ This is the quality enforcement gate for all code generation. It runs three chec
 Validates that all imports, API calls, and type references resolve to real entities in the ecosystem manifest.
 
 **Blocks on:**
+
 - `missing-file`: Import path resolves to a file that does not exist in the codebase
 - `missing-export`: Named import references an export that does not exist in the target file
 - `unknown-route`: API call targets a route not defined in any scanned repo
@@ -31,6 +32,7 @@ Validates that all imports, API calls, and type references resolve to real entit
 Enforces detected codebase patterns on generated code.
 
 **Blocks on:**
+
 - `naming`: Variable/function name violates the repo's naming convention (camelCase, snake_case, PascalCase, kebab-case)
 - `file-location`: File is placed in the wrong directory per codebase convention
 - `error-handling`: Async function uses await without error handling when the codebase convention is try-catch
@@ -41,10 +43,12 @@ Enforces detected codebase patterns on generated code.
 Catches common AI code generation failures.
 
 **Blocks on (severity: error):**
+
 - `placeholder`: TODO comments, FIXME, HACK, XXX, "not implemented" throws, placeholder console.logs
 - `phantom-import`: Package imported that is not in the project's dependency list (hallucinated package)
 
 **Warns on (severity: warning):**
+
 - `duplicate-block`: 3+ lines of duplicate code detected
 - `over-commenting`: Comment-to-code ratio exceeds 50%
 
@@ -53,10 +57,12 @@ Catches common AI code generation failures.
 Hard rules enforced on generated code by the rule engine:
 
 **Blocks on (severity: error):**
+
 - `no-fetch-without-catch`: `fetch()` without `.catch()` or try-catch within 5 lines
 - `no-hardcoded-secret`: API key / token / password pattern hardcoded in source
 
 **Warns on (severity: warning):**
+
 - `no-raw-env-access`: `process.env.X` without `??` fallback
 - `no-any-cast`: TypeScript `as any` in production (non-test) files
 

@@ -125,7 +125,7 @@ export function doFoo() {
       expect(result.valid).toBe(false);
       expect(result.violations.length).toBeGreaterThan(0);
 
-      const fileViolation = result.violations.find(v => v.kind === 'missing-file');
+      const fileViolation = result.violations.find((v) => v.kind === 'missing-file');
       expect(fileViolation).toBeDefined();
       expect(fileViolation!.message).toContain('foo-service');
       expect(fileViolation!.line).toBe(1);
@@ -204,7 +204,7 @@ export function run() {
       const result = checkReferences(code, 'src/index.ts', manifest);
       expect(result.valid).toBe(false);
 
-      const exportViolation = result.violations.find(v => v.kind === 'missing-export');
+      const exportViolation = result.violations.find((v) => v.kind === 'missing-export');
       expect(exportViolation).toBeDefined();
       expect(exportViolation!.message).toContain('NonExistentThing');
     });
@@ -275,7 +275,7 @@ export async function fetchData() {
       const result = checkReferences(code, 'src/client.ts', manifest);
       expect(result.valid).toBe(false);
 
-      const routeViolation = result.violations.find(v => v.kind === 'unknown-route');
+      const routeViolation = result.violations.find((v) => v.kind === 'unknown-route');
       expect(routeViolation).toBeDefined();
       expect(routeViolation!.message).toContain('/api/v1/nonexistent');
     });
@@ -303,7 +303,7 @@ export async function fetchData() {
       });
 
       const result = checkReferences(code, 'src/client.ts', manifest);
-      const routeViolations = result.violations.filter(v => v.kind === 'unknown-route');
+      const routeViolations = result.violations.filter((v) => v.kind === 'unknown-route');
       expect(routeViolations).toHaveLength(0);
     });
 
@@ -340,7 +340,7 @@ export async function fetchData() {
       });
 
       const result = checkReferences(code, 'src/client.ts', consumer, [consumer, provider]);
-      const routeViolations = result.violations.filter(v => v.kind === 'unknown-route');
+      const routeViolations = result.violations.filter((v) => v.kind === 'unknown-route');
       expect(routeViolations).toHaveLength(0);
     });
   });
@@ -370,7 +370,7 @@ export async function fetchData() {
       const result = checkReferences(code, 'src/client.ts', manifest);
       expect(result.valid).toBe(false);
 
-      const procViolation = result.violations.find(v => v.kind === 'unknown-procedure');
+      const procViolation = result.violations.find((v) => v.kind === 'unknown-procedure');
       expect(procViolation).toBeDefined();
       expect(procViolation!.message).toContain('nonExistentProcedure');
     });
@@ -397,7 +397,7 @@ export async function fetchData() {
       });
 
       const result = checkReferences(code, 'src/client.ts', manifest);
-      const procViolations = result.violations.filter(v => v.kind === 'unknown-procedure');
+      const procViolations = result.violations.filter((v) => v.kind === 'unknown-procedure');
       expect(procViolations).toHaveLength(0);
     });
   });
@@ -522,7 +522,11 @@ class UserService {
 
       const result = checkReferences(code, 'Sources/UserService.swift', manifest);
       expect(result.valid).toBe(false);
-      expect(result.violations.some(v => v.kind === 'unknown-route' && v.message.includes('/api/missing'))).toBe(true);
+      expect(
+        result.violations.some(
+          (v) => v.kind === 'unknown-route' && v.message.includes('/api/missing'),
+        ),
+      ).toBe(true);
     });
   });
 });

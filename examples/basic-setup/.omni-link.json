@@ -1,0 +1,16 @@
+{
+  "repos": [
+    {
+      "name": "backend",
+      "path": "/absolute/path/to/backend",
+      "language": "typescript",
+      "role": "backend"
+    },
+    {
+      "name": "frontend",
+      "path": "/absolute/path/to/frontend",
+      "language": "tsx",
+      "role": "frontend"
+    }
+  ]
+}

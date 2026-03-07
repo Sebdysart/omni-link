@@ -92,7 +92,10 @@ function makeManifest(overrides: Partial<RepoManifest> & { repoId: string }): Re
 function makeTypeDef(name: string, repo: string): TypeDef {
   return {
     name,
-    fields: [{ name: 'id', type: 'string' }, { name: 'name', type: 'string' }],
+    fields: [
+      { name: 'id', type: 'string' },
+      { name: 'name', type: 'string' },
+    ],
     source: { repo, file: `src/types/${name}.ts`, line: 1 },
   };
 }
@@ -179,7 +182,13 @@ function makeLargeGraph(): EcosystemGraph {
       {
         trigger: { repo: 'backend', file: 'src/changed.ts', change: 'type-change' },
         affected: [
-          { repo: 'ios-app', file: 'Models/Changed.swift', line: 1, reason: 'Uses type', severity: 'warning' },
+          {
+            repo: 'ios-app',
+            file: 'Models/Changed.swift',
+            line: 1,
+            reason: 'Uses type',
+            severity: 'warning',
+          },
         ],
       },
     ],
@@ -303,7 +312,7 @@ describe('buildContext', () => {
     const { digest } = buildContext(graph, config);
 
     expect(digest.repos.length).toBeGreaterThan(0);
-    const backendDigest = digest.repos.find(r => r.name === 'backend');
+    const backendDigest = digest.repos.find((r) => r.name === 'backend');
     expect(backendDigest).toBeDefined();
     expect(backendDigest!.branch).toBe('feature/users');
     expect(backendDigest!.uncommittedCount).toBe(1);

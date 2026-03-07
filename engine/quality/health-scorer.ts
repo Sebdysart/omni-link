@@ -1,6 +1,6 @@
 // engine/quality/health-scorer.ts — Per-repo and ecosystem code health metrics
 
-import type { RepoManifest, EcosystemGraph, HealthScore as RawHealthScore } from '../types.js';
+import type { RepoManifest, EcosystemGraph } from '../types.js';
 
 // ─── Public Types ────────────────────────────────────────────────────────────
 
@@ -80,7 +80,7 @@ function scoreTests(testCoverage: number | null): number {
  * Each lint error costs 2 points, each type error costs 4 points (type errors are more serious).
  */
 function scoreQuality(lintErrors: number, typeErrors: number): number {
-  const penalty = (lintErrors * 2) + (typeErrors * 4);
+  const penalty = lintErrors * 2 + typeErrors * 4;
   return Math.max(0, Math.min(100, 100 - penalty));
 }
 
@@ -93,19 +93,16 @@ export function scoreHealth(manifest: RepoManifest): HealthScoreResult {
   const { health, apiSurface } = manifest;
 
   const todoScore = scoreTodos(health.todoCount);
-  const deadCodeScore = scoreDeadCode(
-    health.deadCode.length,
-    apiSurface.exports.length,
-  );
+  const deadCodeScore = scoreDeadCode(health.deadCode.length, apiSurface.exports.length);
   const testScore = scoreTests(health.testCoverage);
   const qualityScore = scoreQuality(health.lintErrors, health.typeErrors);
 
   // Weighted overall score
   const overall = Math.round(
     todoScore * WEIGHTS.todo +
-    deadCodeScore * WEIGHTS.deadCode +
-    testScore * WEIGHTS.test +
-    qualityScore * WEIGHTS.quality,
+      deadCodeScore * WEIGHTS.deadCode +
+      testScore * WEIGHTS.test +
+      qualityScore * WEIGHTS.quality,
   );
 
   return {

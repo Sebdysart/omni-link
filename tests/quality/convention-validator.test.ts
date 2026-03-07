@@ -76,7 +76,7 @@ describe('validateConventions', () => {
       const result = validateConventions(code, 'src/users.ts', manifest);
       expect(result.valid).toBe(false);
 
-      const namingViolations = result.violations.filter(v => v.kind === 'naming');
+      const namingViolations = result.violations.filter((v) => v.kind === 'naming');
       expect(namingViolations.length).toBeGreaterThan(0);
       expect(namingViolations[0].suggestion).toBeTruthy();
     });
@@ -99,7 +99,7 @@ describe('validateConventions', () => {
       });
 
       const result = validateConventions(code, 'src/users.ts', manifest);
-      const namingViolations = result.violations.filter(v => v.kind === 'naming');
+      const namingViolations = result.violations.filter((v) => v.kind === 'naming');
       expect(namingViolations).toHaveLength(0);
     });
 
@@ -123,7 +123,7 @@ describe('validateConventions', () => {
       const result = validateConventions(code, 'src/users.py', manifest);
       expect(result.valid).toBe(false);
 
-      const namingViolations = result.violations.filter(v => v.kind === 'naming');
+      const namingViolations = result.violations.filter((v) => v.kind === 'naming');
       expect(namingViolations.length).toBeGreaterThan(0);
     });
 
@@ -151,7 +151,7 @@ export interface UserData {
       });
 
       const result = validateConventions(code, 'src/user-service.ts', manifest);
-      const namingViolations = result.violations.filter(v => v.kind === 'naming');
+      const namingViolations = result.violations.filter((v) => v.kind === 'naming');
       expect(namingViolations).toHaveLength(0);
     });
   });
@@ -178,7 +178,7 @@ describe('UserService', () => {
 
       // Test file placed in src/ instead of tests/
       const result = validateConventions(code, 'src/user-service.test.ts', manifest);
-      const locationViolations = result.violations.filter(v => v.kind === 'file-location');
+      const locationViolations = result.violations.filter((v) => v.kind === 'file-location');
       expect(locationViolations.length).toBeGreaterThan(0);
       expect(locationViolations[0].suggestion).toBeTruthy();
     });
@@ -203,7 +203,7 @@ describe('UserService', () => {
       });
 
       const result = validateConventions(code, 'tests/user-service.test.ts', manifest);
-      const locationViolations = result.violations.filter(v => v.kind === 'file-location');
+      const locationViolations = result.violations.filter((v) => v.kind === 'file-location');
       expect(locationViolations).toHaveLength(0);
     });
 
@@ -224,7 +224,7 @@ export default app;`;
       });
 
       const result = validateConventions(code, 'src/utils/users-route.ts', manifest);
-      const locationViolations = result.violations.filter(v => v.kind === 'file-location');
+      const locationViolations = result.violations.filter((v) => v.kind === 'file-location');
       expect(locationViolations.length).toBeGreaterThan(0);
     });
   });
@@ -248,7 +248,7 @@ export default app;`;
       });
 
       const result = validateConventions(code, 'src/api-client.ts', manifest);
-      const errorViolations = result.violations.filter(v => v.kind === 'error-handling');
+      const errorViolations = result.violations.filter((v) => v.kind === 'error-handling');
       expect(errorViolations.length).toBeGreaterThan(0);
       expect(errorViolations[0].suggestion).toContain('try-catch');
     });
@@ -275,7 +275,7 @@ export default app;`;
       });
 
       const result = validateConventions(code, 'src/api-client.ts', manifest);
-      const errorViolations = result.violations.filter(v => v.kind === 'error-handling');
+      const errorViolations = result.violations.filter((v) => v.kind === 'error-handling');
       expect(errorViolations).toHaveLength(0);
     });
 
@@ -295,7 +295,7 @@ export default app;`;
       });
 
       const result = validateConventions(code, 'src/math.ts', manifest);
-      const errorViolations = result.violations.filter(v => v.kind === 'error-handling');
+      const errorViolations = result.violations.filter((v) => v.kind === 'error-handling');
       expect(errorViolations).toHaveLength(0);
     });
   });
@@ -325,7 +325,7 @@ export default app;`;
       });
 
       const result = validateConventions(code, 'src/utils.ts', manifest);
-      const namingViolations = result.violations.filter(v => v.kind === 'naming');
+      const namingViolations = result.violations.filter((v) => v.kind === 'naming');
       expect(namingViolations).toHaveLength(0);
     });
   });

@@ -37,5 +37,23 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Coverage
+        run: npm run test:coverage
+
+      - name: CLI smoke
+        run: npm run smoke:cli
+
+      - name: Security audit
+        run: npm audit --audit-level=moderate
+
       - name: Benchmark smoke
         run: npm run benchmark:smoke
+
+      - name: Pack dry run
+        run: npm run pack:check
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: true

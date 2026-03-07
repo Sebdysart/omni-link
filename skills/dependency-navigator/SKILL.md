@@ -22,6 +22,7 @@ This skill enables cross-repo exploration: tracing where entities are used, foll
 Trace all usages of an entity across the entire ecosystem.
 
 **Process:**
+
 1. Identify what X is: a type, function, API route, tRPC procedure, or package
 2. Search the ecosystem graph for references:
    - **Type**: Check `sharedTypes` in the graph for all instances across repos
@@ -52,6 +53,7 @@ Trace all usages of an entity across the entire ecosystem.
 Follow the chain: A imports B which imports C.
 
 **Process:**
+
 1. Start from the target entity
 2. Walk the `dependencies.internal` graph for in-repo chains
 3. Walk the `bridges` graph for cross-repo chains
@@ -72,6 +74,7 @@ UserService.swift
 Trace how a type concept appears in different repos and whether instances are aligned.
 
 **Process:**
+
 1. Find the type in `sharedTypes` (TypeLineage entries)
 2. Check `alignment`: `aligned`, `diverged`, or `subset`
 3. If diverged, identify specific field differences
@@ -96,6 +99,7 @@ Alignment: DIVERGED
 Before making a change, assess what would break.
 
 **Process:**
+
 1. Identify the entity being changed
 2. Trace all dependents using the above workflows
 3. Classify impact severity for each dependent:

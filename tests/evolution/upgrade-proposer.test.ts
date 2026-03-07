@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { proposeUpgrades } from '../../engine/evolution/upgrade-proposer.js';
 import type { GapFinding } from '../../engine/evolution/gap-analyzer.js';
 import type { BottleneckFinding } from '../../engine/evolution/bottleneck-finder.js';
-import type { RepoManifest, EvolutionSuggestion } from '../../engine/types.js';
+import type { RepoManifest } from '../../engine/types.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -14,7 +14,13 @@ function makeManifest(repoId: string): RepoManifest {
     gitState: { branch: 'main', headSha: 'abc123', uncommittedChanges: [], recentCommits: [] },
     apiSurface: { routes: [], procedures: [], exports: [] },
     typeRegistry: { types: [], schemas: [], models: [] },
-    conventions: { naming: 'camelCase', fileOrganization: 'feature-based', errorHandling: 'try-catch', patterns: [], testingPatterns: 'co-located' },
+    conventions: {
+      naming: 'camelCase',
+      fileOrganization: 'feature-based',
+      errorHandling: 'try-catch',
+      patterns: [],
+      testingPatterns: 'co-located',
+    },
     dependencies: { internal: [], external: [] },
     health: { testCoverage: null, lintErrors: 0, typeErrors: 0, todoCount: 0, deadCode: [] },
   };
@@ -46,13 +52,16 @@ function makeBottleneck(overrides: Partial<BottleneckFinding> = {}): BottleneckF
 describe('proposeUpgrades', () => {
   it('generates suggestions from gap findings', () => {
     const gaps: GapFinding[] = [
-      makeGap({ kind: 'incomplete-crud', description: "Resource '/api/users' has GET, POST but is missing: DELETE, PUT/PATCH" }),
+      makeGap({
+        kind: 'incomplete-crud',
+        description: "Resource '/api/users' has GET, POST but is missing: DELETE, PUT/PATCH",
+      }),
     ];
 
     const suggestions = proposeUpgrades(gaps, [], [makeManifest('backend')]);
 
     expect(suggestions.length).toBeGreaterThan(0);
-    const featureSuggestion = suggestions.find(s => s.category === 'feature');
+    const featureSuggestion = suggestions.find((s) => s.category === 'feature');
     expect(featureSuggestion).toBeDefined();
     expect(featureSuggestion!.title).toBeTruthy();
     expect(featureSuggestion!.description).toBeTruthy();
@@ -68,7 +77,9 @@ describe('proposeUpgrades', () => {
     const suggestions = proposeUpgrades([], bottlenecks, [makeManifest('backend')]);
 
     expect(suggestions.length).toBeGreaterThan(0);
-    const perfSuggestion = suggestions.find(s => s.category === 'performance' || s.category === 'scale');
+    const perfSuggestion = suggestions.find(
+      (s) => s.category === 'performance' || s.category === 'scale',
+    );
     expect(perfSuggestion).toBeDefined();
     expect(perfSuggestion!.estimatedImpact).toBeTruthy();
     expect(perfSuggestion!.estimatedEffort).toBeTruthy();
@@ -76,13 +87,17 @@ describe('proposeUpgrades', () => {
 
   it('generates security suggestions from rate-limiting bottlenecks', () => {
     const bottlenecks: BottleneckFinding[] = [
-      makeBottleneck({ kind: 'unbounded-query', description: '3 mutation routes found but no rate-limiting middleware detected', severity: 'high' }),
+      makeBottleneck({
+        kind: 'unbounded-query',
+        description: '3 mutation routes found but no rate-limiting middleware detected',
+        severity: 'high',
+      }),
     ];
 
     const suggestions = proposeUpgrades([], bottlenecks, [makeManifest('backend')]);
 
     expect(suggestions.length).toBeGreaterThan(0);
-    const secSuggestion = suggestions.find(s => s.category === 'security');
+    const secSuggestion = suggestions.find((s) => s.category === 'security');
     expect(secSuggestion).toBeDefined();
   });
 
@@ -141,12 +156,22 @@ describe('proposeUpgrades', () => {
   it('each suggestion has a unique id', () => {
     const gaps: GapFinding[] = [
       makeGap({ kind: 'incomplete-crud' }),
-      makeGap({ kind: 'dead-export', description: "Export 'foo' unused", file: 'src/foo.ts', line: 5 }),
-      makeGap({ kind: 'orphaned-schema', description: "Schema 'Bar' orphaned", file: 'src/schemas.ts', line: 15 }),
+      makeGap({
+        kind: 'dead-export',
+        description: "Export 'foo' unused",
+        file: 'src/foo.ts',
+        line: 5,
+      }),
+      makeGap({
+        kind: 'orphaned-schema',
+        description: "Schema 'Bar' orphaned",
+        file: 'src/schemas.ts',
+        line: 15,
+      }),
     ];
 
     const suggestions = proposeUpgrades(gaps, [], [makeManifest('backend')]);
-    const ids = suggestions.map(s => s.id);
+    const ids = suggestions.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -157,7 +182,11 @@ describe('proposeUpgrades', () => {
 
   it('deduplicates affectedRepos', () => {
     const gaps: GapFinding[] = [
-      makeGap({ repo: 'backend', kind: 'incomplete-crud', description: "Resource '/api/users' missing DELETE" }),
+      makeGap({
+        repo: 'backend',
+        kind: 'incomplete-crud',
+        description: "Resource '/api/users' missing DELETE",
+      }),
     ];
 
     const suggestions = proposeUpgrades(gaps, [], [makeManifest('backend')]);
@@ -185,12 +214,14 @@ describe('proposeUpgrades', () => {
       }),
     ];
 
-    const suggestions = proposeUpgrades([], bottlenecks, [makeManifest('backend'), makeManifest('ios-app')]);
+    const suggestions = proposeUpgrades([], bottlenecks, [
+      makeManifest('backend'),
+      makeManifest('ios-app'),
+    ]);
 
     // Must be exactly ONE CORS suggestion — not two
-    const corsSuggestions = suggestions.filter(s =>
-      s.title.toLowerCase().includes('cors') ||
-      s.description.toLowerCase().includes('cors')
+    const corsSuggestions = suggestions.filter(
+      (s) => s.title.toLowerCase().includes('cors') || s.description.toLowerCase().includes('cors'),
     );
     expect(corsSuggestions.length).toBe(1);
 

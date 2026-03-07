@@ -130,7 +130,15 @@ function detectFileOrganization(files: FileInfo[]): string {
   const layerDirCount = dirBasenames.filter((d) => LAYER_DIRS.has(d)).length;
 
   // Check for feature-based: directories contain mixed file types (service + router + model)
-  const ROLE_NAMES = new Set(['service', 'router', 'controller', 'model', 'handler', 'schema', 'index']);
+  const ROLE_NAMES = new Set([
+    'service',
+    'router',
+    'controller',
+    'model',
+    'handler',
+    'schema',
+    'index',
+  ]);
   let featureDirs = 0;
   for (const [_dir, basenames] of dirMap) {
     const roles = [...basenames].filter((b) => ROLE_NAMES.has(b.toLowerCase()));
@@ -176,12 +184,7 @@ function detectErrorHandling(sourceSnippets: string[]): string {
 
 // ─── Testing Patterns ───────────────────────────────────────────────────────
 
-const TEST_FILE_PATTERNS = [
-  /\.test\.[^.]+$/,
-  /\.spec\.[^.]+$/,
-  /_test\.[^.]+$/,
-  /_spec\.[^.]+$/,
-];
+const TEST_FILE_PATTERNS = [/\.test\.[^.]+$/, /\.spec\.[^.]+$/, /_test\.[^.]+$/, /_spec\.[^.]+$/];
 
 function isTestFile(path: string): boolean {
   return TEST_FILE_PATTERNS.some((p) => p.test(path));
@@ -208,7 +211,10 @@ function detectTestingPatterns(files: FileInfo[]): string {
     // Check if there's a matching source file in the same directory
     const hasCoLocatedSource = sourceFiles.some((sf) => {
       const sourceDir = sf.path.split('/').slice(0, -1).join('/');
-      const sourceBasename = sf.path.split('/').pop()!.replace(/\.[^.]+$/, '');
+      const sourceBasename = sf.path
+        .split('/')
+        .pop()!
+        .replace(/\.[^.]+$/, '');
       return sourceDir === testDir && sourceBasename === testBasename;
     });
 
@@ -221,7 +227,8 @@ function detectTestingPatterns(files: FileInfo[]): string {
 
   // Check if tests are in a dedicated test directory
   const testDirFiles = testFiles.filter(
-    (f) => f.path.includes('/tests/') || f.path.includes('/__tests__/') || f.path.startsWith('tests/'),
+    (f) =>
+      f.path.includes('/tests/') || f.path.includes('/__tests__/') || f.path.startsWith('tests/'),
   );
 
   if (coLocated > separated) return 'co-located';
@@ -247,9 +254,7 @@ function detectPatterns(files: FileInfo[], language: string): string[] {
   if (hasIndexFiles) patterns.push('barrel-exports');
 
   // Check for service pattern
-  const hasServices = files.some(
-    (f) => f.path.includes('service') || f.path.includes('Service'),
-  );
+  const hasServices = files.some((f) => f.path.includes('service') || f.path.includes('Service'));
   if (hasServices) patterns.push('service-pattern');
 
   // Check for repository pattern
@@ -271,14 +276,12 @@ function detectPatterns(files: FileInfo[], language: string): string[] {
   }
 
   if (language === 'swift') {
-    const hasSwiftUI = files.some(
-      (f) => f.exports.some((e) => e.includes('View') || e.includes('body')),
+    const hasSwiftUI = files.some((f) =>
+      f.exports.some((e) => e.includes('View') || e.includes('body')),
     );
     if (hasSwiftUI) patterns.push('swiftui');
 
-    const hasMVVM = files.some(
-      (f) => f.path.includes('ViewModel') || f.path.includes('viewModel'),
-    );
+    const hasMVVM = files.some((f) => f.path.includes('ViewModel') || f.path.includes('viewModel'));
     if (hasMVVM) patterns.push('mvvm');
   }
 

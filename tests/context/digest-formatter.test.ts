@@ -7,9 +7,7 @@ import type {
   Mismatch,
   ApiBridge,
   TypeLineage,
-  ImpactPath,
   TypeDef,
-  EvolutionSuggestion,
 } from '../../engine/types.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -128,7 +126,13 @@ function makeGraph(): EcosystemGraph {
     apiSurface: {
       routes: [
         { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
-        { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 25 },
+        {
+          method: 'POST',
+          path: '/api/users',
+          handler: 'createUser',
+          file: 'src/routes.ts',
+          line: 25,
+        },
       ],
       procedures: [],
       exports: [],
@@ -209,7 +213,13 @@ function makeGraph(): EcosystemGraph {
       {
         trigger: { repo: 'backend', file: 'src/types.ts', change: 'type-change' },
         affected: [
-          { repo: 'ios-app', file: 'Models/User.swift', line: 1, reason: 'Uses User type', severity: 'breaking' },
+          {
+            repo: 'ios-app',
+            file: 'Models/User.swift',
+            line: 1,
+            reason: 'Uses User type',
+            severity: 'breaking',
+          },
         ],
       },
     ],
@@ -237,6 +247,16 @@ describe('formatDigest', () => {
     const { markdown } = formatDigest(graph, config);
 
     expect(markdown).toContain('# OMNI-LINK ECOSYSTEM STATE');
+  });
+
+  it('includes an architecture diagram when bridges exist', () => {
+    const graph = makeGraph();
+    const config = makeConfig();
+    const { digest, markdown } = formatDigest(graph, config);
+
+    expect(digest.architectureDiagram).toContain('```mermaid');
+    expect(markdown).toContain('## Architecture');
+    expect(markdown).toContain('graph TD');
   });
 
   it('markdown contains Generated timestamp', () => {
@@ -316,13 +336,13 @@ describe('formatDigest', () => {
 
     expect(digest.repos).toHaveLength(2);
 
-    const backendDigest = digest.repos.find(r => r.name === 'backend');
+    const backendDigest = digest.repos.find((r) => r.name === 'backend');
     expect(backendDigest).toBeDefined();
     expect(backendDigest!.language).toBe('typescript');
     expect(backendDigest!.branch).toBe('develop');
     expect(backendDigest!.uncommittedCount).toBe(2);
 
-    const iosDigest = digest.repos.find(r => r.name === 'ios-app');
+    const iosDigest = digest.repos.find((r) => r.name === 'ios-app');
     expect(iosDigest).toBeDefined();
     expect(iosDigest!.language).toBe('swift');
     expect(iosDigest!.uncommittedCount).toBe(0);

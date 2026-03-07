@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeGaps } from '../../engine/evolution/gap-analyzer.js';
-import type { GapFinding } from '../../engine/evolution/gap-analyzer.js';
 import type { RepoManifest } from '../../engine/types.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -50,8 +49,20 @@ describe('analyzeGaps', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes/users.ts', line: 10 },
-            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes/users.ts', line: 20 },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes/users.ts',
+              line: 10,
+            },
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes/users.ts',
+              line: 20,
+            },
           ],
           procedures: [],
           exports: [],
@@ -59,10 +70,10 @@ describe('analyzeGaps', () => {
       });
 
       const findings = analyzeGaps([manifest]);
-      const crudFindings = findings.filter(f => f.kind === 'incomplete-crud');
+      const crudFindings = findings.filter((f) => f.kind === 'incomplete-crud');
 
       expect(crudFindings.length).toBeGreaterThan(0);
-      const userFinding = crudFindings.find(f => f.description.includes('/api/users'));
+      const userFinding = crudFindings.find((f) => f.description.includes('/api/users'));
       expect(userFinding).toBeDefined();
       expect(userFinding!.repo).toBe('backend');
       expect(userFinding!.description).toMatch(/DELETE|PUT|PATCH/i);
@@ -73,10 +84,34 @@ describe('analyzeGaps', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes/users.ts', line: 10 },
-            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes/users.ts', line: 20 },
-            { method: 'PUT', path: '/api/users/:id', handler: 'updateUser', file: 'src/routes/users.ts', line: 30 },
-            { method: 'DELETE', path: '/api/users/:id', handler: 'deleteUser', file: 'src/routes/users.ts', line: 40 },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes/users.ts',
+              line: 10,
+            },
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes/users.ts',
+              line: 20,
+            },
+            {
+              method: 'PUT',
+              path: '/api/users/:id',
+              handler: 'updateUser',
+              file: 'src/routes/users.ts',
+              line: 30,
+            },
+            {
+              method: 'DELETE',
+              path: '/api/users/:id',
+              handler: 'deleteUser',
+              file: 'src/routes/users.ts',
+              line: 40,
+            },
           ],
           procedures: [],
           exports: [],
@@ -84,7 +119,7 @@ describe('analyzeGaps', () => {
       });
 
       const findings = analyzeGaps([manifest]);
-      const crudFindings = findings.filter(f => f.kind === 'incomplete-crud');
+      const crudFindings = findings.filter((f) => f.kind === 'incomplete-crud');
       expect(crudFindings).toHaveLength(0);
     });
 
@@ -93,11 +128,41 @@ describe('analyzeGaps', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/posts', handler: 'getPosts', file: 'src/routes/posts.ts', line: 5 },
-            { method: 'GET', path: '/api/posts/:id', handler: 'getPost', file: 'src/routes/posts.ts', line: 15 },
-            { method: 'POST', path: '/api/posts', handler: 'createPost', file: 'src/routes/posts.ts', line: 25 },
-            { method: 'PUT', path: '/api/posts/:id', handler: 'updatePost', file: 'src/routes/posts.ts', line: 35 },
-            { method: 'DELETE', path: '/api/posts/:id', handler: 'deletePost', file: 'src/routes/posts.ts', line: 45 },
+            {
+              method: 'GET',
+              path: '/api/posts',
+              handler: 'getPosts',
+              file: 'src/routes/posts.ts',
+              line: 5,
+            },
+            {
+              method: 'GET',
+              path: '/api/posts/:id',
+              handler: 'getPost',
+              file: 'src/routes/posts.ts',
+              line: 15,
+            },
+            {
+              method: 'POST',
+              path: '/api/posts',
+              handler: 'createPost',
+              file: 'src/routes/posts.ts',
+              line: 25,
+            },
+            {
+              method: 'PUT',
+              path: '/api/posts/:id',
+              handler: 'updatePost',
+              file: 'src/routes/posts.ts',
+              line: 35,
+            },
+            {
+              method: 'DELETE',
+              path: '/api/posts/:id',
+              handler: 'deletePost',
+              file: 'src/routes/posts.ts',
+              line: 45,
+            },
           ],
           procedures: [],
           exports: [],
@@ -105,7 +170,7 @@ describe('analyzeGaps', () => {
       });
 
       const findings = analyzeGaps([manifest]);
-      const crudFindings = findings.filter(f => f.kind === 'incomplete-crud');
+      const crudFindings = findings.filter((f) => f.kind === 'incomplete-crud');
       expect(crudFindings).toHaveLength(0);
     });
   });
@@ -118,23 +183,33 @@ describe('analyzeGaps', () => {
           routes: [],
           procedures: [],
           exports: [
-            { name: 'usedHelper', kind: 'function', signature: 'function usedHelper()', file: 'src/helpers.ts', line: 1 },
-            { name: 'deadHelper', kind: 'function', signature: 'function deadHelper()', file: 'src/helpers.ts', line: 10 },
+            {
+              name: 'usedHelper',
+              kind: 'function',
+              signature: 'function usedHelper()',
+              file: 'src/helpers.ts',
+              line: 1,
+            },
+            {
+              name: 'deadHelper',
+              kind: 'function',
+              signature: 'function deadHelper()',
+              file: 'src/helpers.ts',
+              line: 10,
+            },
           ],
         },
         dependencies: {
-          internal: [
-            { from: 'src/index.ts', to: 'src/helpers.ts', imports: ['usedHelper'] },
-          ],
+          internal: [{ from: 'src/index.ts', to: 'src/helpers.ts', imports: ['usedHelper'] }],
           external: [],
         },
       });
 
       const findings = analyzeGaps([manifest]);
-      const deadFindings = findings.filter(f => f.kind === 'dead-export');
+      const deadFindings = findings.filter((f) => f.kind === 'dead-export');
 
       expect(deadFindings.length).toBeGreaterThan(0);
-      const deadHelperFinding = deadFindings.find(f => f.description.includes('deadHelper'));
+      const deadHelperFinding = deadFindings.find((f) => f.description.includes('deadHelper'));
       expect(deadHelperFinding).toBeDefined();
       expect(deadHelperFinding!.repo).toBe('backend');
       expect(deadHelperFinding!.file).toBe('src/helpers.ts');
@@ -145,11 +220,23 @@ describe('analyzeGaps', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 5 },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes.ts',
+              line: 5,
+            },
           ],
           procedures: [],
           exports: [
-            { name: 'getUsers', kind: 'function', signature: 'function getUsers()', file: 'src/routes.ts', line: 5 },
+            {
+              name: 'getUsers',
+              kind: 'function',
+              signature: 'function getUsers()',
+              file: 'src/routes.ts',
+              line: 5,
+            },
           ],
         },
         dependencies: {
@@ -159,7 +246,9 @@ describe('analyzeGaps', () => {
       });
 
       const findings = analyzeGaps([manifest]);
-      const deadFindings = findings.filter(f => f.kind === 'dead-export' && f.description.includes('getUsers'));
+      const deadFindings = findings.filter(
+        (f) => f.kind === 'dead-export' && f.description.includes('getUsers'),
+      );
       expect(deadFindings).toHaveLength(0);
     });
 
@@ -170,8 +259,20 @@ describe('analyzeGaps', () => {
           routes: [],
           procedures: [],
           exports: [
-            { name: 'UserType', kind: 'type', signature: 'type UserType', file: 'src/types.ts', line: 1 },
-            { name: 'IUser', kind: 'interface', signature: 'interface IUser', file: 'src/types.ts', line: 10 },
+            {
+              name: 'UserType',
+              kind: 'type',
+              signature: 'type UserType',
+              file: 'src/types.ts',
+              line: 1,
+            },
+            {
+              name: 'IUser',
+              kind: 'interface',
+              signature: 'interface IUser',
+              file: 'src/types.ts',
+              line: 10,
+            },
           ],
         },
         dependencies: {
@@ -181,7 +282,7 @@ describe('analyzeGaps', () => {
       });
 
       const findings = analyzeGaps([manifest]);
-      const deadFindings = findings.filter(f => f.kind === 'dead-export');
+      const deadFindings = findings.filter((f) => f.kind === 'dead-export');
       expect(deadFindings).toHaveLength(0);
     });
   });
@@ -192,7 +293,14 @@ describe('analyzeGaps', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 10, inputType: 'CreateUserInput' },
+            {
+              method: 'POST',
+              path: '/api/users',
+              handler: 'createUser',
+              file: 'src/routes.ts',
+              line: 10,
+              inputType: 'CreateUserInput',
+            },
           ],
           procedures: [],
           exports: [],
@@ -200,18 +308,28 @@ describe('analyzeGaps', () => {
         typeRegistry: {
           types: [],
           schemas: [
-            { name: 'CreateUserInput', kind: 'zod', fields: [], source: { repo: 'backend', file: 'src/schemas.ts', line: 1 } },
-            { name: 'OrphanedSchema', kind: 'zod', fields: [], source: { repo: 'backend', file: 'src/schemas.ts', line: 20 } },
+            {
+              name: 'CreateUserInput',
+              kind: 'zod',
+              fields: [],
+              source: { repo: 'backend', file: 'src/schemas.ts', line: 1 },
+            },
+            {
+              name: 'OrphanedSchema',
+              kind: 'zod',
+              fields: [],
+              source: { repo: 'backend', file: 'src/schemas.ts', line: 20 },
+            },
           ],
           models: [],
         },
       });
 
       const findings = analyzeGaps([manifest]);
-      const orphanedFindings = findings.filter(f => f.kind === 'orphaned-schema');
+      const orphanedFindings = findings.filter((f) => f.kind === 'orphaned-schema');
 
       expect(orphanedFindings.length).toBeGreaterThan(0);
-      const orphanFinding = orphanedFindings.find(f => f.description.includes('OrphanedSchema'));
+      const orphanFinding = orphanedFindings.find((f) => f.description.includes('OrphanedSchema'));
       expect(orphanFinding).toBeDefined();
       expect(orphanFinding!.repo).toBe('backend');
     });
@@ -221,7 +339,14 @@ describe('analyzeGaps', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10, outputType: 'UserListOutput' },
+            {
+              method: 'GET',
+              path: '/api/users',
+              handler: 'getUsers',
+              file: 'src/routes.ts',
+              line: 10,
+              outputType: 'UserListOutput',
+            },
           ],
           procedures: [],
           exports: [],
@@ -229,14 +354,21 @@ describe('analyzeGaps', () => {
         typeRegistry: {
           types: [],
           schemas: [
-            { name: 'UserListOutput', kind: 'zod', fields: [], source: { repo: 'backend', file: 'src/schemas.ts', line: 1 } },
+            {
+              name: 'UserListOutput',
+              kind: 'zod',
+              fields: [],
+              source: { repo: 'backend', file: 'src/schemas.ts', line: 1 },
+            },
           ],
           models: [],
         },
       });
 
       const findings = analyzeGaps([manifest]);
-      const orphanedFindings = findings.filter(f => f.kind === 'orphaned-schema' && f.description.includes('UserListOutput'));
+      const orphanedFindings = findings.filter(
+        (f) => f.kind === 'orphaned-schema' && f.description.includes('UserListOutput'),
+      );
       expect(orphanedFindings).toHaveLength(0);
     });
 
@@ -246,22 +378,39 @@ describe('analyzeGaps', () => {
         apiSurface: {
           routes: [],
           procedures: [
-            { name: 'getUser', kind: 'query', file: 'src/routers.ts', line: 5, inputType: 'GetUserInput', outputType: 'UserOutput' },
+            {
+              name: 'getUser',
+              kind: 'query',
+              file: 'src/routers.ts',
+              line: 5,
+              inputType: 'GetUserInput',
+              outputType: 'UserOutput',
+            },
           ],
           exports: [],
         },
         typeRegistry: {
           types: [],
           schemas: [
-            { name: 'GetUserInput', kind: 'zod', fields: [], source: { repo: 'backend', file: 'src/schemas.ts', line: 1 } },
-            { name: 'UserOutput', kind: 'zod', fields: [], source: { repo: 'backend', file: 'src/schemas.ts', line: 10 } },
+            {
+              name: 'GetUserInput',
+              kind: 'zod',
+              fields: [],
+              source: { repo: 'backend', file: 'src/schemas.ts', line: 1 },
+            },
+            {
+              name: 'UserOutput',
+              kind: 'zod',
+              fields: [],
+              source: { repo: 'backend', file: 'src/schemas.ts', line: 10 },
+            },
           ],
           models: [],
         },
       });
 
       const findings = analyzeGaps([manifest]);
-      const orphanedFindings = findings.filter(f => f.kind === 'orphaned-schema');
+      const orphanedFindings = findings.filter((f) => f.kind === 'orphaned-schema');
       expect(orphanedFindings).toHaveLength(0);
     });
   });
@@ -283,11 +432,23 @@ describe('analyzeGaps', () => {
         repoId: 'backend',
         apiSurface: {
           routes: [
-            { method: 'GET', path: '/api/items', handler: 'getItems', file: 'src/routes.ts', line: 5 },
+            {
+              method: 'GET',
+              path: '/api/items',
+              handler: 'getItems',
+              file: 'src/routes.ts',
+              line: 5,
+            },
           ],
           procedures: [],
           exports: [
-            { name: 'unusedUtil', kind: 'function', signature: 'function unusedUtil()', file: 'src/utils.ts', line: 1 },
+            {
+              name: 'unusedUtil',
+              kind: 'function',
+              signature: 'function unusedUtil()',
+              file: 'src/utils.ts',
+              line: 1,
+            },
           ],
         },
         dependencies: { internal: [], external: [] },
@@ -299,7 +460,13 @@ describe('analyzeGaps', () => {
           routes: [],
           procedures: [],
           exports: [
-            { name: 'unusedComponent', kind: 'function', signature: 'function unusedComponent()', file: 'src/components.tsx', line: 1 },
+            {
+              name: 'unusedComponent',
+              kind: 'function',
+              signature: 'function unusedComponent()',
+              file: 'src/components.tsx',
+              line: 1,
+            },
           ],
         },
         dependencies: { internal: [], external: [] },
@@ -308,8 +475,8 @@ describe('analyzeGaps', () => {
       const findings = analyzeGaps([backend, frontend]);
 
       // Should find gaps in both repos
-      const backendFindings = findings.filter(f => f.repo === 'backend');
-      const frontendFindings = findings.filter(f => f.repo === 'frontend');
+      const backendFindings = findings.filter((f) => f.repo === 'backend');
+      const frontendFindings = findings.filter((f) => f.repo === 'frontend');
       expect(backendFindings.length).toBeGreaterThan(0);
       expect(frontendFindings.length).toBeGreaterThan(0);
     });

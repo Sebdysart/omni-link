@@ -1,0 +1,22 @@
+{
+  "repos": [
+    {
+      "name": "gateway",
+      "path": "/absolute/path/to/gateway",
+      "language": "typescript",
+      "role": "api-gateway"
+    },
+    {
+      "name": "billing-service",
+      "path": "/absolute/path/to/billing-service",
+      "language": "go",
+      "role": "service"
+    },
+    {
+      "name": "identity-service",
+      "path": "/absolute/path/to/identity-service",
+      "language": "typescript",
+      "role": "service"
+    }
+  ]
+}

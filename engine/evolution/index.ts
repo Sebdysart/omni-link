@@ -21,7 +21,7 @@ function benchmarkToBottleneckFindings(results: BenchmarkResult[]): BottleneckFi
   for (const result of results) {
     if (result.status === 'present') continue;
 
-    const severity = result.status === 'missing' ? 'high' as const : 'medium' as const;
+    const severity = result.status === 'missing' ? ('high' as const) : ('medium' as const);
 
     // Map benchmark category to bottleneck kind
     let kind: BottleneckFinding['kind'];
@@ -90,7 +90,7 @@ export function analyzeEvolution(
 
   // Step 6: Filter by config categories
   const allowedCategories = new Set(config.evolution.categories);
-  suggestions = suggestions.filter(s => allowedCategories.has(s.category));
+  suggestions = suggestions.filter((s) => allowedCategories.has(s.category));
 
   // Step 7: Limit to maxSuggestionsPerSession
   const limit = config.evolution.maxSuggestionsPerSession;

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createParser, getSupportedLanguages, detectLanguage } from '../../engine/scanner/tree-sitter.js';
+import {
+  createParser,
+  getSupportedLanguages,
+  detectLanguage,
+} from '../../engine/scanner/tree-sitter.js';
 
 describe('tree-sitter parser factory', () => {
   it('creates a parser for typescript', () => {

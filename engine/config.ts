@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import type { OmniLinkConfig } from './types.js';
+import { parseConfig, safeParseConfig } from './config-validator.js';
 
 export const DEFAULT_CONFIG: Omit<OmniLinkConfig, 'repos'> = {
   evolution: {
@@ -35,49 +36,38 @@ export function resolveConfigPath(cwd: string, homeDir: string = os.homedir()): 
   return null;
 }
 
-export function validateConfig(
-  raw: Record<string, unknown>,
-): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-  const repos = raw.repos as Array<Record<string, unknown>> | undefined;
-
-  if (!repos || !Array.isArray(repos) || repos.length === 0) {
-    errors.push('repos: must have at least 1 repo');
-  } else if (repos.length > 4) {
-    errors.push('repos: maximum 4 repos allowed');
-  } else {
-    for (const [i, repo] of repos.entries()) {
-      if (!repo.name) errors.push(`repos[${i}]: missing name`);
-      if (!repo.path) errors.push(`repos[${i}]: missing path`);
-      if (!repo.language) errors.push(`repos[${i}]: missing language`);
-    }
+export function validateConfig(raw: Record<string, unknown>): { valid: boolean; errors: string[] } {
+  const result = safeParseConfig(raw);
+  if (result.success) {
+    return { valid: true, errors: [] };
   }
 
-  return { valid: errors.length === 0, errors };
+  const errors = result.error.issues.map((issue) => {
+    if (issue.path.length === 1 && issue.path[0] === 'repos') {
+      if (issue.code === 'too_small') {
+        return 'repos: must have at least 1 repo';
+      }
+      if (issue.code === 'too_big') {
+        return 'repos: maximum 10 repos allowed';
+      }
+    }
+
+    const pathLabel = issue.path.length > 0 ? issue.path.join('.') : 'config';
+    return `${pathLabel}: ${issue.message}`;
+  });
+
+  return { valid: false, errors };
 }
 
 export function loadConfig(configPath: string): OmniLinkConfig {
   const raw = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-  const validation = validateConfig(raw);
-
-  if (!validation.valid) {
-    throw new Error(
-      `Invalid omni-link config:\n${validation.errors.join('\n')}`,
-    );
-  }
-
-  const evolution = { ...DEFAULT_CONFIG.evolution, ...raw.evolution };
-  if (Array.isArray(evolution.categories)) {
-    evolution.categories = evolution.categories.map((category: string) =>
-      category === 'features' ? 'feature' : category,
-    );
-  }
-
-  return {
-    repos: raw.repos,
-    evolution,
+  const merged = {
+    ...raw,
+    evolution: { ...DEFAULT_CONFIG.evolution, ...raw.evolution },
     quality: { ...DEFAULT_CONFIG.quality, ...raw.quality },
     context: { ...DEFAULT_CONFIG.context, ...raw.context },
     cache: { ...DEFAULT_CONFIG.cache, ...raw.cache },
   };
+
+  return parseConfig(merged);
 }

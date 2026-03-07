@@ -63,12 +63,12 @@ Provide 3-5 prioritized, actionable recommendations:
 
 ## Scoring Weights
 
-| Dimension | Weight | Scoring |
-|-----------|--------|---------|
-| Test Coverage | 30% | Direct percentage. Unknown = 40. |
-| Code Quality | 25% | 100 minus (lint errors x 2 + type errors x 4) |
-| Dead Code | 25% | 100 x (1 - dead exports / total exports) |
-| TODO Burden | 20% | Logarithmic decay from 100. 0 TODOs = 100. |
+| Dimension     | Weight | Scoring                                       |
+| ------------- | ------ | --------------------------------------------- |
+| Test Coverage | 30%    | Direct percentage. Unknown = 40.              |
+| Code Quality  | 25%    | 100 minus (lint errors x 2 + type errors x 4) |
+| Dead Code     | 25%    | 100 x (1 - dead exports / total exports)      |
+| TODO Burden   | 20%    | Logarithmic decay from 100. 0 TODOs = 100.    |
 
 ## If Health Cannot Be Computed
 

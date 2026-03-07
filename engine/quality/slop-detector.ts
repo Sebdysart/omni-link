@@ -5,7 +5,12 @@ import type { RepoManifest } from '../types.js';
 // ─── Public Types ────────────────────────────────────────────────────────────
 
 export interface SlopIssue {
-  kind: 'placeholder' | 'phantom-import' | 'over-abstraction' | 'duplicate-block' | 'over-commenting';
+  kind:
+    | 'placeholder'
+    | 'phantom-import'
+    | 'over-abstraction'
+    | 'duplicate-block'
+    | 'over-commenting';
   message: string;
   line: number;
   severity: 'error' | 'warning';
@@ -19,13 +24,48 @@ export interface SlopCheckResult {
 // ─── Node.js Built-in Modules ────────────────────────────────────────────────
 
 const NODE_BUILTINS = new Set([
-  'assert', 'async_hooks', 'buffer', 'child_process', 'cluster', 'console',
-  'constants', 'crypto', 'dgram', 'diagnostics_channel', 'dns', 'domain',
-  'events', 'fs', 'http', 'http2', 'https', 'inspector', 'module', 'net',
-  'os', 'path', 'perf_hooks', 'process', 'punycode', 'querystring',
-  'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers',
-  'tls', 'trace_events', 'tty', 'url', 'util', 'v8', 'vm', 'wasi',
-  'worker_threads', 'zlib',
+  'assert',
+  'async_hooks',
+  'buffer',
+  'child_process',
+  'cluster',
+  'console',
+  'constants',
+  'crypto',
+  'dgram',
+  'diagnostics_channel',
+  'dns',
+  'domain',
+  'events',
+  'fs',
+  'http',
+  'http2',
+  'https',
+  'inspector',
+  'module',
+  'net',
+  'os',
+  'path',
+  'perf_hooks',
+  'process',
+  'punycode',
+  'querystring',
+  'readline',
+  'repl',
+  'stream',
+  'string_decoder',
+  'sys',
+  'timers',
+  'tls',
+  'trace_events',
+  'tty',
+  'url',
+  'util',
+  'v8',
+  'vm',
+  'wasi',
+  'worker_threads',
+  'zlib',
 ]);
 
 const SWIFT_STANDARD_MODULES = new Set([
@@ -56,7 +96,10 @@ const PLACEHOLDER_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
   { pattern: /\/\/\s*FIXME\b/i, description: 'FIXME comment' },
   { pattern: /\/\/\s*HACK\b/i, description: 'HACK comment' },
   { pattern: /\/\/\s*XXX\b/i, description: 'XXX comment' },
-  { pattern: /throw\s+new\s+Error\s*\(\s*['"]not\s+implemented['"]/i, description: '"not implemented" error throw' },
+  {
+    pattern: /throw\s+new\s+Error\s*\(\s*['"]not\s+implemented['"]/i,
+    description: '"not implemented" error throw',
+  },
   { pattern: /throw\s+new\s+Error\s*\(\s*['"]TODO['"]/i, description: 'TODO error throw' },
   { pattern: /console\.log\s*\(\s*['"]implement/i, description: 'placeholder console.log' },
   { pattern: /console\.log\s*\(\s*['"]todo/i, description: 'placeholder console.log' },
@@ -157,7 +200,7 @@ function extractExternalImports(code: string): Array<{ packageName: string; line
 
 function detectPhantomImports(code: string, manifest: RepoManifest): SlopIssue[] {
   const issues: SlopIssue[] = [];
-  const knownPackages = new Set(manifest.dependencies.external.map(d => d.name));
+  const knownPackages = new Set(manifest.dependencies.external.map((d) => d.name));
 
   const externalImports = extractExternalImports(code);
 
@@ -185,12 +228,19 @@ function detectDuplicateBlocks(code: string): SlopIssue[] {
   const lines = code.split('\n');
 
   // Normalize lines: trim whitespace
-  const normalizedLines = lines.map(l => l.trim());
+  const normalizedLines = lines.map((l) => l.trim());
 
   // Lines too trivial to be part of meaningful duplicates
-  const isTrivialLine = (l: string) =>
-    l === '' || l === '{' || l === '}' || l === '(' || l === ')' || l === ');'
-    || l === 'return;' || l === 'break;' || l === 'continue;';
+  const isTrivialLine = (l: string): boolean =>
+    l === '' ||
+    l === '{' ||
+    l === '}' ||
+    l === '(' ||
+    l === ')' ||
+    l === ');' ||
+    l === 'return;' ||
+    l === 'break;' ||
+    l === 'continue;';
 
   // Sliding window: find blocks of DUPLICATE_MIN_LINES+ that repeat
   const seen = new Map<string, number>(); // block hash → first occurrence line
@@ -226,7 +276,7 @@ function detectDuplicateBlocks(code: string): SlopIssue[] {
       // Only report once per duplicate pair
       if (firstLine !== i + 1) {
         const alreadyReported = issues.some(
-          iss => iss.kind === 'duplicate-block' && iss.message.includes(`line ${firstLine}`),
+          (iss) => iss.kind === 'duplicate-block' && iss.message.includes(`line ${firstLine}`),
         );
         if (!alreadyReported) {
           issues.push({
@@ -319,9 +369,11 @@ function detectOverAbstraction(code: string): SlopIssue[] {
   }
 
   // Heuristic 2: Abstract/interface count >= 2x concrete class count
-  const abstractCount = (code.match(/\babstract\s+class\b/g) ?? []).length +
-                        (code.match(/\binterface\s+\w/g) ?? []).length;
-  const concreteCount = (code.match(/\bclass\s+\w/g) ?? []).length - (code.match(/\babstract\s+class\b/g) ?? []).length;
+  const abstractCount =
+    (code.match(/\babstract\s+class\b/g) ?? []).length +
+    (code.match(/\binterface\s+\w/g) ?? []).length;
+  const concreteCount =
+    (code.match(/\bclass\s+\w/g) ?? []).length - (code.match(/\babstract\s+class\b/g) ?? []).length;
   if (concreteCount > 0 && abstractCount >= concreteCount * 2) {
     issues.push({
       kind: 'over-abstraction',
@@ -339,7 +391,11 @@ function detectOverAbstraction(code: string): SlopIssue[] {
     const trimmed = line.trim();
     // Matches: export function foo(...) { return obj.method(...); }
     // or: export async function foo(...) { return obj.method(...); }
-    if (/^export\s+(?:async\s+)?function\s+\w+\s*\([^)]*\)\s*\{[^{}]*return\s+\w+\.\w+\s*\(/.test(trimmed)) {
+    if (
+      /^export\s+(?:async\s+)?function\s+\w+\s*\([^)]*\)\s*\{[^{}]*return\s+\w+\.\w+\s*\(/.test(
+        trimmed,
+      )
+    ) {
       wrapperCount++;
     }
   }

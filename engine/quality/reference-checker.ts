@@ -18,13 +18,48 @@ export interface ReferenceCheckResult {
 // ─── Node.js Built-in Modules ────────────────────────────────────────────────
 
 const NODE_BUILTINS = new Set([
-  'assert', 'async_hooks', 'buffer', 'child_process', 'cluster', 'console',
-  'constants', 'crypto', 'dgram', 'diagnostics_channel', 'dns', 'domain',
-  'events', 'fs', 'http', 'http2', 'https', 'inspector', 'module', 'net',
-  'os', 'path', 'perf_hooks', 'process', 'punycode', 'querystring',
-  'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers',
-  'tls', 'trace_events', 'tty', 'url', 'util', 'v8', 'vm', 'wasi',
-  'worker_threads', 'zlib',
+  'assert',
+  'async_hooks',
+  'buffer',
+  'child_process',
+  'cluster',
+  'console',
+  'constants',
+  'crypto',
+  'dgram',
+  'diagnostics_channel',
+  'dns',
+  'domain',
+  'events',
+  'fs',
+  'http',
+  'http2',
+  'https',
+  'inspector',
+  'module',
+  'net',
+  'os',
+  'path',
+  'perf_hooks',
+  'process',
+  'punycode',
+  'querystring',
+  'readline',
+  'repl',
+  'stream',
+  'string_decoder',
+  'sys',
+  'timers',
+  'tls',
+  'trace_events',
+  'tty',
+  'url',
+  'util',
+  'v8',
+  'vm',
+  'wasi',
+  'worker_threads',
+  'zlib',
 ]);
 
 const SWIFT_STANDARD_MODULES = new Set([
@@ -135,7 +170,9 @@ function parseImports(code: string): ParsedImport[] {
     }
 
     // CommonJS require: const X = require('...')
-    const requireMatch = line.match(/(?:const|let|var)\s+(?:(\{[^}]*\})|(\w+))\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+    const requireMatch = line.match(
+      /(?:const|let|var)\s+(?:(\{[^}]*\})|(\w+))\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+    );
     if (requireMatch) {
       const names: string[] = [];
       if (requireMatch[1]) {
@@ -194,7 +231,7 @@ function parseApiCalls(code: string): ParsedApiCall[] {
   const lines = code.split('\n');
   const seen = new Set<string>();
 
-  const addCall = (kind: ParsedApiCall['kind'], value: string, line: number) => {
+  const addCall = (kind: ParsedApiCall['kind'], value: string, line: number): void => {
     const key = `${kind}:${value}:${line}`;
     if (seen.has(key)) return;
     seen.add(key);
@@ -276,9 +313,7 @@ function resolveRelativeImport(specifier: string, fromFile: string): string {
   if (!specifier.startsWith('.')) return specifier;
 
   // Get directory of the importing file
-  const fromDir = fromFile.includes('/')
-    ? fromFile.substring(0, fromFile.lastIndexOf('/'))
-    : '.';
+  const fromDir = fromFile.includes('/') ? fromFile.substring(0, fromFile.lastIndexOf('/')) : '.';
 
   // Resolve the relative path
   const parts = fromDir.split('/');
@@ -405,7 +440,7 @@ export function checkReferences(
 ): ReferenceCheckResult {
   const violations: ReferenceViolation[] = [];
   const knownFiles = getKnownFiles(manifest);
-  const externalPackages = new Set(manifest.dependencies.external.map(d => d.name));
+  const externalPackages = new Set(manifest.dependencies.external.map((d) => d.name));
   const normalizedFile = normalizeFilePath(file, manifest.path);
 
   // ─── Check Imports ──────────────────────────────────────────────────
@@ -421,7 +456,7 @@ export function checkReferences(
       const resolvedPath = resolveRelativeImport(imp.specifier, normalizedFile);
       const candidates = getImportCandidates(resolvedPath);
 
-      const matchedFile = candidates.find(c => knownFiles.has(c));
+      const matchedFile = candidates.find((c) => knownFiles.has(c));
 
       if (!matchedFile) {
         violations.push({
@@ -476,7 +511,7 @@ export function checkReferences(
       const normalizedPath = call.value.split('?')[0].replace(/\/$/, '');
       if (!knownRoutes.has(normalizedPath)) {
         // Check if any known route is a prefix match (parameterized routes)
-        const isParameterized = [...knownRoutes].some(route => {
+        const isParameterized = [...knownRoutes].some((route) => {
           const routePattern = route.replace(/:\w+/g, '[^/]+').replace(/\{[^}]+\}/g, '[^/]+');
           return new RegExp(`^${routePattern}$`).test(normalizedPath);
         });

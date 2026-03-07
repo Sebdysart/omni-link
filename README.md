@@ -8,15 +8,16 @@
 
 ## What it does
 
-omni-link scans up to 4 repositories, builds an ecosystem graph of API contracts, shared types, and cross-repo dependencies, then injects a compact context digest into every Claude Code session. It enforces quality gates that **block** hallucinated imports, wrong conventions, and placeholder code -- and proactively surfaces business evolution opportunities backed by codebase evidence.
+omni-link scans up to 10 repositories, builds an ecosystem graph of API contracts, shared types, and cross-repo dependencies, then injects a compact context digest into every Claude Code session. It enforces quality gates that **block** hallucinated imports, wrong conventions, and placeholder code -- and proactively surfaces business evolution opportunities backed by codebase evidence.
 
 ## Features
 
-- **Multi-repo scanning** -- Tree-sitter-powered parsing of TypeScript, Swift, Python, Go, Rust, Java, and JavaScript
+- **Multi-repo scanning** -- Tree-sitter-powered parsing of TypeScript, TSX, Swift, Python, Go, Rust, Java, JavaScript, and GraphQL-aware file detection
 - **API contract mapping** -- Detects routes, tRPC procedures, and consumer references across repos
 - **Type lineage tracking** -- Finds shared concepts (e.g., `User` in backend, `UserDTO` in iOS) via name matching and field similarity
 - **Contract mismatch detection** -- Identifies breaking, warning, and info-level type divergences
-- **Context digest** -- Token-budgeted markdown summary injected at session start
+- **Context digest** -- Token-budgeted markdown summary injected at session start with Mermaid architecture diagrams
+- **Ignore-aware scanning** -- Honors `.gitignore` and `.claudeignore` during repo walks
 - **Anti-slop gate** -- Blocks hallucinated imports, unknown packages, wrong conventions, and placeholder code
 - **Convention enforcement** -- Detects and enforces naming, file organization, error handling, and testing patterns
 - **Evolution engine** -- Gap analysis, bottleneck detection, competitive benchmarking, and ranked upgrade proposals
@@ -84,60 +85,60 @@ Create a `.omni-link.json` in your project root or `~/.claude/omni-link.json` fo
 
 ### Config options
 
-| Section | Key | Values | Default | Description |
-|---------|-----|--------|---------|-------------|
-| `repos[]` | `name` | string | -- | Unique repo identifier |
-| `repos[]` | `path` | string | -- | Absolute path to repo root |
-| `repos[]` | `language` | `typescript`, `swift`, `python`, `go`, `rust`, `java`, `javascript` | -- | Primary language |
-| `repos[]` | `role` | string | -- | Repo's role in the ecosystem (e.g., `backend`, `ios`, `web`) |
-| `evolution` | `aggressiveness` | `aggressive`, `moderate`, `on-demand` | `aggressive` | How proactively to surface suggestions |
-| `evolution` | `maxSuggestionsPerSession` | number | `5` | Cap on evolution suggestions per session |
-| `evolution` | `categories` | array of strings | all 5 | Which categories to include |
-| `quality` | `blockOnFailure` | boolean | `true` | Whether quality violations block output |
-| `quality` | `requireTestsForNewCode` | boolean | `true` | Require test coverage for new code |
-| `quality` | `conventionStrictness` | `strict`, `moderate`, `relaxed` | `strict` | How strictly to enforce conventions |
-| `context` | `tokenBudget` | number | `8000` | Max tokens for context digest |
-| `context` | `prioritize` | `changed-files-first`, `api-surface-first` | `changed-files-first` | What to prioritize in digest |
-| `context` | `includeRecentCommits` | number | `20` | How many recent commits to include |
-| `cache` | `directory` | string | `~/.claude/omni-link-cache` | Cache directory path |
-| `cache` | `maxAgeDays` | number | `7` | Cache TTL in days |
+| Section     | Key                        | Values                                                                                | Default                     | Description                                                  |
+| ----------- | -------------------------- | ------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------ |
+| `repos[]`   | `name`                     | string                                                                                | --                          | Unique repo identifier                                       |
+| `repos[]`   | `path`                     | string                                                                                | --                          | Absolute path to repo root                                   |
+| `repos[]`   | `language`                 | `typescript`, `tsx`, `swift`, `python`, `go`, `rust`, `java`, `javascript`, `graphql` | --                          | Primary language                                             |
+| `repos[]`   | `role`                     | string                                                                                | --                          | Repo's role in the ecosystem (e.g., `backend`, `ios`, `web`) |
+| `evolution` | `aggressiveness`           | `aggressive`, `moderate`, `on-demand`                                                 | `aggressive`                | How proactively to surface suggestions                       |
+| `evolution` | `maxSuggestionsPerSession` | number                                                                                | `5`                         | Cap on evolution suggestions per session                     |
+| `evolution` | `categories`               | array of strings                                                                      | all 5                       | Which categories to include                                  |
+| `quality`   | `blockOnFailure`           | boolean                                                                               | `true`                      | Whether quality violations block output                      |
+| `quality`   | `requireTestsForNewCode`   | boolean                                                                               | `true`                      | Require test coverage for new code                           |
+| `quality`   | `conventionStrictness`     | `strict`, `moderate`, `relaxed`                                                       | `strict`                    | How strictly to enforce conventions                          |
+| `context`   | `tokenBudget`              | number                                                                                | `8000`                      | Max tokens for context digest                                |
+| `context`   | `prioritize`               | `changed-files-first`, `api-surface-first`                                            | `changed-files-first`       | What to prioritize in digest                                 |
+| `context`   | `includeRecentCommits`     | number                                                                                | `20`                        | How many recent commits to include                           |
+| `cache`     | `directory`                | string                                                                                | `~/.claude/omni-link-cache` | Cache directory path                                         |
+| `cache`     | `maxAgeDays`               | number                                                                                | `7`                         | Cache TTL in days                                            |
 
 ## Skills
 
 Skills are contextual instructions that guide Claude Code's behavior within the omni-link ecosystem.
 
-| Skill | Trigger | Purpose |
-|-------|---------|---------|
-| `using-omni-link` | Session start | Meta skill defining iron laws, skill registry, and aggressive evolution posture |
-| `ecosystem-grounding` | Session start, after rescan | Ground Claude in current ecosystem state: repos, contracts, mismatches |
-| `anti-slop-gate` | Code generation | Block hallucinated imports, unknown packages, wrong conventions, placeholder code |
-| `convention-enforcer` | Code generation | Enforce naming, file organization, error handling, and testing conventions |
-| `cross-repo-impact` | Before API/schema changes | Analyze ripple effects of changes across all configured repositories |
-| `dependency-navigator` | On demand | Trace dependency chains, answer "Where is X used?" across repos |
-| `ecosystem-planner` | Multi-repo feature planning | Plan task ordering, coordination points, and contract validation checkpoints |
-| `health-audit` | On demand | Produce per-repo and overall health scores with actionable recommendations |
-| `business-evolution` | Session start, `/evolve` | Surface business improvement opportunities backed by codebase evidence |
-| `upgrade-executor` | Multi-repo changes | Orchestrate provider-first ordering, contract validation, and rollback planning |
+| Skill                  | Trigger                     | Purpose                                                                           |
+| ---------------------- | --------------------------- | --------------------------------------------------------------------------------- |
+| `using-omni-link`      | Session start               | Meta skill defining iron laws, skill registry, and aggressive evolution posture   |
+| `ecosystem-grounding`  | Session start, after rescan | Ground Claude in current ecosystem state: repos, contracts, mismatches            |
+| `anti-slop-gate`       | Code generation             | Block hallucinated imports, unknown packages, wrong conventions, placeholder code |
+| `convention-enforcer`  | Code generation             | Enforce naming, file organization, error handling, and testing conventions        |
+| `cross-repo-impact`    | Before API/schema changes   | Analyze ripple effects of changes across all configured repositories              |
+| `dependency-navigator` | On demand                   | Trace dependency chains, answer "Where is X used?" across repos                   |
+| `ecosystem-planner`    | Multi-repo feature planning | Plan task ordering, coordination points, and contract validation checkpoints      |
+| `health-audit`         | On demand                   | Produce per-repo and overall health scores with actionable recommendations        |
+| `business-evolution`   | Session start, `/evolve`    | Surface business improvement opportunities backed by codebase evidence            |
+| `upgrade-executor`     | Multi-repo changes          | Orchestrate provider-first ordering, contract validation, and rollback planning   |
 
 ## Commands
 
 Commands are slash commands available in Claude Code.
 
-| Command | Description |
-|---------|-------------|
-| `/scan` | Force a full ecosystem rescan across all configured repos |
-| `/impact` | Analyze cross-repo impact of uncommitted changes |
-| `/health` | Run a full ecosystem health audit with per-repo scores |
-| `/evolve` | Generate ranked evolution suggestions with evidence |
+| Command   | Description                                               |
+| --------- | --------------------------------------------------------- |
+| `/scan`   | Force a full ecosystem rescan across all configured repos |
+| `/impact` | Analyze cross-repo impact of uncommitted changes          |
+| `/health` | Run a full ecosystem health audit with per-repo scores    |
+| `/evolve` | Generate ranked evolution suggestions with evidence       |
 
 ## Agents
 
 Specialized agents for focused analysis tasks.
 
-| Agent | Description |
-|-------|-------------|
-| `repo-analyst` | Deep-dive single-repo analysis: structure, dependencies, dead code, test coverage, health |
-| `cross-repo-reviewer` | Reviews changes for cross-repo safety: API contracts, type lineage, dependency compatibility |
+| Agent                  | Description                                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| `repo-analyst`         | Deep-dive single-repo analysis: structure, dependencies, dead code, test coverage, health             |
+| `cross-repo-reviewer`  | Reviews changes for cross-repo safety: API contracts, type lineage, dependency compatibility          |
 | `evolution-strategist` | CTO/product strategist perspective: industry best practices, competitive analysis, strategic roadmaps |
 
 ## Architecture
@@ -201,6 +202,12 @@ npm run build
 npm test
 ```
 
+### Run coverage
+
+```bash
+npm run test:coverage
+```
+
 ### Run tests in watch mode
 
 ```bash
@@ -211,6 +218,19 @@ npm run test:watch
 
 ```bash
 npm run lint
+npm run format:check
+```
+
+### Full verification
+
+```bash
+npm run verify
+```
+
+### CLI smoke test
+
+```bash
+npm run smoke:cli
 ```
 
 ### CLI
@@ -218,10 +238,15 @@ npm run lint
 ```bash
 node dist/cli.js --help
 node dist/cli.js scan --config .omni-link.json
+node dist/cli.js scan --markdown --config .omni-link.json
 node dist/cli.js health --config .omni-link.json
 node dist/cli.js evolve --config .omni-link.json
 node dist/cli.js impact --config .omni-link.json
 ```
+
+### Releases
+
+Create a git tag like `v1.0.0` and push it to trigger the release workflow. The workflow rebuilds, reruns verification, creates an `npm pack` artifact, and publishes a GitHub release with generated notes.
 
 ### Project structure
 

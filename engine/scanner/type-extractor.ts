@@ -1,6 +1,9 @@
 // engine/scanner/type-extractor.ts — Extracts type definitions and schema definitions from source code
+import type Parser from 'tree-sitter';
 import type { TypeDef, TypeField, SchemaDef } from '../types.js';
 import { createParser } from './tree-sitter.js';
+
+type SyntaxNode = Parser.SyntaxNode;
 
 // ─── Type Extraction ────────────────────────────────────────────────────────
 
@@ -57,18 +60,18 @@ function extractTSTypes(source: string, file: string, language: string, repo: st
     const body = iface.descendantsOfType('interface_body')[0];
     const fields = body ? extractTSInterfaceFields(body) : [];
 
-    const typeDef: import('../types.js').TypeDef = {
+    const typeDef: TypeDef = {
       name: nameNode.text,
       fields,
       source: { repo, file, line: iface.startPosition.row + 1 },
     };
 
     // Capture extends clause: interface Foo extends A, B { ... }
-    const extendsClause = iface.children.find((c: any) => c.type === 'extends_type_clause');
+    const extendsClause = iface.children.find((c: SyntaxNode) => c.type === 'extends_type_clause');
     if (extendsClause) {
       const parentNames: string[] = extendsClause.children
-        .filter((c: any) => c.type === 'type_identifier')
-        .map((c: any) => c.text as string);
+        .filter((c: SyntaxNode) => c.type === 'type_identifier')
+        .map((c: SyntaxNode) => c.text);
       if (parentNames.length > 0) {
         typeDef.extends = parentNames;
       }
@@ -87,18 +90,18 @@ function extractTSTypes(source: string, file: string, language: string, repo: st
     const objectType = alias.descendantsOfType('object_type')[0];
     const fields = objectType ? extractTSObjectTypeFields(objectType) : [];
 
-    const typeDef: import('../types.js').TypeDef = {
+    const typeDef: TypeDef = {
       name: nameNode.text,
       fields,
       source: { repo, file, line: alias.startPosition.row + 1 },
     };
 
     // Capture intersection type parents: type Combined = TypeA & TypeB
-    const intersectionNode = alias.children.find((c: any) => c.type === 'intersection_type');
+    const intersectionNode = alias.children.find((c: SyntaxNode) => c.type === 'intersection_type');
     if (intersectionNode) {
       const memberNames: string[] = intersectionNode.children
-        .filter((c: any) => c.type === 'type_identifier')
-        .map((c: any) => c.text as string);
+        .filter((c: SyntaxNode) => c.type === 'type_identifier')
+        .map((c: SyntaxNode) => c.text);
       if (memberNames.length > 0) {
         typeDef.extends = memberNames;
       }
@@ -110,7 +113,7 @@ function extractTSTypes(source: string, file: string, language: string, repo: st
   return results;
 }
 
-function extractTSInterfaceFields(body: any): TypeField[] {
+function extractTSInterfaceFields(body: SyntaxNode): TypeField[] {
   const fields: TypeField[] = [];
   const props = body.descendantsOfType('property_signature');
 
@@ -122,12 +125,10 @@ function extractTSInterfaceFields(body: any): TypeField[] {
     if (!nameNode) continue;
 
     const typeAnnotation = prop.descendantsOfType('type_annotation')[0];
-    const typeText = typeAnnotation
-      ? typeAnnotation.text.replace(/^:\s*/, '')
-      : 'unknown';
+    const typeText = typeAnnotation ? typeAnnotation.text.replace(/^:\s*/, '') : 'unknown';
 
     // Check for optional marker (?)
-    const hasQuestion = prop.children.some((c: any) => c.type === '?');
+    const hasQuestion = prop.children.some((c: SyntaxNode) => c.type === '?');
 
     fields.push({
       name: nameNode.text,
@@ -139,7 +140,7 @@ function extractTSInterfaceFields(body: any): TypeField[] {
   return fields;
 }
 
-function extractTSObjectTypeFields(objectType: any): TypeField[] {
+function extractTSObjectTypeFields(objectType: SyntaxNode): TypeField[] {
   const fields: TypeField[] = [];
   const props = objectType.descendantsOfType('property_signature');
 
@@ -150,11 +151,9 @@ function extractTSObjectTypeFields(objectType: any): TypeField[] {
     if (!nameNode) continue;
 
     const typeAnnotation = prop.descendantsOfType('type_annotation')[0];
-    const typeText = typeAnnotation
-      ? typeAnnotation.text.replace(/^:\s*/, '')
-      : 'unknown';
+    const typeText = typeAnnotation ? typeAnnotation.text.replace(/^:\s*/, '') : 'unknown';
 
-    const hasQuestion = prop.children.some((c: any) => c.type === '?');
+    const hasQuestion = prop.children.some((c: SyntaxNode) => c.type === '?');
 
     fields.push({
       name: nameNode.text,
@@ -192,7 +191,7 @@ function extractSwiftTypes(source: string, file: string, repo: string): TypeDef[
   return results;
 }
 
-function extractSwiftFields(body: any): TypeField[] {
+function extractSwiftFields(body: SyntaxNode): TypeField[] {
   const fields: TypeField[] = [];
   const props = body.descendantsOfType('property_declaration');
 
@@ -254,7 +253,7 @@ function extractPythonTypes(source: string, file: string, repo: string): TypeDef
   return results;
 }
 
-function extractPythonFields(body: any): TypeField[] {
+function extractPythonFields(body: SyntaxNode): TypeField[] {
   const fields: TypeField[] = [];
 
   // Look for expression_statement > assignment with type annotations
@@ -266,11 +265,11 @@ function extractPythonFields(body: any): TypeField[] {
     if (!assignment) continue;
 
     // Check if assignment has a type annotation (: after identifier)
-    const hasColon = assignment.children.some((c: any) => c.type === ':');
+    const hasColon = assignment.children.some((c: SyntaxNode) => c.type === ':');
     if (!hasColon) continue;
 
     // Get name (first identifier child)
-    const nameNode = assignment.children.find((c: any) => c.type === 'identifier');
+    const nameNode = assignment.children.find((c: SyntaxNode) => c.type === 'identifier');
     if (!nameNode) continue;
 
     // Get type (the 'type' node child)
@@ -312,7 +311,7 @@ function extractGoTypes(source: string, file: string, repo: string): TypeDef[] {
   for (const child of tree.rootNode.namedChildren) {
     if (child.type !== 'type_declaration') continue;
 
-    const typeSpecs = child.namedChildren.filter((node: any) => node.type === 'type_spec');
+    const typeSpecs = child.namedChildren.filter((node: SyntaxNode) => node.type === 'type_spec');
     for (const typeSpec of typeSpecs) {
       const nameNode = typeSpec.childForFieldName('name');
       const typeNode = typeSpec.childForFieldName('type');
@@ -336,18 +335,22 @@ function extractGoTypes(source: string, file: string, repo: string): TypeDef[] {
   return results;
 }
 
-function extractGoFields(structNode: any): TypeField[] {
+function extractGoFields(structNode: SyntaxNode): TypeField[] {
   const body = structNode.descendantsOfType('field_declaration_list')[0];
   if (!body) return [];
 
   const fields: TypeField[] = [];
-  const declarations = body.namedChildren.filter((node: any) => node.type === 'field_declaration');
+  const declarations = body.namedChildren.filter(
+    (node: SyntaxNode) => node.type === 'field_declaration',
+  );
 
   for (const declaration of declarations) {
     const typeNode = declaration.childForFieldName('type');
     if (!typeNode) continue;
 
-    const nameNodes = declaration.children.filter((node: any) => node.type === 'field_identifier');
+    const nameNodes = declaration.children.filter(
+      (node: SyntaxNode) => node.type === 'field_identifier',
+    );
     for (const nameNode of nameNodes) {
       fields.push({
         name: nameNode.text,
@@ -375,7 +378,8 @@ function extractRustTypes(source: string, file: string, repo: string): TypeDef[]
 
     results.push({
       name: nameNode.text,
-      fields: child.type === 'struct_item' ? extractRustFields(child.childForFieldName('body')) : [],
+      fields:
+        child.type === 'struct_item' ? extractRustFields(child.childForFieldName('body')) : [],
       source: { repo, file, line: child.startPosition.row + 1 },
     });
   }
@@ -383,13 +387,15 @@ function extractRustTypes(source: string, file: string, repo: string): TypeDef[]
   return results;
 }
 
-function extractRustFields(body: any): TypeField[] {
+function extractRustFields(body: SyntaxNode | null): TypeField[] {
   if (!body) return [];
 
   const fields: TypeField[] = [];
 
   if (body.type === 'field_declaration_list') {
-    const declarations = body.namedChildren.filter((node: any) => node.type === 'field_declaration');
+    const declarations = body.namedChildren.filter(
+      (node: SyntaxNode) => node.type === 'field_declaration',
+    );
     for (const declaration of declarations) {
       const nameNode = declaration.childForFieldName('name');
       const typeNode = declaration.childForFieldName('type');
@@ -405,7 +411,9 @@ function extractRustFields(body: any): TypeField[] {
   }
 
   if (body.type === 'ordered_field_declaration_list') {
-    const orderedTypes = body.namedChildren.filter((node: any) => node.type !== 'visibility_modifier');
+    const orderedTypes = body.namedChildren.filter(
+      (node: SyntaxNode) => node.type !== 'visibility_modifier',
+    );
     for (const [index, typeNode] of orderedTypes.entries()) {
       fields.push({
         name: String(index),
@@ -440,11 +448,12 @@ function extractJavaTypes(source: string, file: string, repo: string): TypeDef[]
 
     results.push({
       name: nameNode.text,
-      fields: child.type === 'record_declaration'
-        ? extractJavaRecordFields(child.childForFieldName('parameters'))
-        : child.type === 'enum_declaration'
-          ? []
-          : extractJavaFields(child.childForFieldName('body')),
+      fields:
+        child.type === 'record_declaration'
+          ? extractJavaRecordFields(child.childForFieldName('parameters'))
+          : child.type === 'enum_declaration'
+            ? []
+            : extractJavaFields(child.childForFieldName('body')),
       source: { repo, file, line: child.startPosition.row + 1 },
     });
   }
@@ -452,17 +461,21 @@ function extractJavaTypes(source: string, file: string, repo: string): TypeDef[]
   return results;
 }
 
-function extractJavaFields(body: any): TypeField[] {
+function extractJavaFields(body: SyntaxNode | null): TypeField[] {
   if (!body) return [];
 
   const fields: TypeField[] = [];
 
-  const declarations = body.namedChildren.filter((node: any) => node.type === 'field_declaration');
+  const declarations = body.namedChildren.filter(
+    (node: SyntaxNode) => node.type === 'field_declaration',
+  );
   for (const declaration of declarations) {
     const typeNode = declaration.childForFieldName('type');
     if (!typeNode) continue;
 
-    const declarators = declaration.namedChildren.filter((node: any) => node.type === 'variable_declarator');
+    const declarators = declaration.namedChildren.filter(
+      (node: SyntaxNode) => node.type === 'variable_declarator',
+    );
     for (const declarator of declarators) {
       const nameNode = declarator.childForFieldName('name');
       if (!nameNode) continue;
@@ -477,12 +490,12 @@ function extractJavaFields(body: any): TypeField[] {
   return fields;
 }
 
-function extractJavaRecordFields(parameters: any): TypeField[] {
+function extractJavaRecordFields(parameters: SyntaxNode | null): TypeField[] {
   if (!parameters) return [];
 
-  return parameters.namedChildren
-    .filter((node: any) => node.type === 'formal_parameter')
-    .map((parameter: any) => {
+  const fields = parameters.namedChildren
+    .filter((node: SyntaxNode) => node.type === 'formal_parameter')
+    .map((parameter: SyntaxNode): TypeField | null => {
       const nameNode = parameter.childForFieldName('name');
       const typeNode = parameter.childForFieldName('type');
       if (!nameNode || !typeNode) return null;
@@ -491,8 +504,9 @@ function extractJavaRecordFields(parameters: any): TypeField[] {
         type: typeNode.text,
         optional: false,
       };
-    })
-    .filter((field: TypeField | null): field is TypeField => field !== null);
+    });
+
+  return fields.filter((field: TypeField | null): field is TypeField => field !== null);
 }
 
 // ─── Schema Extraction ──────────────────────────────────────────────────────
@@ -514,7 +528,12 @@ export function extractSchemas(
   return [];
 }
 
-function extractZodSchemas(source: string, file: string, language: string, repo: string): SchemaDef[] {
+function extractZodSchemas(
+  source: string,
+  file: string,
+  language: string,
+  repo: string,
+): SchemaDef[] {
   const parser = createParser(language);
   const tree = parser.parse(source);
   const results: SchemaDef[] = [];
@@ -534,7 +553,7 @@ function extractZodSchemas(source: string, file: string, language: string, repo:
     const args = zodObjectCall.childForFieldName('arguments');
     if (!args) continue;
 
-    const objArg = args.namedChildren.find((c: any) => c.type === 'object');
+    const objArg = args.namedChildren.find((c: SyntaxNode) => c.type === 'object');
     if (!objArg) continue;
 
     const fields = extractZodFields(objArg);
@@ -553,7 +572,7 @@ function extractZodSchemas(source: string, file: string, language: string, repo:
 /**
  * Find a z.object() call expression within a node (may be nested in chains).
  */
-function findZodObjectCall(node: any): any | null {
+function findZodObjectCall(node: SyntaxNode): SyntaxNode | null {
   if (node.type === 'call_expression') {
     const funcNode = node.childForFieldName('function');
     if (funcNode?.type === 'member_expression') {
@@ -574,7 +593,7 @@ function findZodObjectCall(node: any): any | null {
   return null;
 }
 
-function extractZodFields(objNode: any): TypeField[] {
+function extractZodFields(objNode: SyntaxNode): TypeField[] {
   const fields: TypeField[] = [];
 
   const pairs = objNode.descendantsOfType('pair');
@@ -587,7 +606,9 @@ function extractZodFields(objNode: any): TypeField[] {
 
     const valueNode = pair.childForFieldName('value');
     const typeText = valueNode ? inferZodType(valueNode.text) : 'unknown';
-    const optional = valueNode ? valueNode.text.includes('.optional()') || valueNode.text.includes('.nullable()') : false;
+    const optional = valueNode
+      ? valueNode.text.includes('.optional()') || valueNode.text.includes('.nullable()')
+      : false;
 
     fields.push({
       name: keyNode.text,

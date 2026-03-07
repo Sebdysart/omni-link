@@ -73,12 +73,30 @@ describe('analyzeEvolution', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes/users.ts', line: 10 },
-          { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes/users.ts', line: 20 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes/users.ts',
+            line: 10,
+          },
+          {
+            method: 'POST',
+            path: '/api/users',
+            handler: 'createUser',
+            file: 'src/routes/users.ts',
+            line: 20,
+          },
         ],
         procedures: [],
         exports: [
-          { name: 'unusedHelper', kind: 'function', signature: 'function unusedHelper()', file: 'src/utils.ts', line: 1 },
+          {
+            name: 'unusedHelper',
+            kind: 'function',
+            signature: 'function unusedHelper()',
+            file: 'src/utils.ts',
+            line: 1,
+          },
         ],
       },
       dependencies: { internal: [], external: [] },
@@ -91,7 +109,7 @@ describe('analyzeEvolution', () => {
 
     expect(suggestions.length).toBeGreaterThan(0);
     // Should contain feature suggestions (from gap analysis)
-    expect(suggestions.some(s => s.category === 'feature')).toBe(true);
+    expect(suggestions.some((s) => s.category === 'feature')).toBe(true);
   });
 
   it('returns suggestions from bottleneck analysis', () => {
@@ -99,8 +117,21 @@ describe('analyzeEvolution', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10, outputType: 'UserList' },
-          { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 20 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes.ts',
+            line: 10,
+            outputType: 'UserList',
+          },
+          {
+            method: 'POST',
+            path: '/api/users',
+            handler: 'createUser',
+            file: 'src/routes.ts',
+            line: 20,
+          },
         ],
         procedures: [],
         exports: [],
@@ -113,8 +144,8 @@ describe('analyzeEvolution', () => {
     const suggestions = analyzeEvolution(graph, config);
 
     // Should find pagination/rate-limiting issues
-    const perfOrScale = suggestions.filter(s =>
-      s.category === 'performance' || s.category === 'scale' || s.category === 'security'
+    const perfOrScale = suggestions.filter(
+      (s) => s.category === 'performance' || s.category === 'scale' || s.category === 'security',
     );
     expect(perfOrScale.length).toBeGreaterThan(0);
   });
@@ -124,12 +155,30 @@ describe('analyzeEvolution', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
-          { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 20 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes.ts',
+            line: 10,
+          },
+          {
+            method: 'POST',
+            path: '/api/users',
+            handler: 'createUser',
+            file: 'src/routes.ts',
+            line: 20,
+          },
         ],
         procedures: [],
         exports: [
-          { name: 'unusedFn', kind: 'function', signature: 'function unusedFn()', file: 'src/unused.ts', line: 1 },
+          {
+            name: 'unusedFn',
+            kind: 'function',
+            signature: 'function unusedFn()',
+            file: 'src/unused.ts',
+            line: 1,
+          },
         ],
       },
       dependencies: { internal: [], external: [] },
@@ -152,18 +201,72 @@ describe('analyzeEvolution', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes/users.ts', line: 10 },
-          { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes/users.ts', line: 20 },
-          { method: 'GET', path: '/api/posts', handler: 'getPosts', file: 'src/routes/posts.ts', line: 5 },
-          { method: 'POST', path: '/api/posts', handler: 'createPost', file: 'src/routes/posts.ts', line: 15 },
-          { method: 'GET', path: '/api/comments', handler: 'getComments', file: 'src/routes/comments.ts', line: 5 },
-          { method: 'POST', path: '/api/comments', handler: 'createComment', file: 'src/routes/comments.ts', line: 15 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes/users.ts',
+            line: 10,
+          },
+          {
+            method: 'POST',
+            path: '/api/users',
+            handler: 'createUser',
+            file: 'src/routes/users.ts',
+            line: 20,
+          },
+          {
+            method: 'GET',
+            path: '/api/posts',
+            handler: 'getPosts',
+            file: 'src/routes/posts.ts',
+            line: 5,
+          },
+          {
+            method: 'POST',
+            path: '/api/posts',
+            handler: 'createPost',
+            file: 'src/routes/posts.ts',
+            line: 15,
+          },
+          {
+            method: 'GET',
+            path: '/api/comments',
+            handler: 'getComments',
+            file: 'src/routes/comments.ts',
+            line: 5,
+          },
+          {
+            method: 'POST',
+            path: '/api/comments',
+            handler: 'createComment',
+            file: 'src/routes/comments.ts',
+            line: 15,
+          },
         ],
         procedures: [],
         exports: [
-          { name: 'unused1', kind: 'function', signature: 'function unused1()', file: 'src/utils.ts', line: 1 },
-          { name: 'unused2', kind: 'function', signature: 'function unused2()', file: 'src/utils.ts', line: 10 },
-          { name: 'unused3', kind: 'function', signature: 'function unused3()', file: 'src/utils.ts', line: 20 },
+          {
+            name: 'unused1',
+            kind: 'function',
+            signature: 'function unused1()',
+            file: 'src/utils.ts',
+            line: 1,
+          },
+          {
+            name: 'unused2',
+            kind: 'function',
+            signature: 'function unused2()',
+            file: 'src/utils.ts',
+            line: 10,
+          },
+          {
+            name: 'unused3',
+            kind: 'function',
+            signature: 'function unused3()',
+            file: 'src/utils.ts',
+            line: 20,
+          },
         ],
       },
       dependencies: { internal: [], external: [] },
@@ -182,12 +285,30 @@ describe('analyzeEvolution', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
-          { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 20 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes.ts',
+            line: 10,
+          },
+          {
+            method: 'POST',
+            path: '/api/users',
+            handler: 'createUser',
+            file: 'src/routes.ts',
+            line: 20,
+          },
         ],
         procedures: [],
         exports: [
-          { name: 'deadFn', kind: 'function', signature: 'function deadFn()', file: 'src/dead.ts', line: 1 },
+          {
+            name: 'deadFn',
+            kind: 'function',
+            signature: 'function deadFn()',
+            file: 'src/dead.ts',
+            line: 1,
+          },
         ],
       },
       dependencies: { internal: [], external: [] },
@@ -221,8 +342,20 @@ describe('analyzeEvolution', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
-          { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 20 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes.ts',
+            line: 10,
+          },
+          {
+            method: 'POST',
+            path: '/api/users',
+            handler: 'createUser',
+            file: 'src/routes.ts',
+            line: 20,
+          },
         ],
         procedures: [],
         exports: [],
@@ -243,8 +376,20 @@ describe('analyzeEvolution', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes.ts', line: 10 },
-          { method: 'POST', path: '/api/users', handler: 'createUser', file: 'src/routes.ts', line: 20 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes.ts',
+            line: 10,
+          },
+          {
+            method: 'POST',
+            path: '/api/users',
+            handler: 'createUser',
+            file: 'src/routes.ts',
+            line: 20,
+          },
         ],
         procedures: [],
         exports: [],
@@ -258,7 +403,13 @@ describe('analyzeEvolution', () => {
         routes: [],
         procedures: [],
         exports: [
-          { name: 'unusedComponent', kind: 'function', signature: 'function unusedComponent()', file: 'src/comps.tsx', line: 1 },
+          {
+            name: 'unusedComponent',
+            kind: 'function',
+            signature: 'function unusedComponent()',
+            file: 'src/comps.tsx',
+            line: 1,
+          },
         ],
       },
       dependencies: { internal: [], external: [] },
@@ -271,7 +422,7 @@ describe('analyzeEvolution', () => {
 
     expect(suggestions.length).toBeGreaterThan(0);
     // Should have suggestions affecting both repos
-    const repos = new Set(suggestions.flatMap(s => s.affectedRepos));
+    const repos = new Set(suggestions.flatMap((s) => s.affectedRepos));
     expect(repos.size).toBeGreaterThanOrEqual(1);
   });
 
@@ -281,7 +432,13 @@ describe('analyzeEvolution', () => {
       apiSurface: {
         routes: [
           { method: 'GET', path: '/api/data', handler: 'getData', file: 'src/routes.ts', line: 5 },
-          { method: 'POST', path: '/api/data', handler: 'createData', file: 'src/routes.ts', line: 15 },
+          {
+            method: 'POST',
+            path: '/api/data',
+            handler: 'createData',
+            file: 'src/routes.ts',
+            line: 15,
+          },
         ],
         procedures: [],
         exports: [],
@@ -294,7 +451,7 @@ describe('analyzeEvolution', () => {
     const suggestions = analyzeEvolution(graph, config);
 
     // Should include security suggestions from benchmarker (missing helmet, rate-limit, etc.)
-    const securitySuggestions = suggestions.filter(s => s.category === 'security');
+    const securitySuggestions = suggestions.filter((s) => s.category === 'security');
     expect(securitySuggestions.length).toBeGreaterThan(0);
   });
 });

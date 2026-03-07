@@ -240,7 +240,7 @@ describe('CacheManager', () => {
 
       // Backdate the manifest file
       const repoDir = path.join(tmpDir, 'repo-a');
-      const files = fs.readdirSync(repoDir).filter(f => f.startsWith('manifest-'));
+      const files = fs.readdirSync(repoDir).filter((f) => f.startsWith('manifest-'));
       for (const file of files) {
         const filePath = path.join(repoDir, file);
         const oldDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);

@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npm run smoke:cli
+      - run: npm run benchmark:smoke
+
+      - name: Pack release artifact
+        id: pack
+        run: |
+          PACKAGE_FILE=$(npm pack)
+          echo "package_file=${PACKAGE_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" "${{ steps.pack.outputs.package_file }}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes

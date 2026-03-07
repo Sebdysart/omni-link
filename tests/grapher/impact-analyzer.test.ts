@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeImpact } from '../../engine/grapher/impact-analyzer.js';
-import type { EcosystemGraph, RepoManifest, ApiBridge, TypeLineage } from '../../engine/types.js';
+import type { EcosystemGraph, RepoManifest, ApiBridge } from '../../engine/types.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,11 @@ describe('analyzeImpact', () => {
       repoId: 'backend',
       dependencies: {
         internal: [
-          { from: 'src/routes/users.ts', to: 'src/types/user.ts', imports: ['User', 'CreateUserInput'] },
+          {
+            from: 'src/routes/users.ts',
+            to: 'src/types/user.ts',
+            imports: ['User', 'CreateUserInput'],
+          },
           { from: 'src/services/user-service.ts', to: 'src/types/user.ts', imports: ['User'] },
         ],
         external: [],
@@ -76,7 +80,7 @@ describe('analyzeImpact', () => {
     expect(impacts[0].trigger.change).toBe('type-change');
     expect(impacts[0].affected.length).toBeGreaterThanOrEqual(2);
 
-    const affectedFiles = impacts[0].affected.map(a => a.file);
+    const affectedFiles = impacts[0].affected.map((a) => a.file);
     expect(affectedFiles).toContain('src/routes/users.ts');
     expect(affectedFiles).toContain('src/services/user-service.ts');
   });
@@ -86,7 +90,13 @@ describe('analyzeImpact', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes/users.ts', line: 10 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes/users.ts',
+            line: 10,
+          },
         ],
         procedures: [],
         exports: [],
@@ -102,8 +112,16 @@ describe('analyzeImpact', () => {
       consumer: { repo: 'ios-app', file: 'Services/UserService.swift', line: 15 },
       provider: { repo: 'backend', route: 'GET /api/users', handler: 'getUsers' },
       contract: {
-        inputType: { name: 'void', fields: [], source: { repo: 'backend', file: 'types.ts', line: 0 } },
-        outputType: { name: 'UserList', fields: [{ name: 'users', type: 'User[]' }], source: { repo: 'backend', file: 'types.ts', line: 5 } },
+        inputType: {
+          name: 'void',
+          fields: [],
+          source: { repo: 'backend', file: 'types.ts', line: 0 },
+        },
+        outputType: {
+          name: 'UserList',
+          fields: [{ name: 'users', type: 'User[]' }],
+          source: { repo: 'backend', file: 'types.ts', line: 5 },
+        },
         matchStatus: 'exact',
       },
     };
@@ -120,7 +138,7 @@ describe('analyzeImpact', () => {
     expect(impacts).toHaveLength(1);
 
     // Should include cross-repo impact
-    const crossRepoAffected = impacts[0].affected.find(a => a.repo === 'ios-app');
+    const crossRepoAffected = impacts[0].affected.find((a) => a.repo === 'ios-app');
     expect(crossRepoAffected).toBeDefined();
     expect(crossRepoAffected!.file).toBe('Services/UserService.swift');
     expect(crossRepoAffected!.severity).toBe('breaking');
@@ -130,9 +148,7 @@ describe('analyzeImpact', () => {
     const backend = makeManifest({
       repoId: 'backend',
       dependencies: {
-        internal: [
-          { from: 'src/handlers/user.ts', to: 'src/types/user.ts', imports: ['User'] },
-        ],
+        internal: [{ from: 'src/handlers/user.ts', to: 'src/types/user.ts', imports: ['User'] }],
         external: [],
       },
     });
@@ -144,7 +160,7 @@ describe('analyzeImpact', () => {
     ]);
 
     expect(impacts).toHaveLength(1);
-    const affected = impacts[0].affected.find(a => a.file === 'src/handlers/user.ts');
+    const affected = impacts[0].affected.find((a) => a.file === 'src/handlers/user.ts');
     expect(affected).toBeDefined();
     expect(affected!.severity).toBe('breaking');
   });
@@ -154,7 +170,11 @@ describe('analyzeImpact', () => {
       repoId: 'backend',
       dependencies: {
         internal: [
-          { from: 'src/handlers/user.ts', to: 'src/services/user-service.ts', imports: ['UserService'] },
+          {
+            from: 'src/handlers/user.ts',
+            to: 'src/services/user-service.ts',
+            imports: ['UserService'],
+          },
         ],
         external: [],
       },
@@ -167,7 +187,7 @@ describe('analyzeImpact', () => {
     ]);
 
     expect(impacts).toHaveLength(1);
-    const affected = impacts[0].affected.find(a => a.file === 'src/handlers/user.ts');
+    const affected = impacts[0].affected.find((a) => a.file === 'src/handlers/user.ts');
     expect(affected).toBeDefined();
     expect(affected!.severity).toBe('warning');
   });
@@ -209,7 +229,7 @@ describe('analyzeImpact', () => {
     ]);
 
     expect(impacts).toHaveLength(1);
-    const affectedFiles = impacts[0].affected.map(a => a.file);
+    const affectedFiles = impacts[0].affected.map((a) => a.file);
     // Direct dependent
     expect(affectedFiles).toContain('src/service.ts');
     // Transitive dependent
@@ -221,7 +241,13 @@ describe('analyzeImpact', () => {
       repoId: 'backend',
       apiSurface: {
         routes: [
-          { method: 'GET', path: '/api/users', handler: 'getUsers', file: 'src/routes/users.ts', line: 10 },
+          {
+            method: 'GET',
+            path: '/api/users',
+            handler: 'getUsers',
+            file: 'src/routes/users.ts',
+            line: 10,
+          },
         ],
         procedures: [],
         exports: [],
@@ -234,8 +260,16 @@ describe('analyzeImpact', () => {
       consumer: { repo: 'ios-app', file: 'Services/UserService.swift', line: 15 },
       provider: { repo: 'backend', route: 'GET /api/users', handler: 'getUsers' },
       contract: {
-        inputType: { name: 'void', fields: [], source: { repo: 'backend', file: 'types.ts', line: 0 } },
-        outputType: { name: 'UserList', fields: [], source: { repo: 'backend', file: 'types.ts', line: 5 } },
+        inputType: {
+          name: 'void',
+          fields: [],
+          source: { repo: 'backend', file: 'types.ts', line: 0 },
+        },
+        outputType: {
+          name: 'UserList',
+          fields: [],
+          source: { repo: 'backend', file: 'types.ts', line: 5 },
+        },
         matchStatus: 'exact',
       },
     };
@@ -246,7 +280,7 @@ describe('analyzeImpact', () => {
       { repo: 'backend', file: 'src/routes/users.ts', change: 'implementation-change' },
     ]);
 
-    const crossRepoAffected = impacts[0]?.affected.find(a => a.repo === 'ios-app');
+    const crossRepoAffected = impacts[0]?.affected.find((a) => a.repo === 'ios-app');
     expect(crossRepoAffected).toBeDefined();
     // Implementation-only change cannot break consumers — must be 'warning', not 'breaking'
     expect(crossRepoAffected!.severity).toBe('warning');

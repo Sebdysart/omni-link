@@ -1,28 +1,38 @@
 // engine/grapher/type-flow.ts — Cross-repo type lineage detection
 
-import type {
-  RepoManifest,
-  TypeLineage,
-  TypeDef,
-  TypeField,
-} from '../types.js';
+import type { RepoManifest, TypeLineage, TypeDef, TypeField } from '../types.js';
 
 // Suffixes that are commonly added to a base concept name
 const CONCEPT_SUFFIXES = [
-  'DTO', 'Dto', 'dto',
-  'Model', 'model',
-  'Entity', 'entity',
-  'Schema', 'schema',
-  'Response', 'response',
-  'Request', 'request',
-  'Input', 'input',
-  'Output', 'output',
-  'Payload', 'payload',
-  'Data', 'data',
-  'Type', 'type',
-  'Params', 'params',
-  'Args', 'args',
-  'Form', 'form',
+  'DTO',
+  'Dto',
+  'dto',
+  'Model',
+  'model',
+  'Entity',
+  'entity',
+  'Schema',
+  'schema',
+  'Response',
+  'response',
+  'Request',
+  'request',
+  'Input',
+  'input',
+  'Output',
+  'output',
+  'Payload',
+  'payload',
+  'Data',
+  'data',
+  'Type',
+  'type',
+  'Params',
+  'params',
+  'Args',
+  'args',
+  'Form',
+  'form',
   'FormData',
 ];
 
@@ -71,8 +81,6 @@ export function mapTypeFlows(manifests: RepoManifest[]): TypeLineage[] {
   // Build concept groups: concept name -> { repo, type }[]
   const conceptMap = new Map<string, Array<{ repo: string; type: TypeDef }>>();
 
-  const repoIds = [...typesByRepo.keys()];
-
   // Phase 1 & 2: Name-based matching (exact and suffix-stripped)
   for (const [repoId, types] of typesByRepo.entries()) {
     for (const typeDef of types) {
@@ -81,7 +89,7 @@ export function mapTypeFlows(manifests: RepoManifest[]): TypeLineage[] {
       for (const conceptName of conceptNames) {
         const existing = conceptMap.get(conceptName) ?? [];
         // Avoid duplicate entries for the same repo and type
-        if (!existing.some(e => e.repo === repoId && e.type.name === typeDef.name)) {
+        if (!existing.some((e) => e.repo === repoId && e.type.name === typeDef.name)) {
           existing.push({ repo: repoId, type: typeDef });
         }
         conceptMap.set(conceptName, existing);
@@ -96,10 +104,10 @@ export function mapTypeFlows(manifests: RepoManifest[]): TypeLineage[] {
     const ungrouped: TypeDef[] = [];
     for (const typeDef of types) {
       const conceptNames = getConceptNames(typeDef.name);
-      const isGrouped = conceptNames.some(cn => {
+      const isGrouped = conceptNames.some((cn) => {
         const group = conceptMap.get(cn);
         if (!group) return false;
-        const repos = new Set(group.map(g => g.repo));
+        const repos = new Set(group.map((g) => g.repo));
         return repos.size > 1;
       });
       if (!isGrouped) {
@@ -129,10 +137,10 @@ export function mapTypeFlows(manifests: RepoManifest[]): TypeLineage[] {
             // Create a concept name from the shorter/simpler name
             const conceptName = pickConceptName(typeA.name, typeB.name);
             const existing = conceptMap.get(conceptName) ?? [];
-            if (!existing.some(e => e.repo === ungroupedRepos[i] && e.type.name === typeA.name)) {
+            if (!existing.some((e) => e.repo === ungroupedRepos[i] && e.type.name === typeA.name)) {
               existing.push({ repo: ungroupedRepos[i], type: typeA });
             }
-            if (!existing.some(e => e.repo === ungroupedRepos[j] && e.type.name === typeB.name)) {
+            if (!existing.some((e) => e.repo === ungroupedRepos[j] && e.type.name === typeB.name)) {
               existing.push({ repo: ungroupedRepos[j], type: typeB });
             }
             conceptMap.set(conceptName, existing);
@@ -147,7 +155,7 @@ export function mapTypeFlows(manifests: RepoManifest[]): TypeLineage[] {
   const emitted = new Set<string>();
 
   for (const [concept, instances] of conceptMap.entries()) {
-    const repos = new Set(instances.map(i => i.repo));
+    const repos = new Set(instances.map((i) => i.repo));
     if (repos.size < 2) continue;
     if (emitted.has(concept)) continue;
 
@@ -162,7 +170,7 @@ export function mapTypeFlows(manifests: RepoManifest[]): TypeLineage[] {
       }
     }
 
-    const alignment = determineAlignment(deduped.map(i => i.type));
+    const alignment = determineAlignment(deduped.map((i) => i.type));
     emitted.add(concept);
 
     lineages.push({
@@ -233,8 +241,8 @@ function stripAllSuffixes(name: string): string {
  * Compares by field name only (ignoring types, since cross-language types differ).
  */
 function jaccardSimilarity(fieldsA: TypeField[], fieldsB: TypeField[]): number {
-  const setA = new Set(fieldsA.map(f => f.name.toLowerCase()));
-  const setB = new Set(fieldsB.map(f => f.name.toLowerCase()));
+  const setA = new Set(fieldsA.map((f) => f.name.toLowerCase()));
+  const setB = new Set(fieldsB.map((f) => f.name.toLowerCase()));
 
   if (setA.size === 0 && setB.size === 0) return 1;
 
@@ -259,10 +267,10 @@ function jaccardSimilarity(fieldsA: TypeField[], fieldsB: TypeField[]): number {
 function determineAlignment(types: TypeDef[]): 'aligned' | 'diverged' | 'subset' {
   if (types.length < 2) return 'aligned';
 
-  const fieldSets = types.map(t => new Set(t.fields.map(f => f.name)));
+  const fieldSets = types.map((t) => new Set(t.fields.map((f) => f.name)));
 
   // Check if all field sets are equal
-  const allEqual = fieldSets.every(set => {
+  const allEqual = fieldSets.every((set) => {
     if (set.size !== fieldSets[0].size) return false;
     for (const field of set) {
       if (!fieldSets[0].has(field)) return false;

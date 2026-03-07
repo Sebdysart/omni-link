@@ -10,6 +10,7 @@ This skill defines when and how to perform cross-repository impact analysis to p
 ## When to Invoke
 
 **Mandatory** before:
+
 - Changing any API route signature (path, method, input type, output type)
 - Modifying a tRPC procedure's input or output schema
 - Altering a shared type or interface used across repos
@@ -18,6 +19,7 @@ This skill defines when and how to perform cross-repository impact analysis to p
 - Modifying error response formats
 
 **Recommended** before:
+
 - Adding new required fields to existing types
 - Changing authentication or authorization logic
 - Modifying middleware that affects multiple routes
@@ -31,6 +33,7 @@ Execute the impact analysis command:
 ```
 
 This runs `omni-link impact` which:
+
 1. Scans all repos for current state
 2. Detects uncommitted changes across the ecosystem
 3. Builds the ecosystem graph
@@ -87,6 +90,7 @@ Action: Update User.swift to add optional phoneNumber, update shared-types
 ## Blocking Rule
 
 If the impact report shows any **BREAKING** severity items, you MUST:
+
 1. Present all breaking items to the user
 2. Propose a migration plan (provider-first ordering)
 3. Get explicit user confirmation before proceeding

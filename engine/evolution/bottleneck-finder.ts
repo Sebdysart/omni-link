@@ -5,7 +5,13 @@ import type { RepoManifest, RouteDefinition, ProcedureDef } from '../types.js';
 // ─── Public Types ────────────────────────────────────────────────────────────
 
 export interface BottleneckFinding {
-  kind: 'missing-pagination' | 'unbounded-query' | 'no-caching' | 'sync-in-async' | 'no-rate-limiting' | 'no-queue';
+  kind:
+    | 'missing-pagination'
+    | 'unbounded-query'
+    | 'no-caching'
+    | 'sync-in-async'
+    | 'no-rate-limiting'
+    | 'no-queue';
   description: string;
   repo: string;
   file: string;
@@ -16,14 +22,19 @@ export interface BottleneckFinding {
 // ─── Pagination Keywords ─────────────────────────────────────────────────────
 
 const PAGINATION_INDICATORS = [
-  'paginate', 'paginated', 'pagination',
-  'page', 'paged',
-  'cursor', 'offset', 'limit',
+  'paginate',
+  'paginated',
+  'pagination',
+  'page',
+  'paged',
+  'cursor',
+  'offset',
+  'limit',
 ];
 
 function hasPaginationIndicator(name: string): boolean {
   const lower = name.toLowerCase();
-  return PAGINATION_INDICATORS.some(kw => lower.includes(kw));
+  return PAGINATION_INDICATORS.some((kw) => lower.includes(kw));
 }
 
 /**
@@ -49,21 +60,42 @@ function isListRoute(route: RouteDefinition): boolean {
 function isListProcedure(proc: ProcedureDef): boolean {
   if (proc.kind !== 'query') return false;
   const lower = proc.name.toLowerCase();
-  return lower.startsWith('list') || lower.startsWith('getall') || lower.startsWith('findall')
-    || lower.startsWith('search') || lower.includes('list');
+  return (
+    lower.startsWith('list') ||
+    lower.startsWith('getall') ||
+    lower.startsWith('findall') ||
+    lower.startsWith('search') ||
+    lower.includes('list')
+  );
 }
 
 // ─── Caching Detection ──────────────────────────────────────────────────────
 
-const CACHING_PATTERNS = ['cache', 'caching', 'redis', 'memcache', 'cdn', 'etag', 'stale-while-revalidate'];
-const CACHING_PACKAGES = ['ioredis', 'redis', 'node-cache', 'lru-cache', 'keyv', 'catbox', 'apicache'];
+const CACHING_PATTERNS = [
+  'cache',
+  'caching',
+  'redis',
+  'memcache',
+  'cdn',
+  'etag',
+  'stale-while-revalidate',
+];
+const CACHING_PACKAGES = [
+  'ioredis',
+  'redis',
+  'node-cache',
+  'lru-cache',
+  'keyv',
+  'catbox',
+  'apicache',
+];
 
 function hasCachingStrategy(manifest: RepoManifest): boolean {
-  const patterns = manifest.conventions.patterns.map(p => p.toLowerCase());
-  if (patterns.some(p => CACHING_PATTERNS.some(cp => p.includes(cp)))) return true;
+  const patterns = manifest.conventions.patterns.map((p) => p.toLowerCase());
+  if (patterns.some((p) => CACHING_PATTERNS.some((cp) => p.includes(cp)))) return true;
 
-  const externalPkgs = manifest.dependencies.external.map(d => d.name.toLowerCase());
-  if (externalPkgs.some(pkg => CACHING_PACKAGES.some(cp => pkg.includes(cp)))) return true;
+  const externalPkgs = manifest.dependencies.external.map((d) => d.name.toLowerCase());
+  if (externalPkgs.some((pkg) => CACHING_PACKAGES.some((cp) => pkg.includes(cp)))) return true;
 
   return false;
 }
@@ -71,14 +103,20 @@ function hasCachingStrategy(manifest: RepoManifest): boolean {
 // ─── Rate Limiting Detection ────────────────────────────────────────────────
 
 const RATE_LIMIT_PATTERNS = ['rate-limit', 'rate_limit', 'ratelimit', 'throttle', 'throttling'];
-const RATE_LIMIT_PACKAGES = ['express-rate-limit', 'rate-limiter-flexible', 'bottleneck', 'p-throttle', 'p-limit'];
+const RATE_LIMIT_PACKAGES = [
+  'express-rate-limit',
+  'rate-limiter-flexible',
+  'bottleneck',
+  'p-throttle',
+  'p-limit',
+];
 
 function hasRateLimiting(manifest: RepoManifest): boolean {
-  const patterns = manifest.conventions.patterns.map(p => p.toLowerCase());
-  if (patterns.some(p => RATE_LIMIT_PATTERNS.some(rl => p.includes(rl)))) return true;
+  const patterns = manifest.conventions.patterns.map((p) => p.toLowerCase());
+  if (patterns.some((p) => RATE_LIMIT_PATTERNS.some((rl) => p.includes(rl)))) return true;
 
-  const externalPkgs = manifest.dependencies.external.map(d => d.name.toLowerCase());
-  if (externalPkgs.some(pkg => RATE_LIMIT_PACKAGES.some(rl => pkg.includes(rl)))) return true;
+  const externalPkgs = manifest.dependencies.external.map((d) => d.name.toLowerCase());
+  if (externalPkgs.some((pkg) => RATE_LIMIT_PACKAGES.some((rl) => pkg.includes(rl)))) return true;
 
   return false;
 }
@@ -136,7 +174,7 @@ function detectNoCaching(manifest: RepoManifest): BottleneckFinding[] {
   const findings: BottleneckFinding[] = [];
 
   // Only check if there are multiple GET routes on the same base resource
-  const getRoutes = manifest.apiSurface.routes.filter(r => r.method.toUpperCase() === 'GET');
+  const getRoutes = manifest.apiSurface.routes.filter((r) => r.method.toUpperCase() === 'GET');
   if (getRoutes.length < 2) return [];
 
   // Group by first two path segments (resource base)
@@ -172,18 +210,18 @@ function detectMissingRateLimiting(manifest: RepoManifest): BottleneckFinding[] 
 
   if (hasRateLimiting(manifest)) return [];
 
-  const hasMutationProcedures = manifest.apiSurface.procedures.some(p => p.kind === 'mutation');
-  const hasMutationRoutes = manifest.apiSurface.routes.some(r =>
-    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(r.method.toUpperCase())
+  const hasMutationProcedures = manifest.apiSurface.procedures.some((p) => p.kind === 'mutation');
+  const hasMutationRoutes = manifest.apiSurface.routes.some((r) =>
+    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(r.method.toUpperCase()),
   );
 
   if (!hasMutationRoutes && !hasMutationProcedures) return [];
 
   // Count all mutation surfaces for the description
-  const mutationRoutes = manifest.apiSurface.routes.filter(r =>
-    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(r.method.toUpperCase())
+  const mutationRoutes = manifest.apiSurface.routes.filter((r) =>
+    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(r.method.toUpperCase()),
   );
-  const mutationProcedures = manifest.apiSurface.procedures.filter(p => p.kind === 'mutation');
+  const mutationProcedures = manifest.apiSurface.procedures.filter((p) => p.kind === 'mutation');
   const totalMutations = mutationRoutes.length + mutationProcedures.length;
 
   // Resolve a representative file/line — prefer routes, fall back to procedures
@@ -207,22 +245,24 @@ function detectMissingRateLimiting(manifest: RepoManifest): BottleneckFinding[] 
 const QUEUE_PACKAGES = ['bullmq', 'bull', 'bee-queue', 'agenda', 'amqplib', 'kafkajs'];
 
 function detectNoQueue(manifest: RepoManifest): BottleneckFinding[] {
-  const mutationCount = manifest.apiSurface.procedures.filter(p => p.kind === 'mutation').length;
+  const mutationCount = manifest.apiSurface.procedures.filter((p) => p.kind === 'mutation').length;
   if (mutationCount < 20) return [];
 
-  const hasQueue = manifest.dependencies.external.some(d =>
-    QUEUE_PACKAGES.some(pkg => d.name.toLowerCase().includes(pkg))
+  const hasQueue = manifest.dependencies.external.some((d) =>
+    QUEUE_PACKAGES.some((pkg) => d.name.toLowerCase().includes(pkg)),
   );
   if (hasQueue) return [];
 
-  return [{
-    kind: 'no-queue',
-    repo: manifest.repoId,
-    severity: 'medium',
-    description: `${mutationCount} mutation procedures with no job queue detected. Consider adding a queue (e.g., BullMQ) for background processing.`,
-    file: manifest.apiSurface.procedures[0]?.file ?? '',
-    line: manifest.apiSurface.procedures[0]?.line ?? 1,
-  }];
+  return [
+    {
+      kind: 'no-queue',
+      repo: manifest.repoId,
+      severity: 'medium',
+      description: `${mutationCount} mutation procedures with no job queue detected. Consider adding a queue (e.g., BullMQ) for background processing.`,
+      file: manifest.apiSurface.procedures[0]?.file ?? '',
+      line: manifest.apiSurface.procedures[0]?.line ?? 1,
+    },
+  ];
 }
 
 // ─── Client-Language Guard ──────────────────────────────────────────────────
@@ -233,13 +273,7 @@ function detectNoQueue(manifest: RepoManifest): BottleneckFinding[] {
  * contain spurious detections (e.g. JS documentation files inside an iOS repo
  * that contain `window.get()` calls misidentified as HTTP list routes).
  */
-const CLIENT_LANGUAGES = new Set([
-  'swift',
-  'kotlin',
-  'dart',
-  'objective-c',
-  'markdown',
-]);
+const CLIENT_LANGUAGES = new Set(['swift', 'kotlin', 'dart', 'objective-c', 'markdown']);
 
 // ─── Main Entry Point ───────────────────────────────────────────────────────
 

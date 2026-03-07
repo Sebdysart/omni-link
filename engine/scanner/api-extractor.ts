@@ -1,14 +1,21 @@
 // engine/scanner/api-extractor.ts — Extracts exports, routes, and tRPC procedures from source code
+import type Parser from 'tree-sitter';
 import type { ExportDef, RouteDefinition, ProcedureDef } from '../types.js';
 import { createParser } from './tree-sitter.js';
+
+type SyntaxNode = Parser.SyntaxNode;
 
 // ─── Exports ────────────────────────────────────────────────────────────────
 
 function normalizeSignature(text: string): string {
-  return text.replace(/\s+/g, ' ').replace(/\s*{\s*$/, '').replace(/;$/, '').trim();
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/\s*{\s*$/, '')
+    .replace(/;$/, '')
+    .trim();
 }
 
-function signatureBeforeBody(node: any): string {
+function signatureBeforeBody(node: SyntaxNode): string {
   return normalizeSignature(node.text.split('{')[0] ?? node.text);
 }
 
@@ -16,12 +23,16 @@ function isGoExportedName(name: string): boolean {
   return /^[A-Z]/.test(name);
 }
 
-function isRustPublic(node: any): boolean {
-  return node.children.some((child: any) => child.type === 'visibility_modifier' && child.text.startsWith('pub'));
+function isRustPublic(node: SyntaxNode): boolean {
+  return node.children.some(
+    (child: SyntaxNode) => child.type === 'visibility_modifier' && child.text.startsWith('pub'),
+  );
 }
 
-function isJavaPublic(node: any): boolean {
-  return node.children.some((child: any) => child.type === 'modifiers' && /\bpublic\b/.test(child.text));
+function isJavaPublic(node: SyntaxNode): boolean {
+  return node.children.some(
+    (child: SyntaxNode) => child.type === 'modifiers' && /\bpublic\b/.test(child.text),
+  );
 }
 
 /**
@@ -29,11 +40,7 @@ function isJavaPublic(node: any): boolean {
  * - TypeScript: walks export_statement nodes
  * - Swift: walks top-level function_declaration, class_declaration (struct/class)
  */
-export function extractExports(
-  source: string,
-  file: string,
-  language: string,
-): ExportDef[] {
+export function extractExports(source: string, file: string, language: string): ExportDef[] {
   if (language === 'typescript' || language === 'tsx' || language === 'javascript') {
     return extractTSExports(source, file, language);
   }
@@ -62,7 +69,7 @@ function extractTSExports(source: string, file: string, language: string): Expor
 
   const exportNodes = tree.rootNode.descendantsOfType('export_statement');
   for (const exportNode of exportNodes) {
-    const declaration = exportNode.namedChildren.find((c: any) =>
+    const declaration = exportNode.namedChildren.find((c: SyntaxNode) =>
       [
         'function_declaration',
         'class_declaration',
@@ -248,7 +255,7 @@ function extractPythonExports(source: string, file: string): ExportDef[] {
     }
 
     if (child.type === 'expression_statement') {
-      const assignment = child.namedChildren.find((node: any) => node.type === 'assignment');
+      const assignment = child.namedChildren.find((node: SyntaxNode) => node.type === 'assignment');
       const nameNode = assignment?.childForFieldName('left');
       if (!nameNode || nameNode.type !== 'identifier' || !/^[A-Z][A-Z0-9_]*$/.test(nameNode.text)) {
         continue;
@@ -274,7 +281,7 @@ function extractGoExports(source: string, file: string): ExportDef[] {
 
   for (const child of tree.rootNode.namedChildren) {
     if (child.type === 'type_declaration') {
-      const typeSpecs = child.namedChildren.filter((node: any) => node.type === 'type_spec');
+      const typeSpecs = child.namedChildren.filter((node: SyntaxNode) => node.type === 'type_spec');
       for (const typeSpec of typeSpecs) {
         const nameNode = typeSpec.childForFieldName('name');
         const typeNode = typeSpec.childForFieldName('type');
@@ -316,12 +323,12 @@ function extractGoExports(source: string, file: string): ExportDef[] {
     }
 
     if (child.type === 'const_declaration' || child.type === 'var_declaration') {
-      const specs = child.namedChildren.filter((node: any) =>
-        node.type === 'const_spec' || node.type === 'var_spec',
+      const specs = child.namedChildren.filter(
+        (node: SyntaxNode) => node.type === 'const_spec' || node.type === 'var_spec',
       );
 
       for (const spec of specs) {
-        const names = spec.namedChildren.filter((node: any) => node.type === 'identifier');
+        const names = spec.namedChildren.filter((node: SyntaxNode) => node.type === 'identifier');
         for (const nameNode of names) {
           if (!isGoExportedName(nameNode.text)) continue;
           results.push({
@@ -418,8 +425,15 @@ function extractJavaExports(source: string, file: string): ExportDef[] {
         });
       }
 
-      if (member.type === 'field_declaration' && isJavaPublic(member) && /\bstatic\b/.test(member.text) && /\bfinal\b/.test(member.text)) {
-        const declarators = member.namedChildren.filter((node: any) => node.type === 'variable_declarator');
+      if (
+        member.type === 'field_declaration' &&
+        isJavaPublic(member) &&
+        /\bstatic\b/.test(member.text) &&
+        /\bfinal\b/.test(member.text)
+      ) {
+        const declarators = member.namedChildren.filter(
+          (node: SyntaxNode) => node.type === 'variable_declarator',
+        );
         for (const declarator of declarators) {
           const nameNode = declarator.childForFieldName('name');
           if (!nameNode) continue;
@@ -513,7 +527,10 @@ export function extractScriptApiCallSites(source: string, file: string): ExportD
     while ((stringMatch = stringLiteralPattern.exec(line)) !== null) {
       const literalValue = stringMatch[1];
       if (
-        (line.includes('trpc') || line.includes('query(') || line.includes('mutation(') || line.includes('subscribe(')) &&
+        (line.includes('trpc') ||
+          line.includes('query(') ||
+          line.includes('mutation(') ||
+          line.includes('subscribe(')) &&
         /^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)+$/.test(literalValue)
       ) {
         const key = `proc:${literalValue}`;
@@ -596,7 +613,10 @@ export function extractSwiftApiCallSites(source: string, file: string): ExportDe
       const key = `proc:${value}`;
       if (
         !seen.has(key) &&
-        (line.includes('trpc') || line.includes('query(') || line.includes('mutation(') || line.includes('subscribe('))
+        (line.includes('trpc') ||
+          line.includes('query(') ||
+          line.includes('mutation(') ||
+          line.includes('subscribe('))
       ) {
         seen.add(key);
         results.push(makeCallSiteExport(value, file, i + 1));
@@ -702,11 +722,7 @@ function extractGraphQLOperations(source: string, file: string): RouteDefinition
  * Looks for `app.METHOD(path, handler)` patterns.
  * Also handles GraphQL SDL files (.graphql/.gql) via SDL parsing.
  */
-export function extractRoutes(
-  source: string,
-  file: string,
-  language: string,
-): RouteDefinition[] {
+export function extractRoutes(source: string, file: string, language: string): RouteDefinition[] {
   if (language === 'graphql') {
     return extractGraphQLOperations(source, file);
   }
@@ -767,11 +783,7 @@ export function extractRoutes(
  * Each property in the router object maps to a procedure name.
  * The chain terminator (.query/.mutation/.subscription) determines the kind.
  */
-export function extractProcedures(
-  source: string,
-  file: string,
-  language: string,
-): ProcedureDef[] {
+export function extractProcedures(source: string, file: string, language: string): ProcedureDef[] {
   if (language !== 'typescript' && language !== 'tsx' && language !== 'javascript') {
     return [];
   }
@@ -798,7 +810,7 @@ export function extractProcedures(
     if (!args) continue;
 
     // First argument should be an object
-    const objArg = args.namedChildren.find((c: any) => c.type === 'object');
+    const objArg = args.namedChildren.find((c: SyntaxNode) => c.type === 'object');
     if (!objArg) continue;
 
     // Each pair in the object is a procedure
@@ -830,7 +842,7 @@ export function extractProcedures(
 /**
  * Walk a call chain to find the terminal .query(), .mutation(), or .subscription() call.
  */
-function detectProcedureKind(node: any): 'query' | 'mutation' | 'subscription' | null {
+function detectProcedureKind(node: SyntaxNode): 'query' | 'mutation' | 'subscription' | null {
   // The value is typically a call_expression chain like:
   //   publicProcedure.input(...).query(...)
   // The outermost call_expression has a member_expression whose property is the kind.
