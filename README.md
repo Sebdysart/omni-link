@@ -1,35 +1,59 @@
 # omni-link
 
-**Multi-repo AI ecosystem plugin for Claude Code** -- cross-repo grounding, anti-slop enforcement, and proactive business evolution.
+**Local-first multi-repo engineering control plane for Claude Code** -- semantic cross-repo analysis, PR/MR intelligence, bounded automation, policy enforcement, and ecosystem-level evolution.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-green.svg)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/tests-277%2B-brightgreen.svg)](#development)
+[![Verification](https://img.shields.io/badge/verify:stress-passing-brightgreen.svg)](#verification)
+[![Tests](https://img.shields.io/badge/tests-488%2B4_live-brightgreen.svg)](#verification)
 
 ## What it does
 
-omni-link scans up to 10 repositories, builds an ecosystem graph of API contracts, shared types, and cross-repo dependencies, then injects a compact context digest into every Claude Code session. It enforces quality gates that **block** hallucinated imports, wrong conventions, and placeholder code -- and proactively surfaces business evolution opportunities backed by codebase evidence.
+omni-link scans up to 10 repositories, builds a branch-aware ecosystem graph of APIs, types, dependencies, ownership, runtime signals, and policy state, then uses that graph to drive scans, impact analysis, health scoring, PR/MR review artifacts, provider publishing, and bounded execution planning.
+
+This is not just a repo scanner. In max-tier mode, omni-link behaves like a local-first ecosystem control plane:
+
+- It keeps warm state in a SQLite-backed daemon instead of rescanning everything on every command.
+- It combines parser coverage with compiler-backed semantic analysis for TypeScript, Go, Python, Java, and Swift, plus AST-backed GraphQL analysis.
+- It generates branch-aware review artifacts with risk, owners, policy decisions, and rollback-aware execution plans.
+- It publishes or replays provider-native review output for GitHub and GitLab with live metadata negotiation and idempotent comment updates.
+- It keeps automation bounded: branch and PR oriented, policy gated, and auditable.
+
+## Why it is different
+
+- **Cross-repo truth, not single-repo guesses** -- omni-link reasons over the ecosystem graph, not just one working directory.
+- **Semantic where it matters** -- compiler-backed analysis is used where available, with structured fallback where necessary.
+- **Operationally safe** -- direct protected-branch mutation is blocked, execution is policy-gated, and rollback plans are always generated.
+- **Provider-aware** -- GitHub and GitLab publishing is capability-aware, metadata-aware, and proven against live sandbox PR/MR targets.
+- **Proven, not hypothetical** -- the repo ships with contract fixtures, smoke tests, stress tests, packaged-install tests, and live-provider gates.
 
 ## Features
 
-- **Multi-repo scanning** -- Tree-sitter-powered parsing of TypeScript, TSX, Swift, Python, Go, Rust, Java, JavaScript, and GraphQL-aware file detection
-- **API contract mapping** -- Detects routes, tRPC procedures, and consumer references across repos
-- **Type lineage tracking** -- Finds shared concepts (e.g., `User` in backend, `UserDTO` in iOS) via name matching and field similarity
-- **Semantic accuracy layer** -- Optional TypeScript compiler-backed analysis overlays parser results with provenance and confidence
-- **Contract mismatch detection** -- Identifies breaking, warning, and info-level type divergences
-- **Context digest** -- Token-budgeted markdown summary injected at session start with Mermaid architecture diagrams
-- **Ignore-aware scanning** -- Honors `.gitignore` and `.claudeignore` during repo walks
-- **Anti-slop gate** -- Blocks hallucinated imports, unknown packages, wrong conventions, and placeholder code
-- **Convention enforcement** -- Detects and enforces naming, file organization, error handling, and testing patterns
-- **Evolution engine** -- Gap analysis, bottleneck detection, competitive benchmarking, and ranked upgrade proposals
-- **Impact analysis** -- Traces ripple effects of changes across the entire ecosystem
-- **Health scoring** -- Per-repo and overall ecosystem health metrics
-- **Ownership and policy engine** -- Resolves owners, evaluates branch/risk policies, and gates bounded execution
-- **Daemon-backed watch mode** -- Maintains warm ecosystem state for faster repeated analysis
-- **PR review artifacts** -- Generates branch-aware review output with risk, impact, owners, and execution planning
-- **Provider publish transport** -- Replays or publishes review comments and check runs through explicit provider transports
-- **Provider-aware publish orchestration** -- Provider-independent publish flow with capability negotiation, live PR/MR metadata ingestion, GitHub live support, and GitLab live scaffolding
-- **Bounded automation** -- Produces branch/PR-oriented execution plans with rollback instructions and dry-run defaults
+- **Hybrid truth layer** -- Tree-sitter fallback plus compiler-backed TypeScript, Go, Python, Java, and Swift analyzers, plus GraphQL AST analysis with provenance and confidence.
+- **Branch-aware daemon state** -- SQLite-backed warm graph snapshots keyed by config and branch/worktree signature.
+- **Cross-repo API and type graphing** -- Routes, procedures, contracts, imports, symbol references, type lineage, dependency edges, and impact paths.
+- **Runtime-aware ranking** -- Coverage, test, OpenAPI, GraphQL, telemetry, and trace artifacts can influence health and prioritization.
+- **Ownership and policy engine** -- Repo, path, API, and package-level ownership plus protected-branch and risk gating.
+- **Review artifact pipeline** -- `review-pr` emits risk, owners, policy decisions, contract mismatches, and execution plans.
+- **Provider publishing** -- `publish-review` supports dry-run, replay, GitHub, and GitLab transports with capability negotiation and live metadata hydration.
+- **Idempotent provider comments** -- repeated publish runs update the existing omni-link review comment instead of spraying duplicates.
+- **Bounded execution** -- `apply` and `rollback` stay branch-oriented, emit rollback plans, and now produce an execution ledger for auditability.
+- **Contract-locked CLI surface** -- JSON and markdown outputs are pinned by fixture tests so public command drift is deliberate.
+- **Packaged artifact validation** -- the built tarball is installed into a temp project and exercised from `node_modules`.
+- **Polyglot stress coverage** -- the comprehensive stress harness exercises TypeScript, Go, Python, GraphQL, Java, and Swift together.
+
+## Verification
+
+The current repository state is validated by `npm run verify:stress`, which includes lint, typecheck, unit/integration tests, coverage, build, CLI smoke, max-tier smoke, contract fixtures, package-install smoke, full stress, and live-provider gates when credentials are configured.
+
+Current proof points from the verified state:
+
+- `488` core tests passing, plus live GitHub and GitLab provider tests executed in sandbox PR/MR flows
+- `90.6%` statement coverage
+- `0` moderate-or-higher audit vulnerabilities
+- Live GitHub and GitLab metadata fetch plus publish validated through sandbox review targets
+- Cleanup verified: sandbox PRs/MRs are closed and temporary branches are deleted
+- Polyglot stress harness validated across `8` repos and `6` languages in one engine run
 
 ## Installation
 
@@ -297,7 +321,10 @@ npm run format:check
 ```bash
 npm run verify
 npm run verify:max
+npm run verify:stress
 ```
+
+`verify:stress` is the release bar. It runs the full repo verification surface and, when provider credentials are configured, also runs the live GitHub and GitLab sandbox publish gates.
 
 ### CLI smoke test
 
@@ -349,13 +376,15 @@ omni-link/
   commands/         # Slash command docs
   agents/           # 3 specialized agents
   hooks/            # Session-start hook
-  tests/            # Test suite (277+ tests)
+  tests/            # Test suite (488+ core tests, plus live-provider integration gates)
     scanner/        # Scanner unit tests
     grapher/        # Grapher unit tests
     context/        # Context engine tests
     quality/        # Quality gate tests
     evolution/      # Evolution engine tests
+    providers/      # Provider replay and live integration tests
     integration/    # End-to-end integration tests
+  scripts/          # Smoke, contract, package-install, and full stress harnesses
   .claude-plugin/   # Plugin manifest
 ```
 
